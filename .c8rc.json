@@ -1,0 +1,10 @@
+{
+  "all": true,
+  "src": "src/**/*",
+  "extension": [
+    ".mts"
+  ],
+  "reporter": [
+    "text"
+  ]
+}

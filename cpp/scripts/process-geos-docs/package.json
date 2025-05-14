@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "name": "process-geos-docs",
+  "version": "1.0.0",
+  "description": "Generate TypeScript interface for GEOS C-API from GEOS documentation .html file of geos_c.h",
+  "dependencies": {
+    "node-html-parser": "^7.0.1"
+  }
+}

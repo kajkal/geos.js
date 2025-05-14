@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "verbatimModuleSyntax": true,
+    "stripInternal": true,
+    "isolatedDeclarations": true,
+    "declaration": true
+  },
+  "include": [
+    "src/**/*",
+    "tests/**/*"
+  ]
+}
