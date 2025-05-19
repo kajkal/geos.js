@@ -1,4 +1,4 @@
-import type { GEOSBufferParams, GEOSMessageHandler_r, GEOSWKBReader, GEOSWKBWriter, GEOSWKTReader, GEOSWKTWriter, Ptr, WasmGEOS } from '../types/wasm-geos.mjs';
+import type { GEOSBufferParams, GEOSMakeValidParams, GEOSMessageHandler_r, GEOSWKBReader, GEOSWKBWriter, GEOSWKTReader, GEOSWKTWriter, Ptr, WasmGEOS } from '../types/wasm-geos.mjs';
 import type { WasmOther } from '../types/wasm-other.mjs';
 import { POINTER } from './symbols.mjs';
 import { ReusableBuffer, ReusableF64, ReusableU32 } from './reusable-memory.mjs';
@@ -35,7 +35,7 @@ class GEOS {
     buffByL(l: number): ReusableBuffer {
         let { buff } = this;
         if (l > buff.l) {
-            const tmpBuffPtr = geos.malloc(l);
+            const tmpBuffPtr = (this as unknown as WasmOther).malloc(l);
             buff = new ReusableBuffer(tmpBuffPtr, l);
         }
         return buff;
@@ -45,7 +45,7 @@ class GEOS {
         let { buff } = this;
         if (l4 > buff.l4) {
             const tmpBuffLen = l4 * 4;
-            const tmpBuffPtr = geos.malloc(tmpBuffLen);
+            const tmpBuffPtr = (this as unknown as WasmOther).malloc(tmpBuffLen);
             buff = new ReusableBuffer(tmpBuffPtr, tmpBuffLen);
         }
         return buff;
@@ -119,11 +119,7 @@ class GEOS {
     b_r: Record<null | string, Ptr<GEOSWKBReader>> = {};
     b_w: Record<null | string, Ptr<GEOSWKBWriter>> = {};
     b_p: Record<null | string, Ptr<GEOSBufferParams>> = {};
-
-    onGeosNotice: GEOSMessageHandler_r = (messagePtr, _userdata) => {
-        // GEOS notice message is only emitted by `GEOSisValid`
-        throw new GeosError(`Unexpected notice message: '${this.decodeString(messagePtr)}'`);
-    };
+    m_v: Record<null | string, Ptr<GEOSMakeValidParams>> = {};
 
     onGeosError: GEOSMessageHandler_r = (messagePtr, _userdata) => {
         const message = this.decodeString(messagePtr);
@@ -144,14 +140,13 @@ class GEOS {
 
         const { memory, __indirect_function_table, ...exports } = instance.exports as unknown as WasmExports;
 
-        this.memory = memory as WebAssembly.Memory;
+        this.memory = memory;
         this.updateMemory();
 
-        this.table = __indirect_function_table as WebAssembly.Table;
+        this.table = __indirect_function_table;
 
         exports._initialize();
         const ctx = exports.GEOS_init_r();
-        exports.GEOSContext_setNoticeMessageHandler_r(ctx, this.addFunction(this.onGeosNotice, 'vpp'), 0 as Ptr<void>);
         exports.GEOSContext_setErrorMessageHandler_r(ctx, this.addFunction(this.onGeosError, 'vpp'), 0 as Ptr<void>);
 
         // bind ctx to all `_r` functions and remove `_r` from their name:

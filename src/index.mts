@@ -50,17 +50,24 @@ export async function initialize(source: Response | PromiseLike<Response> | WebA
 
 export { terminate } from './core/geos.mjs';
 export { GeosError } from './core/geos-error.mjs';
+export { type Geometry } from './geom/geometry.mjs';
+
 export { version } from './misc/version.mjs';
 export { growMemory } from './misc/grow-memory.mjs';
-export { type Geometry } from './geom/geometry.mjs';
 export { point, lineString, polygon, multiPoint, multiLineString, multiPolygon, geometryCollection } from './misc/helpers.mjs';
+
 export { geosifyGeometry, geosifyGeometries, InvalidGeoJSONError } from './io/geosify.mjs';
 export { jsonifyGeometry, jsonifyGeometries } from './io/jsonify.mjs';
 export { fromWKT, type WKTInputOptions, toWKT, type WKTOutputOptions } from './io/wkt.mjs';
 export { fromWKB, type WKBInputOptions, toWKB, type WKBOutputOptions } from './io/wkb.mjs';
+
 export { buffer } from './operation/buffer.mjs';
 export { difference } from './operation/difference.mjs';
 export { intersection } from './operation/intersection.mjs';
 export { symmetricDifference } from './operation/symmetric-difference.mjs';
 export { unaryUnion } from './operation/unary-union.mjs';
 export { union } from './operation/union.mjs';
+export { makeValid, type MakeValidOptions } from './operation/make-valid.mjs';
+
+export { isSimple } from './predicates/is-simple.mjs';
+export { isValid, isValidOrThrow, TopologyValidationError } from './predicates/is-valid.mjs';

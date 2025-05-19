@@ -284,9 +284,10 @@ void async function main() {
     ];
     const expFunctionsMap = await readFile(EXPORTED_FUNCTIONS_TXT_PATH, { encoding: 'utf8' })
         .then(txt => txt.split('\n')
+            .map(line => line.trim())
             .reduce((map, line) => {
                 const exported = !line.startsWith('#');
-                const fnName = line.replace(/^#/, '').trim();
+                const fnName = line.replace(/^#\s*/, '');
                 return map.set(fnName, { exported });
             }, new Map()),
         );

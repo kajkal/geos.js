@@ -356,6 +356,7 @@ export interface WasmGEOS {
      * @param nf - the message handler
      * @param userData - optional user data pointer that will be passed to the message handler
      * @returns the previously configured message handler or NULL if no message handler was configured
+     * @deprecated this function is not exported
      */
     GEOSContext_setNoticeMessageHandler_r(extHandle: Ptr<GEOSContextHandle_t>, nf: Ptr<GEOSMessageHandler_r>, userData: Ptr<void>): Ptr<GEOSMessageHandler_r>;
 
@@ -1113,7 +1114,6 @@ export interface WasmGEOS {
      * Tests whether the input geometry is "simple". Mostly relevant for linestrings. A "simple" linestring has no self-intersections.
      * @param g - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
-     * @deprecated this function is not exported
      */
     GEOSisSimple(g: ConstPtr<GEOSGeometry>): i8;
 
@@ -1144,7 +1144,6 @@ export interface WasmGEOS {
      * @param reason - A pointer in which the reason string will be places
      * @param location - A pointer in which the location GEOSGeometry will be placed
      * @returns 1 when valid, 0 when invalid, 2 on exception
-     * @deprecated this function is not exported
      */
     GEOSisValidDetail(g: ConstPtr<GEOSGeometry>, flags: i32, reason: Ptr<string[]>, location: Ptr<GEOSGeometry[]>): i8;
 
@@ -1165,7 +1164,6 @@ export interface WasmGEOS {
      * @see GEOSMakeValidParams_destroy
      * @see GEOSMakeValidParams_setMethod
      * @see GEOSMakeValidParams_setKeepCollapsed
-     * @deprecated this function is not exported
      */
     GEOSMakeValidWithParams(g: ConstPtr<GEOSGeometry>, makeValidParams: ConstPtr<GEOSMakeValidParams>): Ptr<GEOSGeometry>;
 
@@ -1173,7 +1171,6 @@ export interface WasmGEOS {
      * Create a GEOSMakeValidParams to hold the desired parameters to control the algorithm and behavior of the validation process.
      * @returns a parameter object
      * @see GEOSMakeValidWithParams
-     * @deprecated this function is not exported
      */
     GEOSMakeValidParams_create(): Ptr<GEOSMakeValidParams>;
 
@@ -1189,7 +1186,6 @@ export interface WasmGEOS {
      * Set the GEOSMakeValidMethods to use in making the geometry valid.
      * @returns 0 on exception, 1 on success.
      * @see GEOSMakeValidWithParams
-     * @deprecated this function is not exported
      */
     GEOSMakeValidParams_setMethod(p: Ptr<GEOSMakeValidParams>, method: GEOSMakeValidMethods): i32;
 
@@ -1197,7 +1193,6 @@ export interface WasmGEOS {
      * When this parameter is nn-zero, the GEOS_MAKE_VALID_STRUCTURE method will keep components that have collapsed into a lower dimensionality. For example, a ring collapsing to a line, or a line collapsing to a point.
      * @returns 0 on exception, 1 on success.
      * @see GEOSMakeValidWithParams
-     * @deprecated this function is not exported
      */
     GEOSMakeValidParams_setKeepCollapsed(p: Ptr<GEOSMakeValidParams>, keepCollapsed: i32): i32;
 

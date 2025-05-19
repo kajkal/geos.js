@@ -9,7 +9,7 @@ GEOS_init_r
 #   GEOS_finish_r
 #   GEOSContext_setNoticeHandler_r
 #   GEOSContext_setErrorHandler_r
-GEOSContext_setNoticeMessageHandler_r
+#   GEOSContext_setNoticeMessageHandler_r
 GEOSContext_setErrorMessageHandler_r
 #   GEOS_printDouble
 GEOSversion
@@ -106,16 +106,16 @@ GEOSNormalize_r
 GEOSOrientPolygons_r
 
 ## Validation:
-#   GEOSisSimple_r
+GEOSisSimple_r
 #   GEOSisValid_r
 #   GEOSisValidReason_r
-#   GEOSisValidDetail_r
+GEOSisValidDetail_r
 #   GEOSMakeValid_r
-#   GEOSMakeValidWithParams_r
-#   GEOSMakeValidParams_create_r
+GEOSMakeValidWithParams_r
+GEOSMakeValidParams_create_r
 #   GEOSMakeValidParams_destroy_r
-#   GEOSMakeValidParams_setMethod_r
-#   GEOSMakeValidParams_setKeepCollapsed_r
+GEOSMakeValidParams_setMethod_r
+GEOSMakeValidParams_setKeepCollapsed_r
 #   GEOSMinimumClearance_r
 #   GEOSMinimumClearanceLine_r
 #   GEOSRemoveRepeatedPoints_r
