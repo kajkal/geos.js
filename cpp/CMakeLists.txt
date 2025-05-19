@@ -25,7 +25,8 @@ if (DEFINED EMSCRIPTEN)
     # EXPORTED_FUNCTIONS:
     file(READ exported_functions.txt EXPORTED_FUNCTIONS_LIST) # load GEOS functions from `./exported_functions.txt`
     string(REPLACE "\n" ";" EXPORTED_FUNCTIONS_LIST "${EXPORTED_FUNCTIONS_LIST}")
-    list(FILTER EXPORTED_FUNCTIONS_LIST EXCLUDE REGEX "^(\\s*|#.*)$") # filter out empty/commented lines
+    list(TRANSFORM EXPORTED_FUNCTIONS_LIST STRIP) # remove leading and trailing spaces from each line
+    list(FILTER EXPORTED_FUNCTIONS_LIST EXCLUDE REGEX "^(|#.*)$") # filter out empty/commented lines
     list(PREPEND EXPORTED_FUNCTIONS_LIST
             # add basic functions:
             free
