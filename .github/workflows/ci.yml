@@ -1,15 +1,15 @@
-name: Publish
+name: CI
 
 on:
-  workflow_dispatch:
+  pull_request:
+  push:
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        node-version: [ 22 ]
+        node-version: [ 18, 20, 22 ]
 
     steps:
       - name: Checkout
@@ -24,12 +24,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          registry-url: https://registry.npmjs.org
           cache: 'pnpm'
 
-      - run: pnpm install
-      - run: pnpm run test
-      - run: pnpm run build
-      - run: npm publish --dry-run
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm run test-coverage

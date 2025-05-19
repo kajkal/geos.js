@@ -26,7 +26,7 @@ wasm-objdump -x ./build/js/geos_js.wasm
 
 ---
 
-to add/remove GEOS C-API function from the .wasm file uncomment/comment selected function from the [`./exported_functions.txt`](./exported_functions.txt) file.
+to add/remove GEOS C-API function from the .wasm file first uncomment/comment selected function from the [`./exported_functions.txt`](./exported_functions.txt) file and then rebuild .wasm file by calling `make geos-js-build`.
 
 ---
 

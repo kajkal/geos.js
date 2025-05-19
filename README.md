@@ -38,10 +38,6 @@ console.log(JSON.stringify(u)); // '{"type":"Polygon","coordinates":[[[10.807852
 console.log(toWKB(fromWKT('POINT Z (1 2 3)'), { flavor: 'iso' })); // Uint8Array(29) [1,233,3,0,...
 ```
 
-## Development
-
-Run `npm test` to execute the test suite. To verify code coverage, run `npm run test-coverage`. The GitHub Actions workflow fails if coverage drops below 95%. Package publication is performed manually via the `Publish` workflow.
-
 ## License
 
 `GEOS.js` is licensed under MIT License. `GEOS` is available under the terms of GNU Lesser General Public License (LGPL) 2.1.
