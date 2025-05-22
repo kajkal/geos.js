@@ -1,0 +1,24 @@
+# Version
+
+hello world!
+
+## some subtitle
+
+```javascript
+import { initializeFromBase64, fromWKT, toWKT, toWKB, point, buffer, union } from 'geos.js';
+
+// GEOS.js needs to be initialized (to compile Wasm code)
+await initializeFromBase64();
+
+// GEOS.js can read and write GeoJSON, WKT and WKB
+const p1 = buffer(fromWKT('POINT (1 1)'), 10);
+const p2 = buffer(point([ 6, 6 ]), 8, { quadrantSegments: 2 });
+const u = union(p1, p2);
+
+console.log(u.area()); // 375.3168319264665
+console.log(toWKT(u, { precision: 1 })); // 'POLYGON ((10.8 -1, 10.2 -2.8, 9.3 -4.6, 8.1 -6.1, 6...
+console.log(u.toJSON()); // { type: 'Polygon', coordinates: [ [ [ 10.807852804032304, -0.9509032...
+console.log(JSON.stringify(u)); // '{"type":"Polygon","coordinates":[[[10.807852804032304,-0.950...
+
+console.log(toWKB(fromWKT('POINT Z (1 2 3)'), { flavor: 'iso' })); // Uint8Array(29) [1,233,3,0,...
+```
