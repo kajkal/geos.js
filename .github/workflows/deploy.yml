@@ -39,7 +39,7 @@ jobs:
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build
+          path: docs/build
 
   deploy:
     name: Deploy to GitHub Pages
@@ -57,6 +57,11 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - name: Debug Build Output 1
+        run: ls -la .
+      - name: Debug Build Output 2
+        run: ls -la docs
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
