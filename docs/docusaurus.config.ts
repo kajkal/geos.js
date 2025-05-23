@@ -9,7 +9,7 @@ const config: Config = {
     favicon: 'img/favicon.ico',
 
     url: 'https://kajkal.github.io',
-    baseUrl: '/',
+    baseUrl: '/geos.js/',
 
     organizationName: 'kajkal',
     projectName: 'geos.js',
