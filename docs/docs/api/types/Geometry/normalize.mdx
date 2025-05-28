@@ -1,0 +1,24 @@
+---
+sidebar_label: 'normalize'
+sidebar_position: 3
+---
+
+# Geometry.prototype.normalize
+
+Organizes the elements, rings, and coordinate order of geometries in a
+consistent way, so that geometries that represent the same object can
+be easily compared.
+Modifies the geometry in-place.
+
+Normalization ensures the following:
+- Lines are oriented to have smallest coordinate first (apart from duplicate endpoints)
+- Rings start with their smallest coordinate (using XY ordering)
+- Polygon **shell** rings are oriented **CW**, and **holes CCW**
+- Collection elements are sorted by their first coordinate
+
+Note the Polygon winding order, OGC standard uses the opposite convention
+and so does GeoJSON. Polygon ring orientation could be changed via [orientPolygons](orientPolygons).
+
+## Returns
+
+[**`this`**](index.mdx) The same geometry but normalized, modified in-place

@@ -1,0 +1,30 @@
+---
+sidebar_label: 'bounds'
+sidebar_position: 3
+---
+
+# bounds
+
+Calculates the bounds (also named bbox - bounding box or extent) of the geometry.
+The bounds are the minimum rectangle that contains the entire geometry.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `geometry` | [**`Geometry`**](../types/Geometry/index.mdx) | The geometry for which the bounds are calculated |
+
+## Returns
+
+**`[ xMin: number, yMin: number, xMax: number, yMax: number ]`** An array of four numbers `[ xMin, yMin, xMax, yMax ]`
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) when called on an empty geometry
+
+## Examples
+
+```ts
+const poly = polygon([ [ [ 3, 3 ], [ 9, 4 ], [ 5, 1 ], [ 3, 3 ] ] ]);
+bounds(poly); // [ 3, 1, 9, 4 ]
+```

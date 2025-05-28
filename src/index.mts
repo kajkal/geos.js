@@ -7,14 +7,19 @@ import { instantiate } from './core/geos.mjs';
  * Although convenient, this causes a certain penalty during initial initialization
  * due to base64 to binary conversion and ~33% overhead of .wasm file size.
  *
- * @returns A Promise that resolves with the WebAssembly module
+ * Note that the returned module is just stateless, compiled WebAssembly code.
+ * `WebAssembly.Module` could be shared with another worker or window via `postMessage`.
+ *
+ * @returns A Promise that resolves with the `WebAssembly.Module`
+ *
+ * @see {@link initialize} initializes `geos.js` module from a fetch request
+ * or already compiled module
+ * @see {@link terminate} terminates initialized `geos.js` instance
  *
  * @example in any environment
  * await initializeFromBase64();
- *
- * @see {@link terminate}
  */
-export async function initializeFromBase64(): Promise<WebAssembly.Module> {
+async function initializeFromBase64(): Promise<WebAssembly.Module> {
     const str = atob('ROLLUP_WILL_INSERT_WASM_BASE64_HERE'), l = str.length;
     const u8 = new Uint8Array(l);
     for (let i = 0; i < l; i++) {
@@ -27,7 +32,13 @@ export async function initializeFromBase64(): Promise<WebAssembly.Module> {
 /**
  * Initializes `geos.js` module using `fetch` request or already compiled module.
  *
- * @returns A Promise that resolves with the WebAssembly module
+ * Note that the returned module is just stateless, compiled WebAssembly code.
+ * `WebAssembly.Module` could be shared with another worker or window via `postMessage`.
+ *
+ * @param source - Either a .wasm file fetch or already compiled module
+ * @returns A Promise that resolves with the `WebAssembly.Module`
+ *
+ * @see {@link terminate} terminates initialized `geos.js` instance
  *
  * @example browser; directly from fetch request
  * await initialize(fetch('geos_js.wasm'));
@@ -40,34 +51,40 @@ export async function initializeFromBase64(): Promise<WebAssembly.Module> {
  * const wasmData = await readFile('./geos_js.wasm');
  * const module = await WebAssembly.compile(wasmData);
  * await initialize(module);
- *
- * @see {@link terminate}
  */
-export async function initialize(source: Response | PromiseLike<Response> | WebAssembly.Module): Promise<WebAssembly.Module> {
+async function initialize(source: Response | Promise<Response> | WebAssembly.Module): Promise<WebAssembly.Module> {
     return await instantiate(source);
 }
 
 
+export { initializeFromBase64, initialize };
 export { terminate } from './core/geos.mjs';
-export { GeosError } from './core/geos-error.mjs';
-export { type Geometry } from './geom/geometry.mjs';
 
-export { version } from './misc/version.mjs';
-export { growMemory } from './misc/grow-memory.mjs';
-export { point, lineString, polygon, multiPoint, multiLineString, multiPolygon, geometryCollection } from './misc/helpers.mjs';
+export { GEOSError } from './core/GEOSError.mjs';
+export { Geometry, type GeometryType } from './geom/Geometry.mjs';
+export { point, lineString, polygon, multiPoint, multiLineString, multiPolygon, geometryCollection } from './helpers/helpers.mjs';
 
 export { geosifyGeometry, geosifyGeometries, InvalidGeoJSONError } from './io/geosify.mjs';
 export { jsonifyGeometry, jsonifyGeometries } from './io/jsonify.mjs';
 export { fromWKT, type WKTInputOptions, toWKT, type WKTOutputOptions } from './io/wkt.mjs';
 export { fromWKB, type WKBInputOptions, toWKB, type WKBOutputOptions } from './io/wkb.mjs';
 
-export { buffer } from './operation/buffer.mjs';
-export { difference } from './operation/difference.mjs';
-export { intersection } from './operation/intersection.mjs';
-export { symmetricDifference } from './operation/symmetric-difference.mjs';
-export { unaryUnion } from './operation/unary-union.mjs';
-export { union } from './operation/union.mjs';
-export { makeValid, type MakeValidOptions } from './operation/make-valid.mjs';
+export { length } from './measurement/length.mjs';
+export { area } from './measurement/area.mjs';
+export { bounds } from './measurement/bounds.mjs';
 
-export { isSimple } from './predicates/is-simple.mjs';
-export { isValid, isValidOrThrow, TopologyValidationError } from './predicates/is-valid.mjs';
+export { type PrecisionGridOptions } from './operations/types/PrecisionGridOptions.mjs';
+export { buffer, type BufferOptions } from './operations/buffer.mjs';
+export { difference } from './operations/difference.mjs';
+export { intersection } from './operations/intersection.mjs';
+export { symmetricDifference } from './operations/symmetricDifference.mjs';
+export { unaryUnion } from './operations/unaryUnion.mjs';
+export { union } from './operations/union.mjs';
+export { makeValid, type MakeValidOptions } from './operations/makeValid.mjs';
+
+export { isEmpty } from './predicates/isEmpty.mjs';
+export { isSimple } from './predicates/isSimple.mjs';
+export { isValid, isValidOrThrow, TopologyValidationError, type IsValidOptions } from './predicates/isValid.mjs';
+
+export { growMemory } from './other/growMemory.mjs';
+export { version } from './other/version.mjs';

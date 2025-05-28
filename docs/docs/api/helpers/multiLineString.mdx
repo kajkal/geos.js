@@ -1,0 +1,34 @@
+---
+sidebar_label: 'multiLineString'
+sidebar_position: 5
+---
+
+# multiLineString
+
+Creates a GEOS multiline string geometry from an array of line strings coordinates.
+Each line string must contain at least 2 positions.
+Empty line strings with 0 positions are allowed.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `ppts` | [**`Position`**](https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.1)`[][]` | MultiLineString coordinates |
+
+## Returns
+
+[**`Geometry`**](../types/Geometry/index.mdx) A new Geometry object
+
+## Throws
+
+- [**`InvalidGeoJSONError`**](../types/errors.mdx#InvalidGeoJSONError) on line with 1 position
+
+## Examples
+
+```ts
+const geom = multiLineString([
+    [ [ 0, 0 ], [ 1, 1 ] ],
+    [ [ 2, 2 ], [ 3, 3 ] ]
+]);
+toWKT(geom); // 'MULTILINESTRING ((0 0, 1 1), (2 2, 3 3))'
+```

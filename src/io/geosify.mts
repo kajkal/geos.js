@@ -86,12 +86,13 @@
  *
  * ## 6. [JS] retrieve pointers of `GEOSGeometry`
  */
+declare const THIS_FILE: symbol; // to omit ^ @file doc from the bundle
 
 import type { Geometry as GeoJSONGeometry, GeometryCollection, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon } from 'geojson';
-import type { GEOSGeometry, Ptr } from '../types/wasm-geos.mjs';
+import type { GEOSGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry, GEOSGeometryTypeDecoder } from '../geom/geometry.mjs';
-import { GeosError } from '../core/geos-error.mjs';
+import { Geometry, GEOSGeometryTypeDecoder } from '../geom/Geometry.mjs';
+import { GEOSError } from '../core/GEOSError.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -109,7 +110,7 @@ interface GEOSGeometryType {
 const GEOSGeometryType: GEOSGeometryType = GEOSGeometryTypeDecoder.reduce((a, t, i) => (a[ t ] = i, a), {} as any);
 
 
-export class InvalidGeoJSONError extends GeosError {
+export class InvalidGeoJSONError extends GEOSError {
     /** @internal */
     constructor(type: number, geom: GeoJSONGeometry) {
         super(`Invalid ${GEOSGeometryTypeDecoder[ type ]} ${JSON.stringify(geom)}`);
@@ -209,7 +210,7 @@ const geosifyMeasureAndValidateGeom = (geom: GeoJSONGeometry, c: GeosifyCounter)
         }
 
         default: {
-            throw new GeosError(`Unexpected geometry type. Expected one of [${GEOSGeometryTypeDecoder.slice(0, 2)},${GEOSGeometryTypeDecoder.slice(3, 8)}] received "${geom.type}"`);
+            throw new GEOSError(`Unexpected geometry type. Expected one of [${GEOSGeometryTypeDecoder.slice(0, 2)},${GEOSGeometryTypeDecoder.slice(3, 8)}] received "${geom.type}"`);
         }
 
     }
@@ -378,10 +379,11 @@ const geosifyPopulateGeom = (geom: GeoJSONGeometry, s: GeosifyPopulateState): vo
 
 
 /**
- * Converts provided GeoJSON geometry into GEOS geometry.
+ * Creates a {@link Geometry} from GeoJSON geometry object.
  *
- * @param geojson - GeoJSON geometry to be converted into GEOS geometry
- * @throws InvalidGeoJSONError on invalid geometry
+ * @param geojson - GeoJSON geometry object
+ * @returns A new geometry
+ * @throws {InvalidGeoJSONError} on invalid GeoJSON geometry
  *
  * @example
  * const pt = geosifyGeometry({ type: 'Point', coordinates: [ 1, 1 ] });
@@ -428,10 +430,11 @@ export function geosifyGeometry(geojson: GeoJSONGeometry): Geometry {
 }
 
 /**
- * Converts provided array of GeoJSON geometries into an array of GEOS geometries.
+ * Creates an array of {@link Geometry} from an array of GeoJSON geometry objects.
  *
- * @param geojsons - array of GeoJSON geometries to be converted into an array of GEOS geometries
- * @throws InvalidGeoJSONError on invalid geometry
+ * @param geojsons - Array of GeoJSON geometry objects
+ * @returns An array of new geometries
+ * @throws {InvalidGeoJSONError} on invalid GeoJSON geometry
  *
  * @example
  * const geometries = geosifyGeometries([

@@ -1,0 +1,33 @@
+---
+sidebar_label: 'jsonifyGeometry'
+sidebar_position: 3
+---
+
+# jsonifyGeometry
+
+Converts a geometry object to its GeoJSON representation.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `geometry` | [**`Geometry`**](../types/Geometry/index.mdx) | The geometry object to be converted |
+
+## Returns
+
+[**`GeoJSONGeometry`**](https://datatracker.ietf.org/doc/html/rfc7946#section-3.1) A GeoJSON representation of the geometry
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) when called with an unsupported geometry type (not GeoJSON)
+
+## Examples
+
+```ts
+const pt = fromWKT('POINT (1 1)');
+const line = fromWKT('LINESTRING (0 0, 1 1)');
+const collection = fromWKT('GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 1 1))');
+jsonifyGeometry(pt); // { type: 'Point', coordinates: [ 1, 1 ] }
+jsonifyGeometry(line); // { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] }
+jsonifyGeometry(collection); // { type: 'GeometryCollection', geometries: [ { type: 'Point', coordinates: [ 1, 1 ] }, { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] } ] }
+```

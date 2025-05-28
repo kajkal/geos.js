@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { before, describe, it, mock } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import { POINTER } from '../../src/core/symbols.mjs';
-import { lineString } from '../../src/index.mjs';
+import { lineString } from '../../src/helpers/helpers.mjs';
 import { geos } from '../../src/core/geos.mjs';
 
 
@@ -24,7 +24,7 @@ describe('geos', () => {
 
         it('should throw on complex string', () => {
             assert.throws(() => geos.encodeString('żuk'), {
-                name: 'GeosError',
+                name: 'GEOSError',
                 message: 'Unexpected string encoding result',
             });
         });

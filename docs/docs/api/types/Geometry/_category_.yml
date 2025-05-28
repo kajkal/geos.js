@@ -1,0 +1,6 @@
+position: 1
+label: 'Geometry'
+collapsed: false
+link:
+  type: doc
+  id: index

@@ -1,0 +1,25 @@
+---
+sidebar_label: 'multiPoint'
+sidebar_position: 4
+---
+
+# multiPoint
+
+Creates a GEOS multipoint geometry from an array of positions.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `pts` | [**`Position`**](https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.1)`[]` | MultiPoint coordinates |
+
+## Returns
+
+[**`Geometry`**](../types/Geometry/index.mdx) A new Geometry object
+
+## Examples
+
+```ts
+const geom = multiPoint([ [ 1, 1 ], [ 2, 2 ], [ 3, 3 ] ]);
+toWKT(geom); // 'MULTIPOINT ((1 1), (2 2), (3 3))'
+```

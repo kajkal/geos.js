@@ -1,12 +1,12 @@
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry } from '../geom/geometry.mjs';
+import { Geometry } from '../geom/Geometry.mjs';
 import { geos } from '../core/geos.mjs';
 
 
 export interface WKBInputOptions {
 
     /**
-     * Automatically repair structural errors in the input (currently just unclosed rings) while reading
+     * Automatically repair structural errors in the input (currently just unclosed rings) while reading.
      * @default false
      */
     fix?: boolean;
@@ -14,12 +14,14 @@ export interface WKBInputOptions {
 }
 
 /**
- * Creates a Geometry object from Well-Known Binary (WKB) representation.
+ * Creates a {@link Geometry} from Well-Known Binary (WKB) representation.
  *
  * @param wkb - Binary data containing WKB representation of the geometry
- * @param options - WKB input configuration
- * @returns A new Geometry object created from the WKB data
- * @throws {GeosError} on invalid WKB data
+ * @param options - Optional WKB input configuration
+ * @returns A new geometry object created from the WKB data
+ * @throws {GEOSError} on invalid WKB data
+ *
+ * @see {@link https://libgeos.org/specifications/wkb}
  *
  * @example basic usage
  * const wkbData = new Uint8Array([...]);
@@ -28,8 +30,6 @@ export interface WKBInputOptions {
  * @example with options
  * const wkbData = new Uint8Array([...]);
  * const geometry = fromWKB(wkbData, { fix: true }); // will fix structural errors
- *
- * @see {@link https://libgeos.org/specifications/wkb}
  */
 export function fromWKB(wkb: Uint8Array, options?: WKBInputOptions): Geometry {
     const cache = geos.b_r;
@@ -71,8 +71,8 @@ export interface WKBOutputOptions {
 
     /**
      * Output flavor of the writer.
-     * - `extended` - {@link https://libgeos.org/specifications/wkb/#extended-wkb}
-     * - `iso` - {@link https://libgeos.org/specifications/wkb/#iso-wkb}
+     * - [`extended`]{@link https://libgeos.org/specifications/wkb/#extended-wkb}
+     * - [`iso`]{@link https://libgeos.org/specifications/wkb/#iso-wkb}
      * @default 'extended'
      */
     flavor?: 'extended' | 'iso';
@@ -94,11 +94,13 @@ export interface WKBOutputOptions {
 }
 
 /**
- * Converts a Geometry object to its Well-Known Binary (WKB) representation.
+ * Converts a geometry object to its Well-Known Binary (WKB) representation.
  *
  * @param geometry - The geometry object to be converted to WKB
- * @param options - WKB output configuration
+ * @param options - Optional WKB output configuration
  * @returns A Uint8Array containing the WKB representation of the geometry
+ *
+ * @see {@link https://libgeos.org/specifications/wkb}
  *
  * @example basic usage
  * const point = point([ 1, 2, 3 ]);
@@ -107,8 +109,6 @@ export interface WKBOutputOptions {
  * @example with options
  * const point = point([ 1, 2, 3 ]);
  * const wkb = toWKB(point, { dim: 2 }); // Uint8Array([...])
- *
- * @see {@link https://libgeos.org/specifications/wkb}
  */
 export function toWKB(geometry: Geometry, options?: WKBOutputOptions): Uint8Array {
     const cache = geos.b_w;

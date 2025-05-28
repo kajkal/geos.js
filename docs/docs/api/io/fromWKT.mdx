@@ -1,0 +1,39 @@
+---
+sidebar_label: 'fromWKT'
+sidebar_position: 5
+---
+
+# fromWKT
+
+Creates a [`Geometry`](../types/Geometry/index.mdx) from Well-Known Text (WKT) representation.
+
+## Parameters
+
+| Name | Type | Default | Description |
+| --- | :-: | :-: | --- |
+| `wkt` | **`string`** |  | String containing WKT representation of the geometry |
+| `options?` | **`object`** |  | Optional WKT input configuration |
+| `options.fix?` | **`boolean`** | `false` | Automatically repair structural errors in the input (currently just unclosed rings) while reading. |
+
+## Returns
+
+[**`Geometry`**](../types/Geometry/index.mdx) A new geometry object created from the WKT string
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) on invalid WKT string
+
+## See also
+
+- [https://libgeos.org/specifications/wkt](https://libgeos.org/specifications/wkt)
+
+## Examples
+
+```ts title="basic usage"
+const point = fromWKT('POINT(1 1)');
+const line = fromWKT('LINESTRING(0 0, 1 1, 2 2)');
+const polygon = fromWKT('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))');
+```
+```ts title="with options"
+const polygon = fromWKT('POLYGON((0 0, 1 0, 1 1))', { fix: true }); // will fix unclosed ring
+```

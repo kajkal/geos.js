@@ -1,0 +1,63 @@
+---
+sidebar_label: 'isValid'
+sidebar_position: 3
+---
+
+# isValid
+
+Returns `true` when the geometry is well-formed and valid in 2D according to
+the OGC rules. For geometries with 3 and 4 dimensions, the validity is still
+only tested in 2 dimensions.
+
+Validity is defined for each Geometry type as follows:
+- Point coordinates must be finite (not `NaN` or `Infinity`)
+- MultiPoint points must all be valid
+- LineString must have at least 2 unique points
+- MultiLineString lines must all be valid
+- LinearRing must have at lest 4 unique points, be closed (first and last
+  point must be equal), be [simple](isSimple.mdx) i.e. must not self-intersect
+  except at endpoints
+- Polygon interior must be connected (some hole cannot split interior into parts)
+  - Shell (exterior ring) must be a valid LinearRing, not be self-touching
+    (could be configured by `options.isInvertedRingValid` parameter),
+    not be exverted ("bow-tie" configuration)
+  - Holes (interior rings) each must be a valid LinearRing, be completely
+    inside the shell, not be nested inside other holes, not self-touch
+    to create disconnected interiors, not be "C-shaped" with self-touching
+    that creates islands
+- MultiPolygon polygons must all be valid, no polygon can be in the interior
+  of another polygon, shells cannot partially overlap or touch along an edge
+- GeometryCollection geometries must all be valid
+- Empty geometries are valid
+
+## Parameters
+
+| Name | Type | Default | Description |
+| --- | :-: | :-: | --- |
+| `geometry` | [**`Geometry`**](../types/Geometry/index.mdx) |  | The geometry to check |
+| `options?` | **`object`** |  | Optional options object |
+| `options.isInvertedRingValid?` | **`boolean`** | `false` | Sets how to treat a polygon with self-touching rings. <br/> If set to `true` the following self-touching conditions are treated as being valid (ESRI SDE model): <ul><li>**inverted shell** - the shell ring self-touches to create a hole   touching the shell </li><li>**exverted hole** - a hole ring self-touches to create two holes   touching at a point </li></ul> If set to `false` the above conditions, following the OGC SFS standard, are treated as not valid. |
+
+## Returns
+
+**`boolean`** `true` when geometry is valid, `false` otherwise
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) on unsupported geometry types (curved)
+
+## See also
+
+- [`isValidOrThrow`](isValidOrThrow.mdx) throws an error when geometry is not valid
+- [`makeValid`](../operations/makeValid.mdx) repairs invalid geometries
+
+## Examples
+
+```ts
+isValid(lineString([ [ 0, 0 ], [ 1, 1 ] ])); // true
+const selfTouchingExteriorRingFormingHole = polygon([
+    [ [ 0, 0 ], [ 0, 10 ], [ 10, 0 ], [ 0, 0 ], [ 4, 2 ], [ 2, 4 ], [ 0, 0 ] ],
+]);
+isValid(selfTouchingExteriorRingFormingHole, { isInvertedRingValid: true }); // true
+isValid(selfTouchingExteriorRingFormingHole); // false
+```

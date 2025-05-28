@@ -1,0 +1,28 @@
+---
+sidebar_label: 'area'
+sidebar_position: 2
+---
+
+# area
+
+Calculate the area of a geometry.
+
+Areal geometries have a non-zero area.
+Others return 0.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `geometry` | [**`Geometry`**](../types/Geometry/index.mdx) | The geometry for which the area is calculated |
+
+## Returns
+
+**`number`** The area of the geometry
+
+## Examples
+
+```ts
+const poly = polygon([ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ]);
+area(poly); // 0.5
+```

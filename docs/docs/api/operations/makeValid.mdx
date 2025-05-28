@@ -1,0 +1,43 @@
+---
+sidebar_label: 'makeValid'
+sidebar_position: 7
+---
+
+# makeValid
+
+Repairs an invalid geometry, returns a repaired, valid geometry.
+Input geometries are always processed, so even valid inputs may
+have some minor alterations. The output is always a new geometry object.
+
+## Parameters
+
+| Name | Type | Default | Description |
+| --- | :-: | :-: | --- |
+| `geometry` | [**`Geometry`**](../types/Geometry/index.mdx) |  | The geometry to repair |
+| `options?` | **`object`** |  | Optional parameters to control the algorithm |
+| `options.method?` | **`'linework'`** \| **`'structure'`** | `'linework'` | Method used for fixing invalid geometries. <ul><li>`linework` - builds valid geometries by first extracting all lines,   noding that linework together, then building a value output from the   linework </li><li>`structure` - is an algorithm that distinguishes between interior and   exterior rings, building new geometry by unioning exterior rings, and   then differencing all interior rings </li></ul> |
+| `options.keepCollapsed?` | **`boolean`** | `false` | Only valid for the `structure` method. When set to `false`, geometry components that collapse to a lower dimensionality, for example, a one-point linestring would be dropped. |
+
+## Returns
+
+[**`Geometry`**](../types/Geometry/index.mdx) A new repaired geometry
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) on unsupported geometry types (curved)
+
+## See also
+
+- [`isValid`](../predicates/isValid.mdx) checks whether a geometry is already valid
+
+## Examples
+
+```ts
+const lineInDisguise = polygon([ [ [ 0, 0 ], [ 1, 1 ], [ 1, 2 ], [ 1, 1 ], [ 0, 0 ] ] ]);
+toWKT(makeValid(lineInDisguise));
+// MULTILINESTRING ((0 0, 1 1), (1 1, 1 2))
+toWKT(makeValid(lineInDisguise, { method: 'structure', keepCollapsed: true }));
+// LINESTRING (0 0, 1 1, 1 2, 1 1, 0 0)
+toWKT(makeValid(lineInDisguise, { method: 'structure' }));
+// POLYGON EMPTY
+```

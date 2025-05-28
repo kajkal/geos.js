@@ -1,0 +1,42 @@
+---
+sidebar_label: 'Errors'
+sidebar_position: 2
+---
+
+# Errors
+
+## `GEOSError` {#GEOSError}
+
+<div class='margin-left--md'>
+
+Base error class for all `geos.js` errors.
+
+Errors that originate from C/C++/Wasm code are thrown as instances of this class.
+More specific errors are thrown as instances of one of the subclasses of this class.
+
+`GEOSError` is a subclass of [**`Error`**](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error).
+
+</div>
+
+## `InvalidGeoJSONError` {#InvalidGeoJSONError}
+
+<div class='margin-left--md'>
+
+`InvalidGeoJSONError` is a subclass of [**`GEOSError`**](errors.mdx#GEOSError).
+
+</div>
+
+## `TopologyValidationError` {#TopologyValidationError}
+
+<div class='margin-left--md'>
+
+`TopologyValidationError` is a subclass of [**`GEOSError`**](errors.mdx#GEOSError).
+
+### Instance properties
+
+#### `TopologyValidationError.prototype.location` {#location}
+
+<p class='margin-bottom--sm margin-left--md'>Type: **`[ x: number, y: number ]`**</p>
+<p class='margin-left--md'>Array with X and Y coordinates of the point at which the error occurred.</p>
+
+</div>

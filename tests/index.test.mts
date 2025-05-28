@@ -17,7 +17,7 @@ describe('index', () => {
 
     it('should throw when geos is not initialized', () => {
         assert.throws(() => geos.malloc(8), {
-            name: 'GeosError',
+            name: 'GEOSError',
             message: 'GEOS.js not initialized',
         });
         // but should not throw when `GEOS_destroy` fn is called
@@ -67,6 +67,7 @@ describe('index', () => {
 
         const result = await initialize(module);
         assert.ok(result instanceof WebAssembly.Module);
+        assert.equal(result, module); // the same instance
 
         assert.equal('GEOSversion' in geos, true);
         await terminate();

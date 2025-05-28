@@ -275,7 +275,7 @@ void async function main() {
     const ROOT_DIR = join(import.meta.dirname, '../../..');
     const GEOS_DOCS_FILE_PATH = join(ROOT_DIR, `./cpp/build/native/src/geos-${GEOS_VERSION}/doxygen/doxygen_docs/html/geos__c_8h.html`);
     const EXPORTED_FUNCTIONS_TXT_PATH = join(ROOT_DIR, './cpp/exported_functions.txt');
-    const WASM_GEOS_MTS_PATH = join(ROOT_DIR, './src/types/wasm-geos.mts');
+    const WASM_GEOS_MTS_PATH = join(ROOT_DIR, './src/core/types/WasmGEOS.mts');
 
 
     const expFunctionsLines = [

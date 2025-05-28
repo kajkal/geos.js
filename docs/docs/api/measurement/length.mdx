@@ -1,0 +1,29 @@
+---
+sidebar_label: 'length'
+sidebar_position: 1
+---
+
+# length
+
+Calculates the length of a geometry.
+
+Linear geometries return their length.
+Areal geometries return their perimeter.
+Others return 0.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `geometry` | [**`Geometry`**](../types/Geometry/index.mdx) | The geometry for which the length is calculated |
+
+## Returns
+
+**`number`** The length of the geometry
+
+## Examples
+
+```ts
+const line = lineString([ [ 0, 0 ], [ 1, 1 ] ]);
+length(line); // 1.4142135623730951 = Math.sqrt(2)
+```

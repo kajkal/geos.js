@@ -1,0 +1,39 @@
+---
+sidebar_label: 'geosifyGeometry'
+sidebar_position: 1
+---
+
+# geosifyGeometry
+
+Creates a [`Geometry`](../types/Geometry/index.mdx) from GeoJSON geometry object.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `geojson` | [**`GeoJSONGeometry`**](https://datatracker.ietf.org/doc/html/rfc7946#section-3.1) | GeoJSON geometry object |
+
+## Returns
+
+[**`Geometry`**](../types/Geometry/index.mdx) A new geometry
+
+## Throws
+
+- [**`InvalidGeoJSONError`**](../types/errors.mdx#InvalidGeoJSONError) on invalid GeoJSON geometry
+
+## Examples
+
+```ts
+const pt = geosifyGeometry({ type: 'Point', coordinates: [ 1, 1 ] });
+const line = geosifyGeometry({ type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] });
+const collection = geosifyGeometry({
+    type: 'GeometryCollection',
+    geometries: [
+        { type: 'Point', coordinates: [ 1, 1 ] },
+        { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
+    ],
+});
+pt.type(); // 'Point'
+line.type(); // 'LineString'
+collection.type(); // 'GeometryCollection'
+```

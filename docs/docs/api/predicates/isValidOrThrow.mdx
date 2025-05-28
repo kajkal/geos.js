@@ -1,0 +1,49 @@
+---
+sidebar_label: 'isValidOrThrow'
+sidebar_position: 4
+---
+
+# isValidOrThrow
+
+Asserts whether the geometry is valid.
+Same as [`isValid`](isValid.mdx) but when geometry is not valid instead
+of returning `false` throws an error with the reason of invalidity
+and with the XY location of the point at which the error occurred.
+When geometry is valid, it does nothing.
+
+## Parameters
+
+| Name | Type | Default | Description |
+| --- | :-: | :-: | --- |
+| `geometry` | [**`Geometry`**](../types/Geometry/index.mdx) |  | The geometry to check |
+| `options?` | **`object`** |  | Optional options object |
+| `options.isInvertedRingValid?` | **`boolean`** | `false` | Sets how to treat a polygon with self-touching rings. <br/> If set to `true` the following self-touching conditions are treated as being valid (ESRI SDE model): <ul><li>**inverted shell** - the shell ring self-touches to create a hole   touching the shell </li><li>**exverted hole** - a hole ring self-touches to create two holes   touching at a point </li></ul> If set to `false` the above conditions, following the OGC SFS standard, are treated as not valid. |
+
+## Returns
+
+**`void`** 
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) on unsupported geometry types (curved)
+- [**`TopologyValidationError`**](../types/errors.mdx#TopologyValidationError) on invalid geometry
+
+## See also
+
+- [`isValid`](isValid.mdx) checks whether a geometry is valid (`true`/`false`)
+- [`makeValid`](../operations/makeValid.mdx) repairs invalid geometries
+
+## Examples
+
+```ts
+isValidOrThrow(lineString([ [ 0, 0 ], [ 1, 1 ] ])); // pass
+const selfTouchingExteriorRingFormingHole = polygon([
+    [ [ 0, 0 ], [ 0, 10 ], [ 10, 0 ], [ 0, 0 ], [ 4, 2 ], [ 2, 4 ], [ 0, 0 ] ],
+]);
+isValidOrThrow(selfTouchingExteriorRingFormingHole, { isInvertedRingValid: true }); // pass
+isValidOrThrow(selfTouchingExteriorRingFormingHole); // throw
+// TopologyValidationError { message: 'Ring Self-intersection', location: [ 0, 0 ] }
+
+isValidOrThrow(polygon([ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 1 ], [ 0, 0 ] ] ])); // throw
+// TopologyValidationError { message: 'Self-intersection', location: [ 0.5, 0.5 ] }
+```

@@ -19,12 +19,13 @@
  * The output buffer contains the geometry data (is empty, has z) with pointers
  * to underlying data of their coordinate sequences.
  */
+declare const THIS_FILE: symbol; // to omit ^ @file doc from the bundle
 
 import type { Geometry as GeoJSONGeometry, Position } from 'geojson';
-import type { Ptr, u32 } from '../types/wasm-geos.mjs';
+import type { Ptr, u32 } from '../core/types/WasmGEOS.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry, GEOSGeometryTypeDecoder } from '../geom/geometry.mjs';
-import { GeosError } from '../core/geos-error.mjs';
+import { Geometry, GEOSGeometryTypeDecoder } from '../geom/Geometry.mjs';
+import { GEOSError } from '../core/GEOSError.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -131,16 +132,16 @@ const jsonifyGeom = (s: JsonifyState): GeoJSONGeometry => {
 
     }
 
-    throw new GeosError(`Unsupported geometry type ${GEOSGeometryTypeDecoder[ type ]}`);
+    throw new GEOSError(`Unsupported geometry type ${GEOSGeometryTypeDecoder[ type ]}`);
 };
 
 
 /**
- * Converts a Geometry object to its GeoJSON representation.
+ * Converts a geometry object to its GeoJSON representation.
  *
- * @param geometry - The Geometry object to be converted
+ * @param geometry - The geometry object to be converted
  * @returns A GeoJSON representation of the geometry
- * @throws {GeosError} when called with an unsupported geometry type (not GeoJSON)
+ * @throws {GEOSError} when called with an unsupported geometry type (not GeoJSON)
  *
  * @example
  * const pt = fromWKT('POINT (1 1)');
@@ -180,11 +181,11 @@ export function jsonifyGeometry(geometry: Geometry): GeoJSONGeometry {
 }
 
 /**
- * Converts an array of Geometry objects to its GeoJSON representation.
+ * Converts an array of geometry objects to its GeoJSON representation.
  *
- * @param geometries - Array of Geometry objects to be converted
+ * @param geometries - Array of geometry objects to be converted
  * @returns Array of GeoJSON representations of the geometries
- * @throws {GeosError} when called with an unsupported geometry type (not GeoJSON)
+ * @throws {GEOSError} when called with an unsupported geometry type (not GeoJSON)
  *
  * @example
  * const pt = fromWKT('POINT (1 1)');

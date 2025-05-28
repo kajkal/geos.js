@@ -199,7 +199,7 @@ describe('jsonify - GEOS to GeoJSON', () => {
 
     it('should throw on not GeoJSON geometry', () => {
         assert.throws(() => jsonifyGeometry(fromWKT('CIRCULARSTRING (0 0, 1 1, 2 0)')), {
-            name: 'GeosError',
+            name: 'GEOSError',
             message: 'Unsupported geometry type CircularString',
         });
     });

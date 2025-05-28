@@ -41,11 +41,11 @@ describe('WKT', () => {
         it('should handle `fix` option', () => {
             const input = 'POLYGON ((0 0, 1 0, 1 1))';
             assert.throws(() => fromWKT(input, { fix: false }), {
-                name: 'GeosError::IllegalArgumentException',
+                name: 'GEOSError::IllegalArgumentException',
                 message: 'Points of LinearRing do not form a closed linestring',
             });
             assert.throws(() => fromWKT(input), { // default
-                name: 'GeosError::IllegalArgumentException',
+                name: 'GEOSError::IllegalArgumentException',
                 message: 'Points of LinearRing do not form a closed linestring',
             });
             assert.deepEqual(fromWKT(input, { fix: true }).toJSON(), {

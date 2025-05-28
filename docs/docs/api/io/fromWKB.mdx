@@ -1,0 +1,39 @@
+---
+sidebar_label: 'fromWKB'
+sidebar_position: 7
+---
+
+# fromWKB
+
+Creates a [`Geometry`](../types/Geometry/index.mdx) from Well-Known Binary (WKB) representation.
+
+## Parameters
+
+| Name | Type | Default | Description |
+| --- | :-: | :-: | --- |
+| `wkb` | [**`Uint8Array`**](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) |  | Binary data containing WKB representation of the geometry |
+| `options?` | **`object`** |  | Optional WKB input configuration |
+| `options.fix?` | **`boolean`** | `false` | Automatically repair structural errors in the input (currently just unclosed rings) while reading. |
+
+## Returns
+
+[**`Geometry`**](../types/Geometry/index.mdx) A new geometry object created from the WKB data
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) on invalid WKB data
+
+## See also
+
+- [https://libgeos.org/specifications/wkb](https://libgeos.org/specifications/wkb)
+
+## Examples
+
+```ts title="basic usage"
+const wkbData = new Uint8Array([...]);
+const geometry = fromWKB(wkbData);
+```
+```ts title="with options"
+const wkbData = new Uint8Array([...]);
+const geometry = fromWKB(wkbData, { fix: true }); // will fix structural errors
+```

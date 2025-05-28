@@ -1,5 +1,5 @@
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry } from '../geom/geometry.mjs';
+import { Geometry } from '../geom/Geometry.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -14,12 +14,14 @@ export interface WKTInputOptions {
 }
 
 /**
- * Creates a Geometry object from Well-Known Text (WKT) representation.
+ * Creates a {@link Geometry} from Well-Known Text (WKT) representation.
  *
  * @param wkt - String containing WKT representation of the geometry
- * @param options - WKT input configuration
- * @returns A new Geometry object created from the WKT string
- * @throws GeosError on invalid WKT string
+ * @param options - Optional WKT input configuration
+ * @returns A new geometry object created from the WKT string
+ * @throws {GEOSError} on invalid WKT string
+ *
+ * @see {@link https://libgeos.org/specifications/wkt}
  *
  * @example basic usage
  * const point = fromWKT('POINT(1 1)');
@@ -28,8 +30,6 @@ export interface WKTInputOptions {
  *
  * @example with options
  * const polygon = fromWKT('POLYGON((0 0, 1 0, 1 1))', { fix: true }); // will fix unclosed ring
- *
- * @see {@link https://libgeos.org/specifications/wkt}
  */
 export function fromWKT(wkt: string, options?: WKTInputOptions): Geometry {
     const cache = geos.t_r;
@@ -82,11 +82,13 @@ export interface WKTOutputOptions {
 }
 
 /**
- * Converts a Geometry object to its Well-Known Text (WKT) representation.
+ * Converts a geometry object to its Well-Known Text (WKT) representation.
  *
  * @param geometry - The geometry object to be converted to WKT
- * @param options - WKT output configuration
+ * @param options - Optional WKT output configuration
  * @returns String with WKT representation of the geometry
+ *
+ * @see {@link https://libgeos.org/specifications/wkt}
  *
  * @example basic usage
  * const pt = point([ 1.1234, 1.9876, 10 ]);
@@ -98,8 +100,6 @@ export interface WKTOutputOptions {
  *     dim: 2, // xy
  *     precision: 2, // decimal places
  * }); // 'POINT (1.12 1.99)'
- *
- * @see {@link https://libgeos.org/specifications/wkt}
  */
 export function toWKT(geometry: Geometry, options?: WKTOutputOptions): string {
     const cache = geos.t_w;

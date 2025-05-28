@@ -1,0 +1,36 @@
+---
+sidebar_label: 'unaryUnion'
+sidebar_position: 5
+---
+
+# unaryUnion
+
+Computes the (self) union of all components of geometry `a`.
+This is particularly useful for reducing MultiGeometries or
+GeometryCollections into their minimal representation, merging
+overlapping elements and removing duplicates.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `a` | [**`Geometry`**](../types/Geometry/index.mdx) | Geometry |
+| `options?` | **`object`** | Optional options object |
+| `options.gridSize?` | **`number`** | Precision grid cell size for snapping vertices. <br/> If 0 or when not defined, the highest precision is used (IEE754 double), which provides _almost_ 16 decimal digits of precision. <br/> If nonzero, input as well as resulting coordinates will be snapped to a precision grid of that size. |
+
+## Returns
+
+[**`Geometry`**](../types/Geometry/index.mdx) A new geometry representing the union of all components
+
+## Examples
+
+```ts title="should remove duplicated points"
+const a = fromWKT('MULTIPOINT ((4 5), (6 7), (4 5), (6 5), (6 7))');
+toWKT(unaryUnion(a)); // 'MULTIPOINT ((4 5), (6 5), (6 7))'
+toWKT(unaryUnion(a, 2)); // 'MULTIPOINT ((4 6), (6 6), (6 8))'
+```
+```ts title="dissolving overlapping polygons in a MultiPolygon"
+const a = fromWKT('MULTIPOLYGON (((0 0, 0 10, 10 10, 10 0, 0 0), (1 9, 8 8, 9 1, 1 9)), ((5 10, 15 15, 10 5, 5 10)))');
+toWKT(unaryUnion(a)); // 'POLYGON ((0 10, 5 10, 15 15, 10 5, 10 0, 0 0, 0 10), (1 9, 9 1, 8.166666666666666 6.833333333333333, 6.833333333333333 8.166666666666666, 1 9))'
+toWKT(unaryUnion(a, { gridSize: 1e-4 })); // 'POLYGON ((0 10, 5 10, 15 15, 10 5, 10 0, 0 0, 0 10), (1 9, 9 1, 8.1667 6.8333, 6.8333 8.1667, 1 9))'
+```

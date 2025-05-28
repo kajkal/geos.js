@@ -1,0 +1,40 @@
+---
+sidebar_label: 'toWKT'
+sidebar_position: 6
+---
+
+# toWKT
+
+Converts a geometry object to its Well-Known Text (WKT) representation.
+
+## Parameters
+
+| Name | Type | Default | Description |
+| --- | :-: | :-: | --- |
+| `geometry` | [**`Geometry`**](../types/Geometry/index.mdx) |  | The geometry object to be converted to WKT |
+| `options?` | **`object`** |  | Optional WKT output configuration |
+| `options.dim?` | **`2`** \| **`3`** \| **`4`** | `4` | Output dimensionality of the writer. |
+| `options.precision?` | **`number`** | `16` | Number places after the decimal to output in WKT. |
+| `options.trim?` | **`boolean`** | `true` | Trim trailing 0's from the output coordinates. |
+
+## Returns
+
+**`string`** String with WKT representation of the geometry
+
+## See also
+
+- [https://libgeos.org/specifications/wkt](https://libgeos.org/specifications/wkt)
+
+## Examples
+
+```ts title="basic usage"
+const pt = point([ 1.1234, 1.9876, 10 ]);
+const wkt = toWKT(pt); // 'POINT Z (1.1234 1.9876 10)'
+```
+```ts title="with options"
+const pt = point([ 1.1234, 1.9876, 10 ]);
+const wkt = toWKT(pt, {
+    dim: 2, // xy
+    precision: 2, // decimal places
+}); // 'POINT (1.12 1.99)'
+```

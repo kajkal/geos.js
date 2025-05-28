@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { before, describe, it, mock } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
-import { lineString } from '../../src/misc/helpers.mjs';
+import { lineString } from '../../src/helpers/helpers.mjs';
 import { fromWKB, toWKB } from '../../src/io/wkb.mjs';
 import { fromWKT } from '../../src/io/wkt.mjs';
 import { geos } from '../../src/core/geos.mjs';
@@ -46,11 +46,11 @@ describe('WKB', () => {
         it('should handle `fix` option', () => {
             const input = fromHEX('0103000000010000000300000000000000000000000000000000000000000000000000f03f0000000000000000000000000000f03f000000000000f03f'); // POLYGON ((0 0, 1 0, 1 1))
             assert.throws(() => fromWKB(input, { fix: false }), {
-                name: 'GeosError::IllegalArgumentException',
+                name: 'GEOSError::IllegalArgumentException',
                 message: 'Points of LinearRing do not form a closed linestring',
             });
             assert.throws(() => fromWKB(input), { // default
-                name: 'GeosError::IllegalArgumentException',
+                name: 'GEOSError::IllegalArgumentException',
                 message: 'Points of LinearRing do not form a closed linestring',
             });
             assert.deepEqual(fromWKB(input, { fix: true }).toJSON(), {
@@ -119,7 +119,7 @@ describe('WKB', () => {
             assert.equal(g, '{"type":"GeometryCollection","geometries":[]}');
 
             assert.throws(() => fromWKB(fromHEX('01010000000000000000000000000000000000000')), {
-                name: 'GeosError::ParseException',
+                name: 'GEOSError::ParseException',
                 message: 'Input buffer is smaller than requested object size',
             });
         });

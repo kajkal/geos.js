@@ -1,8 +1,8 @@
-import type { GEOSBufferParams, GEOSMakeValidParams, GEOSMessageHandler_r, GEOSWKBReader, GEOSWKBWriter, GEOSWKTReader, GEOSWKTWriter, Ptr, WasmGEOS } from '../types/wasm-geos.mjs';
-import type { WasmOther } from '../types/wasm-other.mjs';
+import type { GEOSBufferParams, GEOSMakeValidParams, GEOSMessageHandler_r, GEOSWKBReader, GEOSWKBWriter, GEOSWKTReader, GEOSWKTWriter, Ptr, WasmGEOS } from './types/WasmGEOS.mjs';
+import type { WasmOther } from './types/WasmOther.mjs';
 import { POINTER } from './symbols.mjs';
 import { ReusableBuffer, ReusableF64, ReusableU32 } from './reusable-memory.mjs';
-import { GeosError } from './geos-error.mjs';
+import { GEOSError } from './GEOSError.mjs';
 import { initialize } from '../index.mjs';
 
 
@@ -65,7 +65,7 @@ class GEOS {
         const stats = this.te.encodeInto(str, dst);
         if (stats.written !== strLen) {
             // geos related strings are expected to be simple 1 byte utf8
-            throw new GeosError('Unexpected string encoding result');
+            throw new GEOSError('Unexpected string encoding result');
         }
         dst[ strLen ] = 0;
         return buff;
@@ -121,9 +121,9 @@ class GEOS {
     b_p: Record<null | string, Ptr<GEOSBufferParams>> = {};
     m_v: Record<null | string, Ptr<GEOSMakeValidParams>> = {};
 
-    onGeosError: GEOSMessageHandler_r = (messagePtr, _userdata) => {
+    onGEOSError: GEOSMessageHandler_r = (messagePtr, _userdata) => {
         const message = this.decodeString(messagePtr);
-        const error = new GeosError(message);
+        const error = new GEOSError(message);
         const sepIdx = message.indexOf(': ');
         if (sepIdx > 0) {
             error.name = `${error.name}::${message.slice(0, sepIdx)}`;
@@ -147,7 +147,7 @@ class GEOS {
 
         exports._initialize();
         const ctx = exports.GEOS_init_r();
-        exports.GEOSContext_setErrorMessageHandler_r(ctx, this.addFunction(this.onGeosError, 'vpp'), 0 as Ptr<void>);
+        exports.GEOSContext_setErrorMessageHandler_r(ctx, this.addFunction(this.onGEOSError, 'vpp'), 0 as Ptr<void>);
 
         // bind ctx to all `_r` functions and remove `_r` from their name:
         for (const fnName in exports) {
@@ -242,14 +242,14 @@ const geosPlaceholder = new Proxy({}, {
             // silently ignore GEOS destroy calls after `terminate` call
             return () => 0;
         }
-        throw new GeosError('GEOS.js not initialized');
+        throw new GEOSError('GEOS.js not initialized');
     },
 }) as unknown as typeof geos;
 
 export let geos: GEOS & WasmGEOS & WasmOther = geosPlaceholder;
 
 
-export async function instantiate(source: Response | PromiseLike<Response> | WebAssembly.Module): Promise<WebAssembly.Module> {
+export async function instantiate(source: Response | Promise<Response> | WebAssembly.Module): Promise<WebAssembly.Module> {
     let module: WebAssembly.Module;
     let instance: WebAssembly.Instance;
     if (source instanceof WebAssembly.Module) {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { before, describe, it, mock } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import { geosifyGeometries, geosifyGeometry } from '../../src/io/geosify.mjs';
+import { bounds } from '../../src/measurement/bounds.mjs';
 import { toWKT } from '../../src/io/wkt.mjs';
 import { geos } from '../../src/core/geos.mjs';
 
@@ -49,7 +50,7 @@ describe('geosify - GeoJSON to GEOS', () => {
             type: 'LineString',
             coordinates: [ [ 19.9384, 50.0548, 213 ] ],
         }), {
-            name: 'GeosError',
+            name: 'GEOSError',
             message: 'Invalid LineString {"type":"LineString","coordinates":[[19.9384,50.0548,213]]}',
         });
     });
@@ -96,7 +97,7 @@ describe('geosify - GeoJSON to GEOS', () => {
             type: 'Polygon',
             coordinates: [ [ [ 19.9068, 50.0569 ], [ 19.9226, 50.0591 ] ] ],
         }), {
-            name: 'GeosError',
+            name: 'GEOSError',
             message: 'Invalid Polygon {"type":"Polygon","coordinates":[[[19.9068,50.0569],[19.9226,50.0591]]]}',
         });
     });
@@ -150,7 +151,7 @@ describe('geosify - GeoJSON to GEOS', () => {
             type: 'MultiLineString',
             coordinates: [ [ [ 19.9383, 50.0545 ] ] ],
         }), {
-            name: 'GeosError',
+            name: 'GEOSError',
             message: 'Invalid MultiLineString {"type":"MultiLineString","coordinates":[[[19.9383,50.0545]]]}',
         });
     });
@@ -201,7 +202,7 @@ describe('geosify - GeoJSON to GEOS', () => {
             type: 'MultiPolygon',
             coordinates: [ [ [ [ 19.9068, 50.0569 ], [ 19.9226, 50.0591 ] ] ] ],
         }), {
-            name: 'GeosError',
+            name: 'GEOSError',
             message: 'Invalid MultiPolygon {"type":"MultiPolygon","coordinates":[[[[19.9068,50.0569],[19.9226,50.0591]]]]}',
         });
     });
@@ -237,52 +238,52 @@ describe('geosify - GeoJSON to GEOS', () => {
             properties: {},
             geometry: { type: 'Point', coordinates: [ 1, 1 ] },
         } as any), {
-            name: 'GeosError',
+            name: 'GEOSError',
             message: 'Unexpected geometry type. Expected one of [Point,LineString,Polygon,MultiPoint,MultiLineString,MultiPolygon,GeometryCollection] received "Feature"',
         });
     });
 
-    it('should create geometries with correct bbox', () => {
+    it('should create geometries with correct bounds', () => {
         // GEOS calculates envelope on geometry creation
         assert.deepEqual(
-            geosifyGeometry({ type: 'Point', coordinates: [ 1, 1 ] }).bbox(),
+            bounds(geosifyGeometry({ type: 'Point', coordinates: [ 1, 1 ] })),
             [ 1, 1, 1, 1 ],
         );
         assert.deepEqual(
-            geosifyGeometry({ type: 'LineString', coordinates: [ [ 1, 1 ], [ 4, 0 ], [ 0, -1 ] ] }).bbox(),
+            bounds(geosifyGeometry({ type: 'LineString', coordinates: [ [ 1, 1 ], [ 4, 0 ], [ 0, -1 ] ] })),
             [ 0, -1, 4, 1 ],
         );
         assert.deepEqual(
-            geosifyGeometry({ type: 'Polygon', coordinates: [ [ [ 1, 1 ], [ 4, 0 ], [ 0, -1 ], [ 1, 1 ] ] ] }).bbox(),
+            bounds(geosifyGeometry({ type: 'Polygon', coordinates: [ [ [ 1, 1 ], [ 4, 0 ], [ 0, -1 ], [ 1, 1 ] ] ] })),
             [ 0, -1, 4, 1 ],
         );
         assert.deepEqual(
-            geosifyGeometry({ type: 'MultiPoint', coordinates: [ [ 1, 1 ], [ 2, 1 ] ] }).bbox(),
+            bounds(geosifyGeometry({ type: 'MultiPoint', coordinates: [ [ 1, 1 ], [ 2, 1 ] ] })),
             [ 1, 1, 2, 1 ],
         );
         assert.deepEqual(
-            geosifyGeometry({ type: 'MultiLineString', coordinates: [ [ [ 1, 1 ], [ 4, 0 ], [ 0, -1 ] ], [ [ 1, 4 ], [ 2, 2 ] ] ] }).bbox(),
+            bounds(geosifyGeometry({ type: 'MultiLineString', coordinates: [ [ [ 1, 1 ], [ 4, 0 ], [ 0, -1 ] ], [ [ 1, 4 ], [ 2, 2 ] ] ] })),
             [ 0, -1, 4, 4 ],
         );
         assert.deepEqual(
-            geosifyGeometry({
+            bounds(geosifyGeometry({
                 type: 'MultiPolygon',
                 coordinates: [
                     [ [ [ 0, 0 ], [ 0, 1 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ],
                     [ [ [ 2, 2 ], [ 2, 3 ], [ 3, 3 ], [ 2, 2 ] ] ],
                 ],
-            }).bbox(),
+            })),
             [ 0, 0, 3, 3 ],
         );
         assert.deepEqual(
-            geosifyGeometry({
+            bounds(geosifyGeometry({
                 type: 'GeometryCollection',
                 geometries: [
                     { type: 'Point', coordinates: [ 1, 1 ] },
                     { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
                     { type: 'Polygon', coordinates: [ [ [ 2, 2 ], [ 2, 3 ], [ 3, 3 ], [ 2, 2 ] ] ] },
                 ],
-            }).bbox(),
+            })),
             [ 0, 0, 3, 3 ],
         );
     });

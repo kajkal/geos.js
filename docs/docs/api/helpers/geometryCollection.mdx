@@ -1,0 +1,30 @@
+---
+sidebar_label: 'geometryCollection'
+sidebar_position: 7
+---
+
+# geometryCollection
+
+Creates a GEOS geometry collection from an array of GEOS geometries.
+The collection consumes the input geometries - after creating
+the collection, the input geometries become [detached](../types/Geometry/index.mdx#detached),
+are no longer valid and should **not** be used.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `geometries` | [**`Geometry`**](../types/Geometry/index.mdx)`[]` | Array of geometry objects to be included in the collection |
+
+## Returns
+
+[**`Geometry`**](../types/Geometry/index.mdx) A new GeometryCollection containing all input geometries
+
+## Examples
+
+```ts
+const g1 = point([ 1, 1 ]);
+const g2 = lineString([ [ 0, 0 ], [ 2, 2 ] ]);
+const collection = geometryCollection([ g1, g2 ]);
+toWKT(collection); // 'GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 2 2))'
+```

@@ -1,4 +1,4 @@
-import type { Ptr } from '../types/wasm-geos.mjs';
+import type { Ptr } from './types/WasmGEOS.mjs';
 import { POINTER } from './symbols.mjs';
 import { geos } from './geos.mjs';
 

@@ -1,0 +1,49 @@
+---
+sidebar_label: 'growMemory'
+sidebar_position: 1
+---
+
+# growMemory
+
+For performance optimization.
+Increases the size of the `WebAssembly.Memory` _by_ or _to_ a specified
+number of bytes.
+
+Internally, the number of bytes will be rounded up to the closest multiple
+of 64KB - WebAssembly page size.
+
+When you know you will need a larger chunk of memory, 500MB for example,
+you can reserve it in advance. Otherwise, Wasm memory would increase
+dynamically in multiple steps, which could affect performance
+as with each step `WebAssembly.Memory` views must be recreated -
+[detachment upon growing](https://developer.mozilla.org/en-US/docs/WebAssembly/Reference/JavaScript_interface/Memory/grow#detachment_upon_growing).
+
+The initial `WebAssembly.Memory` size is 16MB and grows dynamically
+up to the 4GB limit.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `options` | **`{ by: number }`** \| **`{ to: number }`** | Object with either `by` or `to` property |
+| `options.by` | **`number`** | By how many bytes the memory will grow; incremental step |
+| `options.to` | **`number`** | To how many bytes the memory will grow; target value |
+
+## Returns
+
+**`number`** The new size of the memory, in bytes
+
+## Examples
+
+```ts title="grow memory by 512MB"
+growMemory({ by: 512 * 1024 * 1024 });
+```
+```ts title="grow memory to 1GB"
+growMemory({ to: 1204 * 1024 * 1024 });
+```
+```ts title="reserve all available memory (limited to 4GB for wasm32 target)"
+growMemory({ to: Infinity });
+```
+```ts title="get current memory size"
+growMemory({ by: 0 });
+```
