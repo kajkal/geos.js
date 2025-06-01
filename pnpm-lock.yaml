@@ -68,6 +68,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      geos.js:
+        specifier: workspace:*
+        version: link:..
       prism-react-renderer:
         specifier: ^2.4.1
         version: 2.4.1(react@19.1.0)

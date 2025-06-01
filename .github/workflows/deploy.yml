@@ -8,8 +8,30 @@ on:
 
 jobs:
 
-  build:
+  build-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build package
+        run: pnpm run build
+
+  build-docs:
     name: Build Docusaurus
+    needs: build-package
     runs-on: ubuntu-latest
 
     defaults:
@@ -41,9 +63,9 @@ jobs:
         with:
           path: docs/build
 
-  deploy:
+  deploy-docs:
     name: Deploy to GitHub Pages
-    needs: build
+    needs: build-docs
 
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
