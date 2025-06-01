@@ -56,6 +56,11 @@ const config: Config = {
             },
             items: [
                 {
+                    href: '/playground',
+                    position: 'left',
+                    label: 'Playground',
+                },
+                {
                     type: 'docSidebar',
                     sidebarId: 'docsSidebar',
                     position: 'left',
@@ -86,6 +91,10 @@ const config: Config = {
             darkTheme: prismThemes.gruvboxMaterialDark,
         },
     } satisfies Preset.ThemeConfig,
+
+    themes: [
+        '@docusaurus/theme-live-codeblock',
+    ],
 
     plugins: [
         /** for `import wasm_url from 'geos.js/geos_js.wasm';` to work properly */

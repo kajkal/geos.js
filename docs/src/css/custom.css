@@ -1,3 +1,5 @@
+@import 'leaflet/dist/leaflet.css';
+
 /**
  * Any CSS included here will be global. The classic template
  * bundles Infima by default. Infima is a CSS framework designed to
@@ -15,6 +17,26 @@
     --ifm-color-primary-lightest: #f53514;
     --ifm-code-font-size: 95%;
     --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+    /* to be on top of leaflet */
+    --ifm-z-index-dropdown: 1100;
+    --ifm-z-index-fixed: 1200;
+    --ifm-z-index-overlay: 1400;
+
+    --geos-preview-border-color: var(--ifm-color-emphasis-300);
+    --geos-preview-background-color-light: #fbfaf9;
+    --geos-preview-background-color-dark: var(--ifm-background-surface-color);
+    --geos-preview-color: var(--ifm-color-emphasis-700);
+
+    --preview__0: #00e6bb;
+    --preview__1: #8bcc00;
+    --preview__2: #e600b8;
+    --preview__3: #e6c300;
+    --preview__4: #63c7e6;
+    --preview__5: #ff80ce;
+    --preview__6: #ff5f1f;
+    --preview__7: #5b5efd;
+    --preview__active: #474747;
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
@@ -27,6 +49,18 @@
     --ifm-color-primary-lighter: #fbe545;
     --ifm-color-primary-lightest: #fceb6e;
     --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+
+    --geos-preview-background-color-light: #464648;
+
+    --preview__0: #00ffd2;
+    --preview__1: #b0ff00;
+    --preview__2: #ff00f4;
+    --preview__3: #fdff00;
+    --preview__4: #009fff;
+    --preview__5: #ff80ce;
+    --preview__6: #ffaa00;
+    --preview__7: #aa00ff;
+    --preview__active: #fff;
 }
 
 .header-github-link::before {
