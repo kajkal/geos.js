@@ -86,6 +86,17 @@ const config: Config = {
             darkTheme: prismThemes.gruvboxMaterialDark,
         },
     } satisfies Preset.ThemeConfig,
+
+    plugins: [
+        /** for `import wasm_url from 'geos.js/geos_js.wasm';` to work properly */
+        './plugins/wasm-loader/index.js',
+    ],
+
+    clientModules: [
+        /** imports `geos.js` */
+        './client-modules/geos-integration/index.js',
+    ],
+
 };
 
 export default config;
