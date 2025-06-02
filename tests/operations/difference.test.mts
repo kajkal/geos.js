@@ -18,6 +18,14 @@ describe('difference', () => {
         assert.equal(toWKT(difference(b, a)), 'LINESTRING EMPTY');
     });
 
+    it('should return difference of two polygons', () => {
+        const a = fromWKT('POLYGON ((0 4, 5 5, 4 0, 0 4))');
+        const b = fromWKT('POLYGON ((0 0, 5 6, 9 5, 0 0))');
+        assert.equal(toWKT(difference(a, b)), 'MULTIPOLYGON (((4 4.8, 1.8181818181818181 2.1818181818181817, 0 4, 4 4.8)), ((4 0, 2.5714285714285716 1.4285714285714286, 4.5 2.5, 4 0)))');
+        assert.equal(toWKT(difference(a, b, { gridSize: 0.1 })), 'MULTIPOLYGON (((4 4.8, 1.8 2.2, 0 4, 4 4.8)), ((4 0, 2.6 1.4, 4.5 2.5, 4 0)))');
+        assert.equal(toWKT(difference(b, a)), 'MULTIPOLYGON (((1.8181818181818181 2.1818181818181817, 2.5714285714285716 1.4285714285714286, 0 0, 1.8181818181818181 2.1818181818181817)), ((5 6, 9 5, 4.5 2.5, 5 5, 4 4.8, 5 6)))');
+    });
+
     it('should handle geometry collections', () => {
         const a = fromWKT('GEOMETRYCOLLECTION (POINT (51 -1), LINESTRING (52 -1, 49 2))');
         const b = fromWKT('POINT (2 3)');

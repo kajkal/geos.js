@@ -75,13 +75,15 @@ export interface IsValidOptions {
  * @see {@link isValidOrThrow} throws an error when geometry is not valid
  * @see {@link makeValid} repairs invalid geometries
  *
- * @example
- * isValid(lineString([ [ 0, 0 ], [ 1, 1 ] ])); // true
- * const selfTouchingExteriorRingFormingHole = polygon([
+ * @example #live
+ * const line = lineString([ [ 1, 1 ], [ 2, 2 ] ]);
+ * const line_valid = isValid(line); // true
+ *
+ * const poly = polygon([ // self-touching exterior ring forming hole
  *     [ [ 0, 0 ], [ 0, 10 ], [ 10, 0 ], [ 0, 0 ], [ 4, 2 ], [ 2, 4 ], [ 0, 0 ] ],
  * ]);
- * isValid(selfTouchingExteriorRingFormingHole, { isInvertedRingValid: true }); // true
- * isValid(selfTouchingExteriorRingFormingHole); // false
+ * const poly_valid1 = isValid(poly); // false
+ * const poly_valid2 = isValid(poly, { isInvertedRingValid: true }); // true
  */
 export function isValid(geometry: Geometry, options?: IsValidOptions): boolean {
     return Boolean(geos.GEOSisValidDetail(geometry[ POINTER ], +options?.isInvertedRingValid, 0 as Ptr<string[]>, 0 as Ptr<GEOSGeometry[]>));

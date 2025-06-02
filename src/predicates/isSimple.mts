@@ -31,11 +31,18 @@ import { geos } from '../core/geos.mjs';
  *
  * @see {@link isValid} checks whether a geometry is well-formed
  *
- * @example
- * isSimple(lineString([ [ 0, 0 ], [ 2, 2 ], [ 1, 2 ], [ 1, 0 ] ])); // false - self-intersection
- * isSimple(multiLineString([ [ [ 0, 1 ], [ 2, 1 ] ], [ [ 0, 0 ], [ 2, 1 ] ] ])); // true - intersection at endpoints is ok
- * isSimple(lineString([ [ -1, -1 ], [ 0, 0 ], [ 0, 1 ], [ 1, 0 ], [ 0, 0 ] ])); // false - intersection not at the endpoints
- * isSimple(lineString([ [ 0, 0 ], [ 0, 1 ], [ 1, 0 ], [ 0, 0 ] ])); // true - ring
+ * @example #live
+ * const a = lineString([ [ 0, 0 ], [ 2, 2 ], [ 1, 2 ], [ 1, 0 ] ]);
+ * const a_simple = isSimple(a); // false - self-intersection
+ *
+ * const b = multiLineString([ [ [ 2, 0 ], [ 4, 2 ] ], [ [ 3, 2 ], [ 4, 2 ] ] ]);
+ * const b_simple = isSimple(b); // true - intersection at endpoints is ok
+ *
+ * const c = lineString([ [ 4, 0 ], [ 5, 1 ], [ 5, 2 ], [ 6, 1 ], [ 5, 1 ] ]);
+ * const c_simple = isSimple(c); // false - intersection not at the endpoints
+ *
+ * const d = lineString([ [ 7, 1 ], [ 7, 2 ], [ 8, 1 ], [ 7, 1 ] ]);
+ * const d_simple = isSimple(d); // true - ring
  */
 export function isSimple(geometry: Geometry): boolean {
     return Boolean(geos.GEOSisSimple(geometry[ POINTER ]));

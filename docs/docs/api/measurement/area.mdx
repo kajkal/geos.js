@@ -5,7 +5,7 @@ sidebar_position: 2
 
 # area
 
-Calculate the area of a geometry.
+Calculates the area of a geometry.
 
 Areal geometries have a non-zero area.
 Others return 0.
@@ -22,7 +22,14 @@ Others return 0.
 
 ## Examples
 
-```ts
-const poly = polygon([ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ]);
-area(poly); // 0.5
+```js live noInline
+const pt = point([ 3, 1 ]);
+const ptArea = area(pt); // 0
+const line = lineString([ [ 8, 1 ], [ 9, 1 ] ]);
+const lineArea = area(pt); // 0
+const poly = polygon([ [ [ 3, 3 ], [ 9, 4 ], [ 5, 1 ], [ 3, 3 ] ] ]);
+const polyArea = area(poly); // 7
+
+// this example is alive!
+render(preview({ pt, ptArea, line, lineArea, poly, polyArea }));
 ```

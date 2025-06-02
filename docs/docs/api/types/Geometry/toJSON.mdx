@@ -15,9 +15,12 @@ and is automatically called by `JSON.stringify()`.
 
 ## Examples
 
-```ts title="converting a geometry to GeoJSON"
-const geojson = geometry.toJSON();
-```
-```ts title="using JSON.stringify()"
-const geojsonStr = JSON.stringify(geometry);
+```js live noInline
+// converting a geometry to GeoJSON
+const geom = point([ 1, 2, 3 ]);
+const geojson = geom.toJSON(); // {"type":"Point","coordinates":[1,2,3]}
+const geojsonStr = JSON.stringify(geom); // '{"type":"Point","coordinates":[1,2,3]}'
+
+// this example is alive!
+render(preview({ geom, geojson, geojsonStr }));
 ```

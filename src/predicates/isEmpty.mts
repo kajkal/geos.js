@@ -11,11 +11,11 @@ import { geos } from '../core/geos.mjs';
  * @param geometry - The geometry to check
  * @returns `true` when geometry is empty, `false` otherwise
  *
- * @example
+ * @example #live
  * const a = point([]);
- * const aIsEmpty = isEmpty(a); // true
+ * const a_empty = isEmpty(a); // true
  * const b = point([ 0, 0 ]);
- * const bIsEmpty = isEmpty(b); // false
+ * const b_empty = isEmpty(b); // false
  */
 export function isEmpty(geometry: Geometry): boolean {
     return Boolean(geos.GEOSisEmpty(geometry[ POINTER ]));

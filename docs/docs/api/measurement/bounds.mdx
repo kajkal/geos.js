@@ -24,7 +24,12 @@ The bounds are the minimum rectangle that contains the entire geometry.
 
 ## Examples
 
-```ts
+```js live noInline
+const pt = point([ 3, 1 ]);
+const ptExtent = bounds(pt); // [ 3, 1, 3, 1 ]
 const poly = polygon([ [ [ 3, 3 ], [ 9, 4 ], [ 5, 1 ], [ 3, 3 ] ] ]);
-bounds(poly); // [ 3, 1, 9, 4 ]
+const polyExtent = bounds(poly); // [ 3, 1, 9, 4 ]
+
+// this example is alive!
+render(preview({ pt, ptExtent, poly, polyExtent }));
 ```

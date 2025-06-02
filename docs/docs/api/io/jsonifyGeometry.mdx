@@ -23,11 +23,14 @@ Converts a geometry object to its GeoJSON representation.
 
 ## Examples
 
-```ts
+```js live noInline
 const pt = fromWKT('POINT (1 1)');
 const line = fromWKT('LINESTRING (0 0, 1 1)');
 const collection = fromWKT('GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 1 1))');
-jsonifyGeometry(pt); // { type: 'Point', coordinates: [ 1, 1 ] }
-jsonifyGeometry(line); // { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] }
-jsonifyGeometry(collection); // { type: 'GeometryCollection', geometries: [ { type: 'Point', coordinates: [ 1, 1 ] }, { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] } ] }
+const pt_json = jsonifyGeometry(pt); // { type: 'Point', coordinates: [ 1, 1 ] }
+const line_json = jsonifyGeometry(line); // { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] }
+const collection_json = jsonifyGeometry(collection); // { type: 'GeometryCollection', geometries: [ { type: 'Point', coordinates: [ 1, 1 ] }, { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] } ] }
+
+// this example is alive!
+render(preview({ pt, line, collection, pt_json, line_json, collection_json }));
 ```

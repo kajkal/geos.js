@@ -21,9 +21,12 @@ An empty geometry has no boundary or interior.
 
 ## Examples
 
-```ts
+```js live noInline
 const a = point([]);
-const aIsEmpty = isEmpty(a); // true
+const a_empty = isEmpty(a); // true
 const b = point([ 0, 0 ]);
-const bIsEmpty = isEmpty(b); // false
+const b_empty = isEmpty(b); // false
+
+// this example is alive!
+render(preview({ a, a_empty, b, b_empty }));
 ```

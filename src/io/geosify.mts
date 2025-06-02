@@ -385,7 +385,7 @@ const geosifyPopulateGeom = (geom: GeoJSONGeometry, s: GeosifyPopulateState): vo
  * @returns A new geometry
  * @throws {InvalidGeoJSONError} on invalid GeoJSON geometry
  *
- * @example
+ * @example #live
  * const pt = geosifyGeometry({ type: 'Point', coordinates: [ 1, 1 ] });
  * const line = geosifyGeometry({ type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] });
  * const collection = geosifyGeometry({
@@ -436,8 +436,8 @@ export function geosifyGeometry(geojson: GeoJSONGeometry): Geometry {
  * @returns An array of new geometries
  * @throws {InvalidGeoJSONError} on invalid GeoJSON geometry
  *
- * @example
- * const geometries = geosifyGeometries([
+ * @example #live
+ * const [ pt, line, collection ] = geosifyGeometries([
  *     { type: 'Point', coordinates: [ 1, 1 ] },
  *     { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
  *     {
@@ -448,9 +448,9 @@ export function geosifyGeometry(geojson: GeoJSONGeometry): Geometry {
  *         ],
  *     }
  * ]);
- * geometries[ 0 ].type(); // 'Point'
- * geometries[ 1 ].type(); // 'LineString'
- * geometries[ 2 ].type(); // 'GeometryCollection'
+ * pt.type(); // 'Point'
+ * line.type(); // 'LineString'
+ * collection.type(); // 'GeometryCollection'
  */
 export function geosifyGeometries(geojsons: GeoJSONGeometry[]): Geometry[] {
     const c: GeosifyCounter = { d: 0, s: 0, f: 0 };

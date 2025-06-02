@@ -23,7 +23,7 @@ Creates a [`Geometry`](../types/Geometry/index.mdx) from GeoJSON geometry object
 
 ## Examples
 
-```ts
+```js live noInline
 const pt = geosifyGeometry({ type: 'Point', coordinates: [ 1, 1 ] });
 const line = geosifyGeometry({ type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] });
 const collection = geosifyGeometry({
@@ -36,4 +36,7 @@ const collection = geosifyGeometry({
 pt.type(); // 'Point'
 line.type(); // 'LineString'
 collection.type(); // 'GeometryCollection'
+
+// this example is alive!
+render(preview({ pt, line, collection }));
 ```

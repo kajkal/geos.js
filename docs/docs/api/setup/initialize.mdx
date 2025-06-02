@@ -26,14 +26,16 @@ Note that the returned module is just stateless, compiled WebAssembly code.
 
 ## Examples
 
-```ts title="browser; directly from fetch request"
+```js title="browser; directly from fetch request"
 await initialize(fetch('geos_js.wasm'));
 ```
-```ts title="browser; from compiled module"
+
+```js title="browser; from compiled module"
 const module = await WebAssembly.compileStreaming(fetch('geos_js.wasm'));
 await initialize(module);
 ```
-```ts title="node; from a local file"
+
+```js title="node; from a local file"
 const wasmData = await readFile('./geos_js.wasm');
 const module = await WebAssembly.compile(wasmData);
 await initialize(module);

@@ -29,11 +29,15 @@ Creates a [`Geometry`](../types/Geometry/index.mdx) from Well-Known Binary (WKB)
 
 ## Examples
 
-```ts title="basic usage"
-const wkbData = new Uint8Array([...]);
-const geometry = fromWKB(wkbData);
-```
-```ts title="with options"
-const wkbData = new Uint8Array([...]);
-const geometry = fromWKB(wkbData, { fix: true }); // will fix structural errors
+```js live noInline
+const wkb = new Uint8Array([
+    1, // 1 - LE
+    1, 0, 0, 0, // 1 - point
+    105, 87, 20, 139, 10, 191, 5, 64, // Math.E - x
+    24, 45, 68, 84, 251, 33, 9, 64, // Math.PI - y
+]);
+const pt = fromWKB(wkb); // point([ Math.E, Math.PI ]);
+
+// this example is alive!
+render(preview({ wkb, pt }));
 ```

@@ -39,7 +39,7 @@ export const GEOSGeometryTypeDecoder = [
 
 
 /**
- * Wrapper class for a GEOS geometry
+ * Class representing a GEOS geometry that exists in the Wasm memory.
  */
 export class Geometry {
 
@@ -62,6 +62,11 @@ export class Geometry {
 
     /**
      * Returns geometry type.
+     *
+     * @example #live
+     * const type1 = fromWKT('POINT (1 1)').type();
+     * const type2 = fromWKT('LINESTRING (0 0, 1 1)').type();
+     * const type3 = fromWKT('CIRCULARSTRING (0 0, 1 1, 2 0)').type();
      */
     type(): GeometryType {
         const typeId = geos.GEOSGeomTypeId(this[ POINTER ]);
@@ -134,11 +139,10 @@ export class Geometry {
      *
      * @returns A GeoJSON geometry representation of this geometry
      *
-     * @example converting a geometry to GeoJSON
-     * const geojson = geometry.toJSON();
-     *
-     * @example using JSON.stringify()
-     * const geojsonStr = JSON.stringify(geometry);
+     * @example #live converting a geometry to GeoJSON
+     * const geom = point([ 1, 2, 3 ]);
+     * const geojson = geom.toJSON(); // {"type":"Point","coordinates":[1,2,3]}
+     * const geojsonStr = JSON.stringify(geom); // '{"type":"Point","coordinates":[1,2,3]}'
      */
     toJSON(): GeoJSONGeometry {
         return jsonifyGeometry(this);
@@ -155,6 +159,21 @@ export class Geometry {
         geos.GEOSGeom_destroy(ptr);
     }
 
+    /**
+     * Frees the Wasm memory allocated for the GEOS geometry object.
+     *
+     * {@link Geometry} objects are automatically freed when they are out of scope.
+     * This mechanism is provided by the [`FinalizationRegistry`]{@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry}
+     * that binds the lifetime of the Wasm resources to the lifetime of the JS objects.
+     *
+     * This method exists as a backup for those who find `FinalizationRegistry`
+     * unreliable and want a way to free the memory manually.
+     *
+     * Use with caution, as when the object is manually freed, the underlying
+     * Wasm resource becomes invalid and cannot be used anymore.
+     *
+     * @see {@link Geometry#detached}
+     */
     free(): void {
         Geometry[ FINALIZATION ].unregister(this);
         Geometry[ CLEANUP ](this[ POINTER ]);

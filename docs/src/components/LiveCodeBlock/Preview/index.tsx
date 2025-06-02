@@ -75,7 +75,11 @@ export function preview(props: any): React.ReactNode {
                 y2 = Math.max(y2, bbox[ 3 ]);
             }
         } else {
-            values.push({ n, v: JSON.stringify(v) });
+            if (v instanceof Uint8Array) {
+                values.push({ n, v: `<Uint8Array ${Array.from(v, e => e.toString(16).padStart(2, '0')).join('')}>` });
+            } else {
+                values.push({ n, v: JSON.stringify(v) });
+            }
         }
     }
 
@@ -97,8 +101,8 @@ const Preview: React.FunctionComponent<PreviewProps> = ({ values, features, boun
     React.useEffect(() => {
         map?.whenReady((e) => {
             e.target.fitBounds(bounds, {
-                paddingTopLeft: [ 30, 30 ], // left top
-                paddingBottomRight: [ 30, 10 ], // right bottom
+                paddingTopLeft: [ 40, 40 ], // left top
+                paddingBottomRight: [ 40, 20 ], // right bottom
                 animate: false,
             });
         });
@@ -249,35 +253,25 @@ const VisibilityControl: React.FunctionComponent<{ features: FeatureData[] }> = 
 
 
 const defaultStyle: L.StyleFunction = (feature) => {
-    if (feature.geometry.type === 'Point') {
-        return {
-            radius: 4,
-            fillOpacity: 0.5,
-            opacity: 0.65,
-            color: `var(--preview__${feature[ COLOR ]})`,
-            fillColor: `var(--preview__${feature[ COLOR ]})`,
-            stroke: false,
-            weight: 2,
-        } satisfies L.CircleMarkerOptions;
-    }
     return {
+        radius: 4,
         color: `var(--preview__${feature[ COLOR ]})`,
         fillColor: `var(--preview__${feature[ COLOR ]})`,
         fillOpacity: 0.3,
-        opacity: 0.65,
-        weight: 2,
+        opacity: 0.5,
         stroke: true,
+        weight: 2,
     };
 };
 
 const hoverStyle: L.StyleFunction = (feature) => {
-    if (feature[ ACTIVE ]) return;
     feature[ LAYER ].bringToFront();
+    if (feature[ ACTIVE ]) return;
     return {
-        fillOpacity: 0.4,
+        fillOpacity: 0.6,
         opacity: 1,
         color: 'var(--preview__active)',
-        stroke: true,
+        weight: 2.5,
     };
 };
 
@@ -289,10 +283,10 @@ const restStyle: L.StyleFunction = (feature) => {
 const activeStyle: L.StyleFunction = (feature) => {
     feature[ ACTIVE ] = true;
     return {
-        fillOpacity: 0.7,
+        fillOpacity: 0.85,
         opacity: 1,
         color: 'var(--preview__active)',
-        stroke: true,
+        weight: 2.5,
     };
 };
 

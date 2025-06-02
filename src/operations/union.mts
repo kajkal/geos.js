@@ -14,11 +14,13 @@ import { geos } from '../core/geos.mjs';
  * @param options - Optional options object
  * @returns A new geometry representing the union
  *
- * @example union of two polygons
+ * @example #live union of two polygons
  * const a = fromWKT('POLYGON ((10.01 10, 10 5, 5 5, 5 10, 10.01 10))');
  * const b = fromWKT('POLYGON ((10 15, 15 15, 15 7, 10.01 7, 10 15))');
- * toWKT(union(a, b)); // 'POLYGON ((10 5, 5 5, 5 10, 10.00625 10, 10 15, 15 15, 15 7, 10.01 7, 10.007692307692308 8.846153846153847, 10 5))'
- * toWKT(union(a, b, { gridSize: 0.1 })); // 'POLYGON ((10 5, 5 5, 5 10, 10 10, 10 15, 15 15, 15 7, 10 7, 10 5))'
+ * const ab_union = union(a, b);
+ *  // 'POLYGON ((10 5, 5 5, 5 10, 10.00625 10, 10 15, 15 15, 15 7, 10.01 7, 10.007692307692308 8.846153846153847, 10 5))'
+ * const ab_union_pg = union(a, b, { gridSize: 0.1 });
+ *  // 'POLYGON ((10 5, 5 5, 5 10, 10 10, 10 15, 15 15, 15 7, 10 7, 10 5))'
  */
 export function union(a: Geometry, b: Geometry, options?: PrecisionGridOptions): Geometry {
     const geomPtr = (options?.gridSize != null)

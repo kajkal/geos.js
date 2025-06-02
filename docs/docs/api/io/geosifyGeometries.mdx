@@ -23,8 +23,8 @@ Creates an array of [`Geometry`](../types/Geometry/index.mdx) from an array of G
 
 ## Examples
 
-```ts
-const geometries = geosifyGeometries([
+```js live noInline
+const [ pt, line, collection ] = geosifyGeometries([
     { type: 'Point', coordinates: [ 1, 1 ] },
     { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
     {
@@ -35,7 +35,10 @@ const geometries = geosifyGeometries([
         ],
     }
 ]);
-geometries[ 0 ].type(); // 'Point'
-geometries[ 1 ].type(); // 'LineString'
-geometries[ 2 ].type(); // 'GeometryCollection'
+pt.type(); // 'Point'
+line.type(); // 'LineString'
+collection.type(); // 'GeometryCollection'
+
+// this example is alive!
+render(preview({ pt, line, collection }));
 ```

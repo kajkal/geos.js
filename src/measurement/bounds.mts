@@ -12,9 +12,11 @@ import { geos } from '../core/geos.mjs';
  * @returns An array of four numbers `[ xMin, yMin, xMax, yMax ]`
  * @throws {GEOSError} when called on an empty geometry
  *
- * @example
+ * @example #live
+ * const pt = point([ 3, 1 ]);
+ * const ptExtent = bounds(pt); // [ 3, 1, 3, 1 ]
  * const poly = polygon([ [ [ 3, 3 ], [ 9, 4 ], [ 5, 1 ], [ 3, 3 ] ] ]);
- * bounds(poly); // [ 3, 1, 9, 4 ]
+ * const polyExtent = bounds(poly); // [ 3, 1, 9, 4 ]
  */
 export function bounds(geometry: Geometry): [ xMin: number, yMin: number, xMax: number, yMax: number ] {
     const xMin = geos.f1, yMin = geos.f2, xMax = geos.f3, yMax = geos.f4;

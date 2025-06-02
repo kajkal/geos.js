@@ -10,3 +10,14 @@ Returns geometry type.
 ## Returns
 
 [**`GeometryType`**](../types.mdx#GeometryType) 
+
+## Examples
+
+```js live noInline
+const type1 = fromWKT('POINT (1 1)').type();
+const type2 = fromWKT('LINESTRING (0 0, 1 1)').type();
+const type3 = fromWKT('CIRCULARSTRING (0 0, 1 1, 2 0)').type();
+
+// this example is alive!
+render(preview({ type1, type2, type3 }));
+```

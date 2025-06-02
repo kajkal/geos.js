@@ -143,13 +143,13 @@ const jsonifyGeom = (s: JsonifyState): GeoJSONGeometry => {
  * @returns A GeoJSON representation of the geometry
  * @throws {GEOSError} when called with an unsupported geometry type (not GeoJSON)
  *
- * @example
+ * @example #live
  * const pt = fromWKT('POINT (1 1)');
  * const line = fromWKT('LINESTRING (0 0, 1 1)');
  * const collection = fromWKT('GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 1 1))');
- * jsonifyGeometry(pt); // { type: 'Point', coordinates: [ 1, 1 ] }
- * jsonifyGeometry(line); // { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] }
- * jsonifyGeometry(collection); // { type: 'GeometryCollection', geometries: [ { type: 'Point', coordinates: [ 1, 1 ] }, { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] } ] }
+ * const pt_json = jsonifyGeometry(pt); // { type: 'Point', coordinates: [ 1, 1 ] }
+ * const line_json = jsonifyGeometry(line); // { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] }
+ * const collection_json = jsonifyGeometry(collection); // { type: 'GeometryCollection', geometries: [ { type: 'Point', coordinates: [ 1, 1 ] }, { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] } ] }
  */
 export function jsonifyGeometry(geometry: Geometry): GeoJSONGeometry {
     const buff = geos.buff;
@@ -187,11 +187,11 @@ export function jsonifyGeometry(geometry: Geometry): GeoJSONGeometry {
  * @returns Array of GeoJSON representations of the geometries
  * @throws {GEOSError} when called with an unsupported geometry type (not GeoJSON)
  *
- * @example
+ * @example #live
  * const pt = fromWKT('POINT (1 1)');
  * const line = fromWKT('LINESTRING (0 0, 1 1)');
  * const collection = fromWKT('GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 1 1))');
- * jsonifyGeometries([ pt, line, collection ]);
+ * const geojsons = jsonifyGeometries([ pt, line, collection ]);
  * // [
  * //     { type: 'Point', coordinates: [ 1, 1 ] },
  * //     { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },

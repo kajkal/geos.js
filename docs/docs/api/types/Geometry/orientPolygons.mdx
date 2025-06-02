@@ -22,10 +22,11 @@ Modifies the geometry in-place. Non-polygonal geometries will not be modified.
 
 ## Examples
 
-```ts title="exterior ring CCW, holes CW (GeoJSON compliance)"
+```js title="exterior ring CCW, holes CW (GeoJSON compliance)"
 polygonal = // (Multi)Polygon or GeometryCollection with some (Multi)Polygons
 polygonal.orientPolygons('ccw');
 ```
-```ts title="exterior ring CW, holes CCW"
+
+```js title="exterior ring CW, holes CCW"
 polygonal.orientPolygons('cw');
 ```

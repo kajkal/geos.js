@@ -6,7 +6,7 @@ import { geos } from '../core/geos.mjs';
  *
  * @returns string with the version of GEOS and GEOS C-API
  *
- * @example
+ * @example #live
  * const v = version(); // '3.13.1-CAPI-1.19.2'
  */
 export function version(): string {

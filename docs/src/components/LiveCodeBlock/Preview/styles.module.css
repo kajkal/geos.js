@@ -25,6 +25,17 @@
     }
 }
 
+:global .markdown {
+    [class*='playgroundHeader'] {
+        display: none;
+    }
+
+    [class*='playgroundPreview'] {
+        border: 0 solid var(--ifm-color-emphasis-400);
+        border-top-width: 1px;
+    }
+}
+
 
 /* controls */
 
@@ -101,7 +112,7 @@
     }
 
     :global .leaflet-popup-content {
-        margin: 0.625rem 0.875rem 1.125rem;
+        margin: 0.625rem 0.875rem 1rem;
     }
 }
 
@@ -131,4 +142,5 @@
     font-family: inherit;
     text-align: start;
     padding: 0.25rem 1rem;
+    margin-bottom: 0.25rem;
 }

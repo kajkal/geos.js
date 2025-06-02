@@ -35,15 +35,18 @@ up to the 4GB limit.
 
 ## Examples
 
-```ts title="grow memory by 512MB"
+```js title="grow memory by 512MB"
 growMemory({ by: 512 * 1024 * 1024 });
 ```
-```ts title="grow memory to 1GB"
+
+```js title="grow memory to 1GB"
 growMemory({ to: 1204 * 1024 * 1024 });
 ```
-```ts title="reserve all available memory (limited to 4GB for wasm32 target)"
+
+```js title="reserve all available memory (limited to 4GB for wasm32 target)"
 growMemory({ to: Infinity });
 ```
-```ts title="get current memory size"
+
+```js title="get current memory size"
 growMemory({ by: 0 });
 ```

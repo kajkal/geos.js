@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import React from 'react';
 import clsx from 'clsx';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Link from '@docusaurus/Link';
@@ -32,7 +32,7 @@ function HomepageHeader() {
     );
 }
 
-export default function Home(): ReactNode {
+export default function Home(): React.ReactNode {
     return (
         <Layout
             description='an easy-to-use JavaScript wrapper over WebAssembly build of GEOS'

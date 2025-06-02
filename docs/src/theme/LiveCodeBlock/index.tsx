@@ -1,10 +1,10 @@
-import React, { type ReactNode } from 'react';
+import React from 'react';
 import type { Props } from '@theme/LiveCodeBlock';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import CodeBlock from '@theme/CodeBlock';
 
 
-export default function SuspendedLiveCodeBlock(props: Props): ReactNode {
+export default function SuspendedLiveCodeBlock(props: Props): React.ReactNode {
     const fallback = (
         <CodeBlock
             {...props}

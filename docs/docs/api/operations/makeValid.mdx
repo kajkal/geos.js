@@ -32,12 +32,34 @@ have some minor alterations. The output is always a new geometry object.
 
 ## Examples
 
-```ts
+```js live noInline
+const poly = fromWKT('POLYGON ((2.22 2.28, 7.67 2.06, 10.98 7.7, 9.39 5, 7.96 7.12, 6.77 5.16, 7.43 6.24, 3.7 7.22, 5.72 5.77, 4.18 10.74, 2.2 6.83, 2.22 2.28))');
+const valid1 = makeValid(poly);
+const valid3 = makeValid(poly, { method: 'structure' });
+
+// this example is alive!
+render(preview({ poly, valid1, valid3 }));
+```
+
+```js live noInline
+// polygon with hole partially outside shell
+const poly = polygon([ [ [ 0, 0 ], [ 0, 2 ], [ 2, 0 ], [ 0, 0 ] ], [ [ 0.5, 0.5 ], [ 2, 1 ], [ 2, 0.5 ], [ 0.5, 0.5 ] ] ]);
+const valid1 = makeValid(poly);
+const valid3 = makeValid(poly, { method: 'structure' });
+
+// this example is alive!
+render(preview({ poly, valid1, valid3 }));
+```
+
+```js live noInline
 const lineInDisguise = polygon([ [ [ 0, 0 ], [ 1, 1 ], [ 1, 2 ], [ 1, 1 ], [ 0, 0 ] ] ]);
-toWKT(makeValid(lineInDisguise));
+const valid1 = makeValid(lineInDisguise);
 // MULTILINESTRING ((0 0, 1 1), (1 1, 1 2))
-toWKT(makeValid(lineInDisguise, { method: 'structure', keepCollapsed: true }));
+const valid2 = makeValid(lineInDisguise, { method: 'structure', keepCollapsed: true });
 // LINESTRING (0 0, 1 1, 1 2, 1 1, 0 0)
-toWKT(makeValid(lineInDisguise, { method: 'structure' }));
+const valid3 = makeValid(lineInDisguise, { method: 'structure' });
 // POLYGON EMPTY
+
+// this example is alive!
+render(preview({ lineInDisguise, valid1, valid2, valid3 }));
 ```

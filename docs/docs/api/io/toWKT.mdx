@@ -27,14 +27,12 @@ Converts a geometry object to its Well-Known Text (WKT) representation.
 
 ## Examples
 
-```ts title="basic usage"
+```js live noInline
 const pt = point([ 1.1234, 1.9876, 10 ]);
-const wkt = toWKT(pt); // 'POINT Z (1.1234 1.9876 10)'
-```
-```ts title="with options"
-const pt = point([ 1.1234, 1.9876, 10 ]);
-const wkt = toWKT(pt, {
-    dim: 2, // xy
-    precision: 2, // decimal places
-}); // 'POINT (1.12 1.99)'
+const wkt1 = toWKT(pt); // 'POINT Z (1.1234 1.9876 10)'
+const wkt2 = toWKT(pt, { dim: 2 }); // 'POINT (1.1234 1.9876)'
+const wkt3 = toWKT(pt, { precision: 2 }); // 'POINT Z (1.12 1.99 10)'
+
+// this example is alive!
+render(preview({ pt, wkt1, wkt2, wkt3 }));
 ```

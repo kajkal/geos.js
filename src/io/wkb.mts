@@ -23,13 +23,14 @@ export interface WKBInputOptions {
  *
  * @see {@link https://libgeos.org/specifications/wkb}
  *
- * @example basic usage
- * const wkbData = new Uint8Array([...]);
- * const geometry = fromWKB(wkbData);
- *
- * @example with options
- * const wkbData = new Uint8Array([...]);
- * const geometry = fromWKB(wkbData, { fix: true }); // will fix structural errors
+ * @example #live
+ * const wkb = new Uint8Array([
+ *     1, // 1 - LE
+ *     1, 0, 0, 0, // 1 - point
+ *     105, 87, 20, 139, 10, 191, 5, 64, // Math.E - x
+ *     24, 45, 68, 84, 251, 33, 9, 64, // Math.PI - y
+ * ]);
+ * const pt = fromWKB(wkb); // point([ Math.E, Math.PI ]);
  */
 export function fromWKB(wkb: Uint8Array, options?: WKBInputOptions): Geometry {
     const cache = geos.b_r;
@@ -102,13 +103,10 @@ export interface WKBOutputOptions {
  *
  * @see {@link https://libgeos.org/specifications/wkb}
  *
- * @example basic usage
- * const point = point([ 1, 2, 3 ]);
- * const wkb = toWKB(point); // Uint8Array([...])
- *
- * @example with options
- * const point = point([ 1, 2, 3 ]);
- * const wkb = toWKB(point, { dim: 2 }); // Uint8Array([...])
+ * @example #live
+ * const pt = point([ Math.E, Math.PI, 1 ]);
+ * const wkb1 = toWKB(pt); // Uint8Array([...])
+ * const wkb2 = toWKB(pt, { dim: 2 }); // Uint8Array([...])
  */
 export function toWKB(geometry: Geometry, options?: WKBOutputOptions): Uint8Array {
     const cache = geos.b_w;

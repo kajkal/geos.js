@@ -5,6 +5,22 @@ sidebar_position: 7
 
 # Geometry.prototype.free
 
+Frees the Wasm memory allocated for the GEOS geometry object.
+
+[`Geometry`](index.mdx) objects are automatically freed when they are out of scope.
+This mechanism is provided by the [`FinalizationRegistry`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry)
+that binds the lifetime of the Wasm resources to the lifetime of the JS objects.
+
+This method exists as a backup for those who find `FinalizationRegistry`
+unreliable and want a way to free the memory manually.
+
+Use with caution, as when the object is manually freed, the underlying
+Wasm resource becomes invalid and cannot be used anymore.
+
 ## Returns
 
 **`void`** 
+
+## See also
+
+- [`Geometry#detached`](index.mdx#detached)

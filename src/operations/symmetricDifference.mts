@@ -14,11 +14,12 @@ import { geos } from '../core/geos.mjs';
  * @param options - Optional options object
  * @returns A new geometry representing the symmetric difference
  *
- * @example symmetric difference of two lines
- * const a = fromWKT('LINESTRING(50 100, 50 200)');
- * const b = fromWKT('LINESTRING(50 50, 50 150)');
- * toWKT(symmetricDifference(a, b)); // 'MULTILINESTRING ((50 150, 50 200), (50 50, 50 100))'
- * toWKT(symmetricDifference(a, b, { gridSize: 15 })); // 'MULTILINESTRING ((45 150, 45 195), (45 45, 45 105))'
+ * @example #live symmetric difference of two lines
+ * const a = lineString([ [ 50, 100 ], [ 50, 200 ] ]);
+ * const b = lineString([ [ 50, 50 ], [ 50, 150 ] ]);
+ * const ab_sDiff = symmetricDifference(a, b); // 'MULTILINESTRING ((50 150, 50 200), (50 50, 50 100))'
+ * const ab_sDiff_pg = symmetricDifference(a, b, { gridSize: 15 }); // 'MULTILINESTRING ((45 150, 45 195), (45 45, 45 105))'
+ * const ba_sDiff = symmetricDifference(b, a); // 'MULTILINESTRING ((50 50, 50 100), (50 150, 50 200))'
  */
 export function symmetricDifference(a: Geometry, b: Geometry, options?: PrecisionGridOptions): Geometry {
     const geomPtr = (options?.gridSize != null)

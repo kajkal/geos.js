@@ -23,13 +23,13 @@ export interface WKTInputOptions {
  *
  * @see {@link https://libgeos.org/specifications/wkt}
  *
- * @example basic usage
- * const point = fromWKT('POINT(1 1)');
- * const line = fromWKT('LINESTRING(0 0, 1 1, 2 2)');
- * const polygon = fromWKT('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))');
+ * @example #live
+ * const pt = fromWKT('POINT(0 2)');
+ * const line = fromWKT('LINESTRING(1 2, 2 2, 2 0)');
+ * const poly = fromWKT('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))');
  *
- * @example with options
- * const polygon = fromWKT('POLYGON((0 0, 1 0, 1 1))', { fix: true }); // will fix unclosed ring
+ * @example #live will fix unclosed ring
+ * const poly = fromWKT('POLYGON((0 0, 1 0, 1 1))', { fix: true });
  */
 export function fromWKT(wkt: string, options?: WKTInputOptions): Geometry {
     const cache = geos.t_r;
@@ -90,16 +90,11 @@ export interface WKTOutputOptions {
  *
  * @see {@link https://libgeos.org/specifications/wkt}
  *
- * @example basic usage
+ * @example #live
  * const pt = point([ 1.1234, 1.9876, 10 ]);
- * const wkt = toWKT(pt); // 'POINT Z (1.1234 1.9876 10)'
- *
- * @example with options
- * const pt = point([ 1.1234, 1.9876, 10 ]);
- * const wkt = toWKT(pt, {
- *     dim: 2, // xy
- *     precision: 2, // decimal places
- * }); // 'POINT (1.12 1.99)'
+ * const wkt1 = toWKT(pt); // 'POINT Z (1.1234 1.9876 10)'
+ * const wkt2 = toWKT(pt, { dim: 2 }); // 'POINT (1.1234 1.9876)'
+ * const wkt3 = toWKT(pt, { precision: 2 }); // 'POINT Z (1.12 1.99 10)'
  */
 export function toWKT(geometry: Geometry, options?: WKTOutputOptions): string {
     const cache = geos.t_w;

@@ -12,9 +12,13 @@ import { geos } from '../core/geos.mjs';
  * @param geometry - The geometry for which the area is calculated
  * @returns The area of the geometry
  *
- * @example
- * const poly = polygon([ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ]);
- * area(poly); // 0.5
+ * @example #live
+ * const pt = point([ 3, 1 ]);
+ * const ptArea = area(pt); // 0
+ * const line = lineString([ [ 8, 1 ], [ 9, 1 ] ]);
+ * const lineArea = area(pt); // 0
+ * const poly = polygon([ [ [ 3, 3 ], [ 9, 4 ], [ 5, 1 ], [ 3, 3 ] ] ]);
+ * const polyArea = area(poly); // 7
  */
 export function area(geometry: Geometry): number {
     const f = geos.f1;

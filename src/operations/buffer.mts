@@ -70,21 +70,23 @@ export interface BufferOptions {
  * @returns A new, buffered, geometry
  * @throws {GEOSError} on invalid WKB data
  *
- * @example create a simple buffer around a point
+ * @example #live create a simple buffer around a point
  * const pt = point([ 0, 0 ]);
  * const circle = buffer(pt, 10);
  *
- * @example create a square-capped buffer around a line
- * const line = lineString([ [ 0, 0 ], [ 10, 10 ] ]);
- * const path = buffer(line, 5, { endCapStyle: 'square' });
+ * @example #live create a buffer around a line
+ * const line = lineString([ [ 0, 0 ], [ 10, 10 ], [ 25, 10 ] ]);
+ * const path1 = buffer(line, 2, { endCapStyle: 'square' });
+ * const path2 = buffer(line, 4, { endCapStyle: 'flat' });
  *
- * @example create a buffer that shrinks the geometry
- * const shrunken = buffer(geometry, -5);
+ * @example #live create a buffer that shrinks the geometry
+ * const poly = polygon([ [ [ 0, 0 ], [ 0, 8 ], [ 8, 8 ], [ 8, 0 ], [ 0, 0 ] ] ]);
+ * const shrunken = buffer(poly, -2);
  * // shrunk to nothing
- * toWKT(buffer(polygon([ [ [ 0, 0 ], [ 1, 0 ], [ 1, 1 ], [ 0, 0 ] ] ]), -5)); // 'POLYGON EMPTY'
+ * const empty1 = buffer(polygon([ [ [ 0, 0 ], [ 1, 0 ], [ 1, 1 ], [ 0, 0 ] ] ]), -5); // 'POLYGON EMPTY'
  * // negative or zero-distance buffer of point or line - always empty
- * toWKT(buffer(lineString([ [ 0, 0 ], [ 10, 10 ] ]), 0)); // 'POLYGON EMPTY'
- * toWKT(buffer(point([ 0, 0 ]), 0)); // 'POLYGON EMPTY'
+ * const empty2 = buffer(lineString([ [ 0, 0 ], [ 10, 10 ] ]), 0); // 'POLYGON EMPTY'
+ * const empty3 = buffer(point([ 0, 0 ]), 0); // 'POLYGON EMPTY'
  */
 export function buffer(geometry: Geometry, distance: number, options?: BufferOptions): Geometry {
     const cache = geos.b_p;

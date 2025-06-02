@@ -15,6 +15,10 @@ export default [
         input: 'src/index.mts',
         output: { file: 'dist/esm/index.mjs', format: 'esm' },
         plugins: [
+            replace({
+                delimiters: [ '', '' ],
+                '@example #live': '@example',
+            }),
             typescript({ compilerOptions: { declaration: false } }),
             replace({
                 'ROLLUP_WILL_INSERT_WASM_BASE64_HERE': wasmData.toString('base64'),
@@ -47,6 +51,12 @@ export default [
     {
         input: 'src/index.mts',
         output: { file: 'dist/esm/index.d.mts', format: 'esm' },
-        plugins: [ dts() ],
+        plugins: [
+            replace({
+                delimiters: [ '', '' ],
+                '@example #live': '@example',
+            }),
+            dts(),
+        ],
     },
 ];
