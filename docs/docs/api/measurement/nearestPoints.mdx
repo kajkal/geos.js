@@ -1,0 +1,54 @@
+---
+sidebar_label: 'nearestPoints'
+sidebar_position: 7
+---
+
+# nearestPoints
+
+Finds the nearest points between geometry `a` and geometry `b`.
+
+The returned points can be points along a line segment, not necessarily
+one of the vertices of the input geometries.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `a` | [**`Geometry`**](../types/Geometry/index.mdx) | First geometry |
+| `b` | [**`Geometry`**](../types/Geometry/index.mdx) | Second geometry |
+
+## Returns
+
+**`[`** [**`Geometry`**](../types/Geometry/index.mdx), [**`Geometry`**](../types/Geometry/index.mdx) **`]`** An array with two geometries, first is the nearest point from the
+geometry `a` second from the geometry `b`
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) on unsupported geometry types (curved)
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) when either geometry is empty
+
+## See also
+
+- [`distance`](distance.mdx) to calculate the distance between two geometries
+
+## Examples
+
+```js live noInline
+// nearest points between point and line
+const a = point([ 0, 0 ]);
+const b = lineString([ [ 0, 1 ], [ 1, 0 ] ]);
+const [ a_pt, b_pt ] = nearestPoints(a, b); // [ <POINT (0 0)>, <POINT (0.5 0.5)> ]
+
+// this example is alive!
+render(preview({ a, b, a_pt, b_pt }));
+```
+
+```js live noInline
+// nearest points between two polygons
+const a = polygon([ [ [ 0, 0 ], [ 0, 2 ], [ 1, 0 ], [ 0, 0 ] ] ]);
+const b = polygon([ [ [ 1, 1 ], [ 2, 1 ], [ 2, 2 ], [ 1, 2 ], [ 1, 1 ] ] ]);
+const [ a_pt, b_pt ] = nearestPoints(a, b); // [ <POINT (0.6 0.8)>, <POINT (1 1)> ]
+
+// this example is alive!
+render(preview({ a, b, a_pt, b_pt }));
+```

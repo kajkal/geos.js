@@ -1,6 +1,6 @@
 {
   "name": "geos.js",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "an easy-to-use JavaScript wrapper over WebAssembly build of GEOS",
   "keywords": [
     "geos",

@@ -26,7 +26,7 @@ GEOSversion
 #   GEOSCoordSeq_copyToBuffer_r
 #   GEOSCoordSeq_copyToArrays_r
 #   GEOSCoordSeq_clone_r
-#   GEOSCoordSeq_destroy_r
+GEOSCoordSeq_destroy_r
 #   GEOSCoordSeq_setX_r
 #   GEOSCoordSeq_setY_r
 #   GEOSCoordSeq_setZ_r
@@ -36,7 +36,7 @@ GEOSversion
 #   GEOSCoordSeq_getX_r
 #   GEOSCoordSeq_getY_r
 #   GEOSCoordSeq_getZ_r
-#   GEOSCoordSeq_getXY_r
+GEOSCoordSeq_getXY_r
 #   GEOSCoordSeq_getXYZ_r
 #   GEOSCoordSeq_getOrdinate_r
 #   GEOSCoordSeq_getSize_r
@@ -45,7 +45,7 @@ GEOSversion
 
 ## Geometry Constructors:
 #   GEOSGeom_createPoint_r
-#   GEOSGeom_createPointFromXY_r
+GEOSGeom_createPointFromXY_r
 #   GEOSGeom_createEmptyPoint_r
 #   GEOSGeom_createLinearRing_r
 #   GEOSGeom_createLineString_r
@@ -68,7 +68,7 @@ GEOSGeom_destroy_r
 ## Geometry Accessors:
 #   GEOSGeomType_r
 GEOSGeomTypeId_r
-#   GEOSGetSRID_r
+GEOSGetSRID_r
 #   GEOSGeom_getUserData_r
 #   GEOSGetNumGeometries_r
 #   GEOSGetGeometryN_r
@@ -100,7 +100,7 @@ GEOSisEmpty_r
 #   GEOSisClosed_r
 
 ## Geometry Mutators:
-#   GEOSSetSRID_r
+GEOSSetSRID_r
 #   GEOSGeom_setUserData_r
 GEOSNormalize_r
 GEOSOrientPolygons_r
@@ -126,14 +126,14 @@ GEOSLength_r
 #   GEOSGeomGetLength_r
 
 ## Distance:
-#   GEOSDistance_r
+GEOSDistance_r
 #   GEOSDistanceWithin_r
 #   GEOSDistanceIndexed_r
-#   GEOSNearestPoints_r
-#   GEOSHausdorffDistance_r
-#   GEOSHausdorffDistanceDensify_r
-#   GEOSFrechetDistance_r
-#   GEOSFrechetDistanceDensify_r
+GEOSNearestPoints_r
+GEOSHausdorffDistance_r
+GEOSHausdorffDistanceDensify_r
+GEOSFrechetDistance_r
+GEOSFrechetDistanceDensify_r
 
 ## Linear Referencing:
 #   GEOSProject_r

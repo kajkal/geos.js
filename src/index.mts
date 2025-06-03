@@ -69,9 +69,14 @@ export { jsonifyGeometry, jsonifyGeometries } from './io/jsonify.mjs';
 export { fromWKT, type WKTInputOptions, toWKT, type WKTOutputOptions } from './io/wkt.mjs';
 export { fromWKB, type WKBInputOptions, toWKB, type WKBOutputOptions } from './io/wkb.mjs';
 
-export { length } from './measurement/length.mjs';
-export { area } from './measurement/area.mjs';
+export { type DensifyOptions } from './measurement/types/DensifyOptions.mjs';
 export { bounds } from './measurement/bounds.mjs';
+export { area } from './measurement/area.mjs';
+export { length } from './measurement/length.mjs';
+export { distance } from './measurement/distance.mjs';
+export { hausdorffDistance } from './measurement/hausdorffDistance.mjs';
+export { frechetDistance } from './measurement/frechetDistance.mjs';
+export { nearestPoints } from './measurement/nearestPoints.mjs';
 
 export { type PrecisionGridOptions } from './operations/types/PrecisionGridOptions.mjs';
 export { buffer, type BufferOptions } from './operations/buffer.mjs';

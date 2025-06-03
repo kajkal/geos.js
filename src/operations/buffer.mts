@@ -63,12 +63,13 @@ export interface BufferOptions {
 
 /**
  * Creates a buffer around a geometry with a specified distance.
+ * Distance is in input geometry units.
  *
  * @param geometry - The geometry to buffer
  * @param distance - The buffer distance. Positive values expand the geometry, negative values shrink it
  * @param options - Optional parameters to control buffer generation
  * @returns A new, buffered, geometry
- * @throws {GEOSError} on invalid WKB data
+ * @throws {GEOSError} on unsupported geometry types (curved)
  *
  * @example #live create a simple buffer around a point
  * const pt = point([ 0, 0 ]);

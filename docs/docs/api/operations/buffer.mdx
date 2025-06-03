@@ -6,6 +6,7 @@ sidebar_position: 1
 # buffer
 
 Creates a buffer around a geometry with a specified distance.
+Distance is in input geometry units.
 
 ## Parameters
 
@@ -26,7 +27,7 @@ Creates a buffer around a geometry with a specified distance.
 
 ## Throws
 
-- [**`GEOSError`**](../types/errors.mdx#GEOSError) on invalid WKB data
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) on unsupported geometry types (curved)
 
 ## Examples
 

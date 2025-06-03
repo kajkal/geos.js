@@ -1,0 +1,62 @@
+---
+sidebar_label: 'distance'
+sidebar_position: 4
+---
+
+# distance
+
+Computes the Cartesian distance between geometry `a` and geometry `b`.
+
+Distance is in input geometry units.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `a` | [**`Geometry`**](../types/Geometry/index.mdx) | First geometry |
+| `b` | [**`Geometry`**](../types/Geometry/index.mdx) | Second geometry |
+
+## Returns
+
+**`number`** The distance between the geometries
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) on unsupported geometry types (curved)
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) when either geometry is empty
+
+## See also
+
+- [`nearestPoints`](nearestPoints.mdx) to find nearest points of two geometries
+
+## Examples
+
+```js live noInline
+// distance between point and line
+const a = point([ 0, 0 ]);
+const b = lineString([ [ 0, 1 ], [ 1, 0 ] ]);
+const ab_dist = distance(a, b); // 0.7071067811865476 = Math.sqrt(2) / 2
+
+// this example is alive!
+render(preview({ a, b, ab_dist }));
+```
+
+```js live noInline
+// distance between line and polygon
+const a = lineString([ [ -1, 1 ], [ 1, -1 ] ]);
+const b = polygon([ [ [ 1, 1 ], [ 1, 2 ], [ 2, 1 ], [ 1, 1 ] ] ]);
+const ab_dist = distance(a, b); // 1.4142135623730951 = Math.sqrt(2)
+
+// this example is alive!
+render(preview({ a, b, ab_dist }));
+```
+
+```js live noInline
+// distance between two polygons
+const a = polygon([ [ [ 0, 0 ], [ 1, 0 ], [ 1, 1 ], [ 0, 1 ], [ 0, 0 ] ] ]);
+const b = polygon([ [ [ 2, 2 ], [ 3, 2 ], [ 3, 3 ], [ 2, 2 ] ] ]);
+const ab_dist = distance(a, b); // 1.4142135623730951 = Math.sqrt(2)
+
+// this example is alive!
+render(preview({ a, b, ab_dist }));
+```

@@ -142,12 +142,19 @@ interface TsTypeData {
     array?: number; // `a` => 0; `a[][]` => 2
     typeArgs?: TsTypeData[]; // `a<b>` => [ `b` ]
     props?: TsParamData[]; // for type literals; { a: b }
+    tupleElements?: TsTupleMemberData[];
 }
 
 interface TsParamData {
     name: string;
     type: TsTypeData;
     optional?: boolean;
+}
+
+interface TsTupleMemberData {
+    type: TsTypeData;
+    name: string;
+    optional: boolean;
 }
 
 interface JsDocRichTextNode {
@@ -388,6 +395,17 @@ void async function main() {
                     return {
                         name: m.name.getText(),
                         type: processTypeNode(m.type),
+                    };
+                })
+                : null,
+            tupleElements: ts.isTupleTypeNode(typeNode)
+                ? typeNode.elements.map(el => {
+                    assert.ok(ts.isNamedTupleMember(el));
+                    assert.ok(!el.dotDotDotToken);
+                    return {
+                        type: processTypeNode(el.type),
+                        name: el.name.getText(),
+                        optional: Boolean(el.questionToken),
                     };
                 })
                 : null,
@@ -698,6 +716,10 @@ void async function main() {
         writeValueType = (tsTypeData: TsTypeData) => {
             if (tsTypeData.types) {
                 return tsTypeData.types.map(this.writeValueType).join(' \\| '); // `a | b | c`
+            }
+            if (tsTypeData.tupleElements) { // [ a: number, b: string ]
+                const body = tsTypeData.tupleElements.map(el => this.writeValueType(el.type)).join(', ');
+                return `**\`[\`** ${body} **\`]\`**`;
             }
             return this.writeSimpleType(tsTypeData.type)
                 + (tsTypeData.typeArgs ? `\\<${tsTypeData.typeArgs?.map(this.writeValueType).join(', ')}\\>` : '') // `a<b>`

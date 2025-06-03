@@ -472,7 +472,6 @@ export interface WasmGEOS {
     /**
      * Destroy a coordinate sequence, freeing all memory.
      * @param s - the coordinate sequence to destroy
-     * @deprecated this function is not exported
      */
     GEOSCoordSeq_destroy(s: Ptr<GEOSCoordSequence>): void;
 
@@ -577,7 +576,6 @@ export interface WasmGEOS {
      * @param x - pointer where ordinate X value will be placed
      * @param y - pointer where ordinate Y value will be placed
      * @returns 0 on exception
-     * @deprecated this function is not exported
      */
     GEOSCoordSeq_getXY(s: ConstPtr<GEOSCoordSequence>, idx: u32, x: Ptr<f64>, y: Ptr<f64>): i32;
 
@@ -644,7 +642,6 @@ export interface WasmGEOS {
      * @param x - The X coordinate
      * @param y - The Y coordinate
      * @returns A newly allocated point geometry. NULL on exception. Caller is responsible for freeing with GEOSGeom_destroy().
-     * @deprecated this function is not exported
      */
     GEOSGeom_createPointFromXY(x: f64, y: f64): Ptr<GEOSGeometry>;
 
@@ -815,7 +812,6 @@ export interface WasmGEOS {
      * Returns the "spatial reference id" (SRID) for this geometry.
      * @param g - Input geometry
      * @returns SRID number or 0 if unknown / not set.
-     * @deprecated this function is not exported
      */
     GEOSGetSRID(g: ConstPtr<GEOSGeometry>): i32;
 
@@ -1077,7 +1073,6 @@ export interface WasmGEOS {
      * Set the "spatial reference id" (SRID) for this geometry.
      * @param g - Input geometry
      * @param SRID - SRID number or 0 for unknown SRID.
-     * @deprecated this function is not exported
      */
     GEOSSetSRID(g: Ptr<GEOSGeometry>, SRID: i32): void;
 
@@ -1260,7 +1255,6 @@ export interface WasmGEOS {
      * @param g2 (in) - Input geometry
      * @param dist (out) - Pointer to be filled in with distance result
      * @returns 1 on success, 0 on exception.
-     * @deprecated this function is not exported
      */
     GEOSDistance(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>, dist: Ptr<f64>): i32;
 
@@ -1290,7 +1284,6 @@ export interface WasmGEOS {
      * @param g1 (in) - Input geometry
      * @param g2 (in) - Input geometry
      * @returns A coordinate sequence with the two points, or NULL on exception. Caller must free with GEOSCoordSeq_destroy().
-     * @deprecated this function is not exported
      */
     GEOSNearestPoints(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): Ptr<GEOSCoordSequence>;
 
@@ -1301,7 +1294,6 @@ export interface WasmGEOS {
      * @param dist (out) - Pointer to be filled in with distance result
      * @returns 1 on success, 0 on exception.
      * @see geos::algorithm::distance::DiscreteHausdorffDistance
-     * @deprecated this function is not exported
      */
     GEOSHausdorffDistance(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>, dist: Ptr<f64>): i32;
 
@@ -1313,7 +1305,6 @@ export interface WasmGEOS {
      * @param dist (out) - Pointer to be filled in with distance result
      * @returns 1 on success, 0 on exception.
      * @see geos::algorithm::distance::DiscreteHausdorffDistance
-     * @deprecated this function is not exported
      */
     GEOSHausdorffDistanceDensify(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>, densifyFrac: f64, dist: Ptr<f64>): i32;
 
@@ -1324,7 +1315,6 @@ export interface WasmGEOS {
      * @param dist (out) - Pointer to be filled in with distance result
      * @returns 1 on success, 0 on exception.
      * @see geos::algorithm::distance::DiscreteFrechetDistance
-     * @deprecated this function is not exported
      */
     GEOSFrechetDistance(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>, dist: Ptr<f64>): i32;
 
@@ -1336,7 +1326,6 @@ export interface WasmGEOS {
      * @param dist (out) - Pointer to be filled in with distance result
      * @returns 1 on success, 0 on exception.
      * @see geos::algorithm::distance::DiscreteFrechetDistance
-     * @deprecated this function is not exported
      */
     GEOSFrechetDistanceDensify(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>, densifyFrac: f64, dist: Ptr<f64>): i32;
 

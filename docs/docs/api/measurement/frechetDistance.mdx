@@ -1,0 +1,68 @@
+---
+sidebar_label: 'frechetDistance'
+sidebar_position: 6
+---
+
+# frechetDistance
+
+Compute the discrete Fréchet distance between geometry `a` and geometry `b`.
+The [Fréchet distance](https://en.wikipedia.org/wiki/Fr%C3%A9chet_distance)
+is a measure of similarity: it is the greatest distance between any point in
+`a` and the closest point in `b`.
+
+The discrete distance is an approximation of this metric: only vertices are
+considered. The parameter `options.densify` makes this approximation less coarse
+by splitting the line segments between vertices before computing the distance.
+
+Fréchet distance sweep continuously along their respective curves and the
+direction of curves is significant. This makes it a better measure of similarity
+than Hausdorff distance for curve or surface matching.
+
+## Parameters
+
+| Name | Type | Description |
+| --- | :-: | --- |
+| `a` | [**`Geometry`**](../types/Geometry/index.mdx) | First geometry |
+| `b` | [**`Geometry`**](../types/Geometry/index.mdx) | Second geometry |
+| `options?` | **`object`** | Optional options object |
+| `options.densify?` | **`number`** | Optional fraction by which densify each line segment. <br/> Each segment will be split into a number of equal-length subsegments, whose fraction of the total length is closest to the given fraction. Value of `0.25` means that each segment will be split into four equal length subsegments. <br/> The closer to `0` the better the approximation of the distance. |
+
+## Returns
+
+**`number`** Approximation of Fréchet distance between geometries
+
+## Throws
+
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) on unsupported geometry types (curved)
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) when either geometry is empty
+- [**`GEOSError`**](../types/errors.mdx#GEOSError) when `options.densify` is not in the range `(0.0, 1.0]`
+
+## See also
+
+- [`hausdorffDistance`](hausdorffDistance.mdx)
+
+## Examples
+
+```js live noInline
+const a = lineString([ [ 0, 0 ], [ 100, 0 ] ]);
+const b = lineString([ [ 0, 0 ], [ 50, 50 ], [ 100, 0 ] ]);
+const ab_fDist = frechetDistance(a, b); // 70.71067811865476
+const ab_fDist_d = frechetDistance(a, b, { densify: 0.5 }); // 50
+
+// this example is alive!
+render(preview({ a, b, ab_fDist, ab_fDist_d }));
+```
+
+```js live noInline
+// with a comparison to Hausdorff distance
+const a = lineString([ [ 0, 0 ], [ 50, 200 ], [ 100, 0 ], [ 150, 200 ], [ 200, 0 ] ]);
+const b1 = lineString([ [ 0, 200 ], [ 200, 150 ], [ 0, 100 ], [ 200, 50 ], [ 0, 0 ] ]);
+const b2 = lineString([ [ 0, 0 ], [ 200, 50 ], [ 0, 100 ], [ 200, 150 ], [ 0, 200 ] ]);
+const ab1_hDist = hausdorffDistance(a, b1); // 48.507125007266595
+const ab2_hDist = hausdorffDistance(a, b2); // 48.507125007266595
+const ab1_fDist = frechetDistance(a, b1); // 200
+const ab2_fDist = frechetDistance(a, b2); // 282.842712474619
+
+// this example is alive!
+render(preview({ a, b1, b2, ab1_hDist, ab2_hDist, ab1_fDist, ab2_fDist }));
+```
