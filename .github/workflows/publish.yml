@@ -36,10 +36,9 @@ jobs:
               description: 'OTP from authenticator app'
 
       - run: pnpm install
-      - run: pnpm run test
       - run: pnpm run build
 
       - name: Publish package
-        run: pnpm publish --otp ${{ steps.get-otp.outputs.OTP }}
+        run: pnpm publish --otp ${{ steps.wait-for-secrets.outputs.OTP }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
