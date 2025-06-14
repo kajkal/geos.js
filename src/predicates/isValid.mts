@@ -105,7 +105,7 @@ export function isValid(geometry: Geometry, options?: IsValidOptions): boolean {
  * @see {@link isValid} checks whether a geometry is valid (`true`/`false`)
  * @see {@link makeValid} repairs invalid geometries
  *
- * @example
+ * @example #live
  * isValidOrThrow(lineString([ [ 0, 0 ], [ 1, 1 ] ])); // pass
  * const selfTouchingExteriorRingFormingHole = polygon([
  *     [ [ 0, 0 ], [ 0, 10 ], [ 10, 0 ], [ 0, 0 ], [ 4, 2 ], [ 2, 4 ], [ 0, 0 ] ],

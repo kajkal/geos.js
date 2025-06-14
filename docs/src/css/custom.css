@@ -16,17 +16,28 @@
     --ifm-color-primary-lighter: #e12909;
     --ifm-color-primary-lightest: #f53514;
     --ifm-code-font-size: 95%;
-    --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 
     /* to be on top of leaflet */
     --ifm-z-index-dropdown: 1100;
     --ifm-z-index-fixed: 1200;
     --ifm-z-index-overlay: 1400;
 
-    --geos-preview-border-color: var(--ifm-color-emphasis-300);
-    --geos-preview-background-color-light: #fbfaf9;
-    --geos-preview-background-color-dark: var(--ifm-background-surface-color);
-    --geos-preview-color: var(--ifm-color-emphasis-700);
+    --code-background: #fcfbf7;
+    --code-foreground: #807a78;
+    --code-token-comment: #bdbbb3;
+    --code-token-keyword: #db5877;
+    --code-token-punctuation: #c57485;
+    --code-token-num: #2992cf;
+    --code-token-string: #7faf59;
+    --code-token-regexp: #77bcbb;
+    --code-token-name: #75756a;
+    --code-token-function: #bd983c;
+
+    --code-frame-background-color: #fafbfc;
+
+    --preview-background-color: #fff;
+    --preview-border-color: var(--ifm-color-emphasis-300);
+    --preview-color: var(--ifm-color-emphasis-700);
 
     --preview__0: #00e6bb;
     --preview__1: #8bcc00;
@@ -48,9 +59,21 @@
     --ifm-color-primary-light: #fbe337;
     --ifm-color-primary-lighter: #fbe545;
     --ifm-color-primary-lightest: #fceb6e;
-    --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 
-    --geos-preview-background-color-light: #464648;
+    --code-background: #292828;
+    --code-foreground: #eadbba;
+    --code-token-comment: #807973;
+    --code-token-keyword: #d8655e;
+    --code-token-punctuation: #b3544f;
+    --code-token-num: #5ed6e6;
+    --code-token-string: #88b872;
+    --code-token-regexp: #b8d877;
+    --code-token-name: inherit;
+    --code-token-function: #e6b045;
+
+    --code-frame-background-color: #333131;
+
+    --preview-background-color: #242526;
 
     --preview__0: #00ffd2;
     --preview__1: #b0ff00;
@@ -62,6 +85,13 @@
     --preview__7: #aa00ff;
     --preview__active: #fff;
 }
+
+@supports (interpolate-size: allow-keywords) {
+    :root {
+        interpolate-size: allow-keywords;
+    }
+}
+
 
 .header-github-link::before {
     content: '';
@@ -75,4 +105,45 @@
 
 .header-github-link:hover::before {
     background-color: var(--ifm-navbar-link-hover-color);
+}
+
+
+.code-token {
+    &[data-type="comment"] {
+        color: var(--code-token-comment);
+    }
+
+    &[data-type="keyword"] {
+        color: var(--code-token-keyword);
+    }
+
+    &[data-type="num"] {
+        color: var(--code-token-num);
+    }
+
+    &[data-type="string"] {
+        color: var(--code-token-string);
+    }
+
+    &[data-type="regexp"] {
+        color: var(--code-token-regexp);
+    }
+
+    &[data-type="name"] {
+        color: var(--code-token-name);
+    }
+
+    &[data-type="function"] {
+        color: var(--code-token-function);
+    }
+
+    &[data-type="punctuation"] {
+        color: var(--code-token-punctuation);
+    }
+}
+
+.code-error {
+    text-decoration-line: underline;
+    text-decoration-style: wavy;
+    text-decoration-color: red;
 }

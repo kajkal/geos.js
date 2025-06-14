@@ -24,15 +24,11 @@ are in either geometry `a` or geometry `b`.
 
 ## Examples
 
-```js live noInline
-// union of two polygons
+```js live title="union of two polygons"
 const a = fromWKT('POLYGON ((10.01 10, 10 5, 5 5, 5 10, 10.01 10))');
 const b = fromWKT('POLYGON ((10 15, 15 15, 15 7, 10.01 7, 10 15))');
 const ab_union = union(a, b);
  // 'POLYGON ((10 5, 5 5, 5 10, 10.00625 10, 10 15, 15 15, 15 7, 10.01 7, 10.007692307692308 8.846153846153847, 10 5))'
 const ab_union_pg = union(a, b, { gridSize: 0.1 });
  // 'POLYGON ((10 5, 5 5, 5 10, 10 10, 10 15, 15 15, 15 7, 10 7, 10 5))'
-
-// this example is alive!
-render(preview({ a, b, ab_union, ab_union_pg }));
 ```

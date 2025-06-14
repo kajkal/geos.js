@@ -46,7 +46,7 @@ Simplicity is defined for each Geometry type as follows:
 
 ## Examples
 
-```js live noInline
+```js live
 const a = lineString([ [ 0, 0 ], [ 2, 2 ], [ 1, 2 ], [ 1, 0 ] ]);
 const a_simple = isSimple(a); // false - self-intersection
 
@@ -58,7 +58,4 @@ const c_simple = isSimple(c); // false - intersection not at the endpoints
 
 const d = lineString([ [ 7, 1 ], [ 7, 2 ], [ 8, 1 ], [ 7, 1 ] ]);
 const d_simple = isSimple(d); // true - ring
-
-// this example is alive!
-render(preview({ a, a_simple, b, b_simple, c, c_simple, d, d_simple }));
 ```

@@ -1,0 +1,197 @@
+.interactiveCodeBlock, .staticCodeBlock {
+    color: var(--code-foreground);
+    margin-bottom: var(--ifm-leading);
+
+    > *:first-child {
+        border: 1px solid var(--ifm-color-emphasis-300);
+        border-top-left-radius: var(--ifm-pre-border-radius);
+        border-top-right-radius: var(--ifm-pre-border-radius);
+    }
+
+    > *:last-child {
+        border-bottom-left-radius: var(--ifm-pre-border-radius);
+        border-bottom-right-radius: var(--ifm-pre-border-radius);
+        border: 1px solid var(--ifm-color-emphasis-200);
+    }
+
+    > *:not(:last-child) {
+        border: 1px solid var(--ifm-color-emphasis-200);
+        border-bottom-width: 0;
+    }
+}
+
+.codeBlockTitle {
+    background-color: var(--code-frame-background-color);
+    font-size: 1rem;
+    font-weight: 500;
+    padding: .5rem var(--ifm-pre-padding);
+}
+
+.codeBlockScrollContainer {
+    scrollbar-width: thin;
+    overflow: auto;
+    display: flex;
+
+    > * {
+        overflow: unset !important;
+        flex: 1;
+    }
+}
+
+.interactiveCodeBlockBody, .staticCodeBlockBody {
+    background-color: var(--code-background);
+    font: 0.875rem / var(--ifm-pre-line-height) var(--ifm-font-family-monospace);
+    position: relative;
+}
+
+.codeBlock {
+    display: inline-flex !important;
+    background: transparent;
+    border-radius: unset;
+    color: inherit;
+    font-size: inherit;
+    margin: 0;
+    overflow: hidden;
+
+    code {
+        vertical-align: unset;
+    }
+}
+
+
+/* **************************************** */
+
+.interactiveCodeBlockBody:not(.codeBlockWrap) {
+    .codeBlock, textarea {
+        white-space: pre !important;
+    }
+}
+
+.interactiveCodeBlockBody.codeBlockWrap {
+    .codeBlock, textarea {
+        overflow-wrap: anywhere !important;
+    }
+}
+
+.interactiveCodeBlockPreviewContainer {
+    background-color: var(--code-frame-background-color);
+    height: 1rem;
+    transition: height var(--ifm-transition-slow) ease-in-out;
+
+    &:has(.interactiveCodeBlockPreview) {
+        height: auto;
+        overflow: clip;
+    }
+}
+
+
+/* **************************************** */
+
+.staticCodeBlockBody.codeBlockOverflow {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.staticCodeBlockBody.codeBlockWrap .codeBlock {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+
+/* **************************************** */
+
+:has(> .codeBlockActions):is(:focus-visible, :hover) button {
+    opacity: 0.4;
+}
+
+.codeBlockActions {
+    position: absolute;
+    right: calc(var(--ifm-pre-padding) / 2);
+    top: calc(var(--ifm-pre-padding) / 2);
+
+    display: flex;
+    gap: 0.2rem;
+
+    button {
+        border: 1px solid var(--ifm-color-emphasis-300);
+        border-radius: var(--ifm-global-radius);
+        padding: 0.4rem;
+
+        transition: opacity var(--ifm-transition-fast) ease-in-out;
+        opacity: 0;
+
+        display: flex;
+        align-items: center;
+        background-color: var(--code-background);
+        color: var(--code-foreground);
+
+        &:is(:focus-visible, :hover) {
+            opacity: 1 !important;
+        }
+    }
+}
+
+
+/* **************************************** */
+
+.wordWrapButtonIcon {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+.wordWrapButton {
+    display: none !important;
+}
+
+.codeBlockWrap .wordWrapButtonIcon {
+    color: var(--ifm-color-primary);
+}
+
+.codeBlockOverflow .wordWrapButton,
+.codeBlockWrap .wordWrapButton {
+    display: flex !important;
+}
+
+
+.interactiveCodeBlockBody, .staticCodeBlockBody {
+    &:is(:hover) .copyButtonCopied {
+        opacity: 1 !important;
+    }
+}
+
+.copyButtonIcons {
+    position: relative;
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+.copyButtonIcon,
+.copyButtonSuccessIcon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    fill: currentColor;
+    opacity: inherit;
+    width: inherit;
+    height: inherit;
+    transition: all var(--ifm-transition-fast) ease;
+}
+
+.copyButtonSuccessIcon {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.33);
+    opacity: 0;
+    color: #00d600;
+}
+
+.copyButtonCopied .copyButtonIcon {
+    transform: scale(0.33);
+    opacity: 0;
+}
+
+.copyButtonCopied .copyButtonSuccessIcon {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    transition-delay: 0.075s;
+}

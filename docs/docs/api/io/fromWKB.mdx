@@ -29,7 +29,7 @@ Creates a [`Geometry`](../types/Geometry/index.mdx) from Well-Known Binary (WKB)
 
 ## Examples
 
-```js live noInline
+```js live
 const wkb = new Uint8Array([
     1, // 1 - LE
     1, 0, 0, 0, // 1 - point
@@ -37,7 +37,4 @@ const wkb = new Uint8Array([
     24, 45, 68, 84, 251, 33, 9, 64, // Math.PI - y
 ]);
 const pt = fromWKB(wkb); // point([ Math.E, Math.PI ]);
-
-// this example is alive!
-render(preview({ wkb, pt }));
 ```

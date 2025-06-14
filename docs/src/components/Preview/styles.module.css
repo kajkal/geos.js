@@ -1,0 +1,195 @@
+.preview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ifm-pre-padding);
+    padding: var(--ifm-pre-padding);
+
+    --section-bar-offset: -0.25rem;
+    --section-bar-padding: 0.2rem 1rem;
+    --section-bar-font: 0.75rem / var(--ifm-pre-line-height) var(--ifm-font-family-monospace);
+}
+
+.previewSection {
+    position: relative;
+    --bar-background-color: var(--preview-background-color);
+    --bar-border-color: var(--preview-border-color);
+    --bar-color: var(--preview-color);
+    --body-background-color: var(--code-background);
+    --body-border-color: var(--bar-border-color);
+}
+
+.previewSectionBar {
+    position: absolute;
+    top: var(--section-bar-offset);
+    left: var(--section-bar-offset);
+    padding: var(--section-bar-padding);
+    font: var(--section-bar-font);
+
+    border: 1px solid var(--bar-border-color);
+    background-color: var(--bar-background-color);
+    border-radius: var(--ifm-global-radius);
+    color: var(--bar-color);
+
+    display: flex;
+    align-items: center;
+}
+
+.previewSectionBody {
+    font-size: 0.875rem;
+    padding-top: 2rem;
+    margin: 0;
+    border: 1px solid var(--body-border-color);
+    background-color: var(--body-background-color);
+    scrollbar-width: thin;
+}
+
+.errorPreviewSection {
+    --bar-background-color: var(--ifm-color-danger);
+    --bar-border-color: var(--ifm-color-danger-darker);
+    --bar-color: var(--ifm-color-white);
+}
+
+.errorProps {
+    margin: 0.5rem 0 0 1rem;
+    font-size: 0.75rem;
+}
+
+.value {
+    user-select: none;
+
+    .valueName {
+        font-weight: bold;
+    }
+
+    .valueValue {
+        user-select: text;
+    }
+}
+
+
+/* map */
+
+.mapPreviewSection {
+    height: 420px;
+}
+
+.mapPreviewSectionMap {
+    border: 1px solid var(--body-border-color);
+    background-color: var(--body-background-color);
+    border-radius: var(--ifm-global-radius);
+    font-family: var(--ifm-font-family-base);
+    font-size: 0.75rem;
+    line-height: inherit;
+    height: 100%;
+}
+
+
+/* map controls */
+
+.positionControl {
+    z-index: 500;
+    gap: 0.5em;
+    white-space: pre;
+    flex-wrap: wrap;
+
+    max-width: calc(100% - 8rem);
+    min-width: min-content;
+
+    .zoom {
+        min-width: 4ch;
+        text-align: right;
+    }
+
+    .xy {
+        min-width: 9ch;
+        text-align: right;
+    }
+}
+
+.visibilityControl {
+    position: absolute;
+    z-index: 500;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.3rem;
+
+    max-height: calc(100% - 2rem);
+    max-width: calc(100% - 8rem);
+    min-width: min-content;
+    overflow: auto;
+    scrollbar-width: thin;
+
+    font-family: var(--ifm-font-family-monospace);
+
+    background-color: var(--preview-background-color);
+    color: var(--preview-color);
+    border: 1px solid var(--preview-border-color);
+    border-radius: var(--ifm-global-radius);
+}
+
+.visibilityControlItem {
+    display: flex;
+    align-items: center;
+    border-radius: 0.25rem;
+    gap: 0.25rem;
+    padding-right: 0.5rem;
+    line-height: 1;
+
+    &:is(:hover,:focus-within) {
+        background-color: var(--ifm-menu-color-background-hover);
+    }
+
+    input[type='checkbox'] {
+        accent-color: var(--ifm-color-primary);
+    }
+}
+
+
+/* map popups */
+
+.featurePopup {
+    :global .leaflet-popup-content-wrapper {
+        border-radius: var(--ifm-global-radius);
+    }
+
+    :global .leaflet-popup-content-wrapper,
+    :global .leaflet-popup-tip {
+        border: 1px solid var(--preview-border-color);
+        background-color: var(--preview-background-color);
+        color: var(--preview-color);
+        box-shadow: none;
+    }
+
+    :global .leaflet-popup-content {
+        margin: 0.625rem 0.875rem 1rem;
+    }
+}
+
+.featurePopupHeader {
+    margin-bottom: 0.625rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 0.5rem;
+
+    code {
+        padding: 0 0.25rem;
+    }
+}
+
+.featurePopupActions {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.featurePopupAction {
+    width: 100%;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    font-family: inherit;
+    text-align: start;
+    padding: 0.25rem 1rem;
+    margin-bottom: 0.25rem;
+}

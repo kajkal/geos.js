@@ -10,5 +10,7 @@ if (ExecutionEnvironment.canUseDOM) {
         console.log(`'geos.js' fetched, compiled and instantiated in ${(performance.now() - start).toFixed(1)}ms!`);
         console.log(`You can try 'geos.js' right here using the \`geos\` global, like \`geos.point([ 1, 1 ])\``);
         window.geos = geos;
+        window.___params = Object.keys(geos);
+        window.___args = Object.values(geos);
     });
 }

@@ -53,7 +53,7 @@ Validity is defined for each Geometry type as follows:
 
 ## Examples
 
-```js live noInline
+```js live
 const line = lineString([ [ 1, 1 ], [ 2, 2 ] ]);
 const line_valid = isValid(line); // true
 
@@ -62,7 +62,4 @@ const poly = polygon([ // self-touching exterior ring forming hole
 ]);
 const poly_valid1 = isValid(poly); // false
 const poly_valid2 = isValid(poly, { isInvertedRingValid: true }); // true
-
-// this example is alive!
-render(preview({ line, line_valid, poly, poly_valid1, poly_valid2 }));
 ```

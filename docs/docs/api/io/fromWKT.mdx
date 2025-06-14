@@ -29,19 +29,12 @@ Creates a [`Geometry`](../types/Geometry/index.mdx) from Well-Known Text (WKT) r
 
 ## Examples
 
-```js live noInline
+```js live
 const pt = fromWKT('POINT(0 2)');
 const line = fromWKT('LINESTRING(1 2, 2 2, 2 0)');
 const poly = fromWKT('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))');
-
-// this example is alive!
-render(preview({ pt, line, poly }));
 ```
 
-```js live noInline
-// will fix unclosed ring
+```js live title="will fix unclosed ring"
 const poly = fromWKT('POLYGON((0 0, 1 0, 1 1))', { fix: true });
-
-// this example is alive!
-render(preview({ poly }));
 ```

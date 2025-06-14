@@ -23,7 +23,7 @@ Converts an array of geometry objects to its GeoJSON representation.
 
 ## Examples
 
-```js live noInline
+```js live
 const pt = fromWKT('POINT (1 1)');
 const line = fromWKT('LINESTRING (0 0, 1 1)');
 const collection = fromWKT('GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 1 1))');
@@ -33,7 +33,4 @@ const geojsons = jsonifyGeometries([ pt, line, collection ]);
 //     { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
 //     { type: 'GeometryCollection', geometries: [ { type: 'Point', coordinates: [ 1, 1 ] }, { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] } ] },
 // ]
-
-// this example is alive!
-render(preview({ pt, line, collection, geojsons }));
 ```

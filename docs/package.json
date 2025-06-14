@@ -15,25 +15,26 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@docusaurus/core": "3.8.0",
-    "@docusaurus/preset-classic": "3.8.0",
-    "@docusaurus/theme-live-codeblock": "^3.8.0",
+    "@docusaurus/core": "3.8.1",
+    "@docusaurus/preset-classic": "3.8.1",
     "@mdx-js/react": "^3.1.0",
+    "acorn": "^8.15.0",
     "clsx": "^2.1.1",
+    "copy-text-to-clipboard": "^3.2.0",
     "geos.js": "workspace:*",
     "leaflet": "^1.9.4",
-    "prism-react-renderer": "^2.4.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-leaflet": "5.0.0"
+    "react-leaflet": "5.0.0",
+    "react-simple-code-editor": "^0.14.1"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.8.0",
-    "@docusaurus/tsconfig": "3.8.0",
-    "@docusaurus/types": "3.8.0",
+    "@docusaurus/module-type-aliases": "3.8.1",
+    "@docusaurus/tsconfig": "3.8.1",
+    "@docusaurus/types": "3.8.1",
     "@types/leaflet": "^1.9.18",
-    "@types/react": "^19.1.6",
-    "@types/react-dom": "^19.1.5",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
     "typescript": "catalog:"
   },
   "browserslist": {

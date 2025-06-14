@@ -28,11 +28,8 @@ Converts a geometry object to its Well-Known Binary (WKB) representation.
 
 ## Examples
 
-```js live noInline
+```js live
 const pt = point([ Math.E, Math.PI, 1 ]);
 const wkb1 = toWKB(pt); // Uint8Array([...])
 const wkb2 = toWKB(pt, { dim: 2 }); // Uint8Array([...])
-
-// this example is alive!
-render(preview({ pt, wkb1, wkb2 }));
 ```

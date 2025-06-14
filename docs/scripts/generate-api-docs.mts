@@ -183,7 +183,6 @@ interface JsDocData {
         title?: string;
         code: string;
         live?: boolean;
-        vars?: string[]; // (for live examples) list of declared variables to preview
     }[];
 }
 
@@ -336,31 +335,10 @@ void async function main() {
                                 .map(l => l.replace(/^\s*\*(?: |$)/, ''));
                             header = header.replace(/^@example\s*/, '');
                             header = header.replace(/^#live\s*/, () => (live = true, ''));
-                            const code = lines.join('\n').trim();
-                            const vars: string[] = [];
-
-                            if (live) {
-                                const exampleSourceFile = ts.createSourceFile('example.js', code, ts.ScriptTarget.Latest, true);
-                                exampleSourceFile.statements.forEach(statement => {
-                                    if (ts.isVariableStatement(statement)) {
-                                        statement.declarationList.declarations.forEach(declaration => {
-                                            if (ts.isArrayBindingPattern(declaration.name) || ts.isObjectBindingPattern(declaration.name)) {
-                                                declaration.name.elements.forEach(el => {
-                                                    vars.push(el.getText());
-                                                });
-                                            } else {
-                                                vars.push(declaration.name.getText());
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-
                             data.examples.push({
                                 title: header || null,
                                 code: lines.join('\n').trim(),
                                 live,
-                                vars,
                             });
                             break;
                         }
@@ -913,17 +891,9 @@ void async function main() {
             if (!examples.length) return;
 
             this.lines.push('## Examples\n');
-            for (const { title, code, live, vars } of examples) {
-                if (live) {
-                    this.lines.push('```js live noInline');
-                    title && this.lines.push(`// ${title}`);
-                    this.lines.push(code);
-                    this.lines.push('', '// this example is alive!');
-                    this.lines.push(`render(preview({ ${vars.join(', ')} }));`);
-                } else {
-                    this.lines.push('```js' + (title ? ` title="${title}"` : ''));
-                    this.lines.push(code);
-                }
+            for (const { title, code, live } of examples) {
+                this.lines.push('```js' + (live ? ' live' : '') + (title ? ` title="${title}"` : ''));
+                this.lines.push(code);
                 this.lines.push('```', '');
             }
         }

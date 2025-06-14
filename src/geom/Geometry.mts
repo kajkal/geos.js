@@ -123,7 +123,7 @@ export class Geometry {
      * @returns A new geometry that is a copy of this geometry
      *
      * @example
-     * const original = // some geometry
+     * const original = point([ 0, 0 ]); // some geometry
      * const copy = original.clone();
      * // copy can be modified without affecting the original
      */

@@ -1,4 +1,3 @@
-import { themes as prismThemes } from 'prism-react-renderer';
 import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
@@ -87,14 +86,10 @@ const config: Config = {
             copyright: `Copyright © ${new Date().getFullYear()} GEOS.js</br>Built with Docusaurus.`,
         },
         prism: {
-            theme: prismThemes.duotoneLight,
-            darkTheme: prismThemes.gruvboxMaterialDark,
+            theme: { plain: {}, styles: [] },
+            magicComments: [],
         },
     } satisfies Preset.ThemeConfig,
-
-    themes: [
-        '@docusaurus/theme-live-codeblock',
-    ],
 
     plugins: [
         /** for `import wasm_url from 'geos.js/geos_js.wasm';` to work properly */

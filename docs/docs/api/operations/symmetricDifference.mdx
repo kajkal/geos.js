@@ -24,14 +24,10 @@ geometry but not in both geometries (the union minus the intersection).
 
 ## Examples
 
-```js live noInline
-// symmetric difference of two lines
+```js live title="symmetric difference of two lines"
 const a = lineString([ [ 50, 100 ], [ 50, 200 ] ]);
 const b = lineString([ [ 50, 50 ], [ 50, 150 ] ]);
 const ab_sDiff = symmetricDifference(a, b); // 'MULTILINESTRING ((50 150, 50 200), (50 50, 50 100))'
 const ab_sDiff_pg = symmetricDifference(a, b, { gridSize: 15 }); // 'MULTILINESTRING ((45 150, 45 195), (45 45, 45 105))'
 const ba_sDiff = symmetricDifference(b, a); // 'MULTILINESTRING ((50 50, 50 100), (50 150, 50 200))'
-
-// this example is alive!
-render(preview({ a, b, ab_sDiff, ab_sDiff_pg, ba_sDiff }));
 ```
