@@ -19,5 +19,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# API Documentation is generated from the `geos.js` source code
+/docs/api
+
 # monaco-editor extra libs .d.ts declaration files
 /static/types

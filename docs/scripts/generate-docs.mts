@@ -189,7 +189,7 @@ interface JsDocData {
 
 /**
  * Collects data from `./src` source files TypeScript types and JSDoc comments
- * to generate docs.
+ * to generate API Documentation files.
  *
  * 1. The order of categories in the docs sidebar is based on {@link apiSidebar}
  * 2. The order in which the functions will be presented in the docs is based
