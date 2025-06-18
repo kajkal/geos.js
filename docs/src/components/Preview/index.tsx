@@ -14,16 +14,18 @@ interface PreviewProps {
     js: LanguageJavaScript;
     code: string;
     className?: string;
+    isMapOptional?: boolean;
 }
 
 type RenderErrorHandler = (error: Error, id: string) => void;
 
 
-export default function Preview({ js, code, className }: PreviewProps) {
+export default function Preview(props: PreviewProps) {
     if (!window.geos) {
         throw window.geosPromise;
     }
 
+    const { js, code } = props;
     const [ data, setData ] = React.useState(() => js.evalCode(code));
 
     React.useEffect(() => {
@@ -39,10 +41,10 @@ export default function Preview({ js, code, className }: PreviewProps) {
     }, []);
 
     // when no features in the first render = map is optional
-    const isMapOptional = React.useMemo(() => !data.features?.length, []);
+    const isMapOptional = React.useMemo(() => props.isMapOptional ?? !data.features?.length, []);
 
     return (
-        <div className={clsx(styles.preview, className)}>
+        <div className={clsx(styles.preview, props.className)}>
             {(isMapOptional && !data.features?.length) ? null : (
                 <MapPreview
                     features={data.features}

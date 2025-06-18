@@ -141,7 +141,7 @@ export class LanguageJavaScript extends Language {
 
     evalCode(code: string): EvalCodeResult {
         try {
-            const ast = (this.lastCode = code)
+            const ast = (this.lastCode === code)
                 ? this.lastAST
                 : parse(code, this.acornOptions);
 

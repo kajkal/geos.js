@@ -93,7 +93,9 @@ const config: Config = {
 
     plugins: [
         /** for `import wasm_url from 'geos.js/geos_js.wasm';` to work properly */
-        './plugins/wasm-loader/index.js',
+        './plugins/wasm-loader.js',
+        /** monaco-editor, for `import geojsonTypes from '/types/geojson.d.ts?raw';` to work properly */
+        './plugins/monaco-editor-loader.js',
     ],
 
     clientModules: [

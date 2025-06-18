@@ -93,6 +93,11 @@
 }
 
 
+.navbar__logo {
+    height: 2rem;
+    width: 2rem;
+}
+
 .header-github-link::before {
     content: '';
     width: 24px;

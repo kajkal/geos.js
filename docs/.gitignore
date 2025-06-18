@@ -18,3 +18,6 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# monaco-editor extra libs .d.ts declaration files
+/static/types

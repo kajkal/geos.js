@@ -1,8 +1,15 @@
 # GEOS.js
 
-`GEOS.js` is a proof of concept of an easy-to-use geospatial library built on top of [GEOS](https://github.com/libgeos/geos).
+(WIP) `GEOS.js` is an easy-to-use geospatial library built on top of [GEOS](https://github.com/libgeos/geos).
 
 The goal of this library is to connect [turf](https://github.com/Turfjs/turf)-like ease of use with the reliability of [GEOS](https://github.com/libgeos/geos) (used by [PostGIS](https://postgis.net/), [QGIS](https://qgis.org/), [GDAL](https://gdal.org/), [Shapely](https://github.com/shapely/shapely) and many others).
+
+
+## Try it out
+
+Try out `GEOS.js` in the interactive [playground](https://kajkal.github.io/geos.js/playground)!
+
+You can also check out [API Documentation](https://kajkal.github.io/geos.js/docs/category/setup) for live examples!
 
 
 ## Project structure

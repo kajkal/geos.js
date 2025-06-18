@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { basename, dirname, join, relative } from 'node:path';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import ts from 'typescript';
 
 
@@ -200,7 +200,8 @@ interface JsDocData {
 void async function main() {
     const ROOT_DIR = join(import.meta.dirname, '../..');
     const SRC_INDEX_FILE_PATH = join(ROOT_DIR, './src/index.mts');
-    const DOCS_DIR_PATH = join(ROOT_DIR, './docs/docs/api');
+    const DOCS_DIR = join(ROOT_DIR, './docs');
+    const DOCS_API_DIR = join(DOCS_DIR, './docs/api');
 
     /** Process source files */
     const program = ts.createProgram([ SRC_INDEX_FILE_PATH ], {});
@@ -953,7 +954,7 @@ void async function main() {
             ];
 
             const fileContent = frontMatterFileMetadata.concat(this.lines).join('\n');
-            const filePath = join(DOCS_DIR_PATH, path);
+            const filePath = join(DOCS_API_DIR, path);
             await writeFile(filePath, fileContent, { encoding: 'utf8' });
             console.log(`${filePath} generated`);
         }
@@ -962,7 +963,7 @@ void async function main() {
 
         static async createCategoryDirectory(category: SidebarCategory): Promise<void> {
             if (this.CREATED_DIRS.has(category)) return;
-            const categoryDir = join(DOCS_DIR_PATH, category.dir);
+            const categoryDir = join(DOCS_API_DIR, category.dir);
             await mkdir(categoryDir, { recursive: true });
             const siblings = category.parent?.children || apiSidebar;
             const position = siblings.indexOf(category);
@@ -1104,5 +1105,28 @@ void async function main() {
             writer.lines.push(`</div>`, '');
         }
         await writer?.saveToFile();
+    }
+
+
+    /** Generate Monaco Editor extra libs */
+    {
+        console.log('Monaco Editor extra libs');
+        const DOCS_TYPES_DIR = join(DOCS_DIR, './static/types');
+        await mkdir(DOCS_TYPES_DIR, { recursive: true });
+
+        const geojsonTypes = await readFile(join(ROOT_DIR, './node_modules/@types/geojson/index.d.ts'), { encoding: 'utf8' });
+        const geojsonExtraLib = `declare module "geojson" {\n${geojsonTypes}}\n`;
+        const geojsonExtraLibPath = join(DOCS_TYPES_DIR, 'geojson.d.ts');
+        await writeFile(geojsonExtraLibPath, geojsonExtraLib, { encoding: 'utf8' });
+        console.log(`${geojsonExtraLibPath} generated`);
+
+        const geosTypes = await readFile(join(ROOT_DIR, './dist/esm/index.d.mts'), { encoding: 'utf8' });
+        const geosImportDeclarations = [];
+        let geosExtraLib = geosTypes.replace(/import \{.+?} from .+?;/sg, (m) => (geosImportDeclarations.push(m), ''));
+        geosExtraLib = geosExtraLib.replace(/\bexport (?:type )?\{.+?};/sg, '');
+        geosExtraLib = `${geosImportDeclarations.join('\n')}\ndeclare global {\n${geosExtraLib.trim()}\n}`;
+        const geosExtraLibPath = join(DOCS_TYPES_DIR, 'geos.js.d.ts');
+        await writeFile(geosExtraLibPath, geosExtraLib, { encoding: 'utf8' });
+        console.log(`${geosExtraLibPath} generated`);
     }
 }();

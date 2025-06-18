@@ -1,0 +1,89 @@
+.editorPlaceholder {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--code-background);
+    color: var(--code-foreground);
+
+    pre, code {
+        background-color: inherit;
+        color: inherit;
+    }
+
+    pre {
+        font-size: 14px !important;
+        padding: 16px 0 16px 64px;
+        overflow: hidden;
+        cursor: default;
+        user-select: none;
+    }
+
+    span {
+        display: block;
+        height: 19px;
+        line-height: 19px;
+    }
+}
+
+.playgroundPage {
+    display: flex;
+
+    &[data-dir="row"] {
+        flex-direction: row;
+        height: calc(100svh - var(--ifm-navbar-height));
+
+        .editor {
+            min-width: 1rem;
+            width: 50%;
+            position: relative;
+        }
+
+        .editorResizer {
+            cursor: ew-resize;
+            border-left-width: 1px;
+            padding-right: var(--resizer-area);
+            right: calc(-1 * var(--resizer-area));
+            top: 0;
+            bottom: 0;
+        }
+
+        .preview {
+            flex: 1;
+            min-width: 1rem;
+            overflow: auto;
+            scrollbar-width: thin;
+            container-type: inline-size;
+
+            & > * {
+                padding-right: calc(1rem - (100cqw - 100%));
+            }
+        }
+
+        :global .leaflet-container {
+            height: 50svh;
+        }
+    }
+
+    &[data-dir="col"] {
+        flex-direction: column;
+
+        .editor {
+            min-height: 6rem;
+            height: 30svh;
+            width: 100%;
+            position: relative;
+        }
+
+        .editorResizer {
+            cursor: ns-resize;
+            border-top-width: 1px;
+            padding-bottom: var(--resizer-area);
+            bottom: calc(-1 * var(--resizer-area));
+            width: 100%;
+        }
+
+        .preview {
+            min-height: 1rem;
+        }
+    }
+}
