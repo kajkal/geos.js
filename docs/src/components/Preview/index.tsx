@@ -5,6 +5,7 @@ import type L from 'leaflet';
 import { circleMarker, CRS, DomEvent, latLngBounds } from 'leaflet';
 import { GeoJSON, MapContainer, Popup, useMap } from 'react-leaflet';
 import { ACTIVE, COLOR, EvalCodeResult, FeatureData, GGEOM, KEY, LanguageJavaScript, LAYER, ValueData } from '@site/src/utils/LanguageJavaScript';
+import { Resizer } from '@site/src/components/Resizer';
 
 import styles from './styles.module.css';
 
@@ -173,8 +174,45 @@ const MapPreview: React.FunctionComponent<MapPreviewProps> = ({ features = [], b
         });
     }, [ map, bounds ]);
 
+    React.useEffect(() => {
+        if (map) {
+            const ro = new ResizeObserver(() => {
+                map.invalidateSize();
+            });
+            ro.observe(map.getContainer());
+            return () => ro.disconnect();
+        }
+    }, [ map ]);
+
+    const handleResize: React.PointerEventHandler = React.useCallback((e) => {
+        const mapEl = map.getContainer();
+        const rect = mapEl.getBoundingClientRect();
+        const clickPoint = { y: e.clientY };
+
+        const handlePointerMove = (e: PointerEvent) => {
+            const dy = e.clientY - clickPoint.y;
+            const newHeightInPx = rect.height + dy;
+            mapEl.style.height = `${newHeightInPx}px`;
+        };
+
+        // set cursor
+        document.body.style.cursor = 'ns-resize';
+        mapEl.style.userSelect = 'none';
+        mapEl.style.pointerEvents = 'none';
+
+        document.addEventListener('pointermove', handlePointerMove);
+        document.addEventListener('pointerup', () => {
+            document.removeEventListener('pointermove', handlePointerMove);
+
+            // reset cursor
+            document.body.style.removeProperty('cursor');
+            mapEl.style.removeProperty('user-select');
+            mapEl.style.removeProperty('pointer-events');
+        }, { once: true });
+    }, [ map ]);
+
     return (
-        <div className={clsx(styles.previewSection, styles.mapPreviewSection)}>
+        <div className={styles.previewSection}>
             <MapContainer
                 ref={setMap}
                 className={styles.mapPreviewSectionMap}
@@ -206,6 +244,10 @@ const MapPreview: React.FunctionComponent<MapPreviewProps> = ({ features = [], b
             {map ? (
                 <PositionControl map={map} />
             ) : null}
+            <Resizer
+                className={styles.mapPreviewSectionMapResizer}
+                onPointerDown={handleResize}
+            />
         </div>
     );
 };

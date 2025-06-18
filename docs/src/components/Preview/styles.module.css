@@ -69,10 +69,6 @@
 
 /* map */
 
-.mapPreviewSection {
-    height: 420px;
-}
-
 .mapPreviewSectionMap {
     border: 1px solid var(--body-border-color);
     background-color: var(--body-background-color);
@@ -80,7 +76,18 @@
     font-family: var(--ifm-font-family-base);
     font-size: 0.75rem;
     line-height: inherit;
-    height: 100%;
+
+    min-height: 1rem;
+    height: 420px;
+}
+
+.mapPreviewSectionMapResizer {
+    cursor: ns-resize;
+    border-top-width: 1px;
+    padding-bottom: var(--resizer-area);
+    bottom: calc(-1 * var(--resizer-area));
+    left: var(--ifm-global-radius);
+    right: var(--ifm-global-radius);
 }
 
 

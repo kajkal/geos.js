@@ -1,0 +1,18 @@
+.resizer {
+    --resizer-area: 6px;
+
+    position: absolute;
+    user-select: none;
+    touch-action: none;
+
+    border: 0 solid var(--preview-border-color);
+    transition: border-color var(--ifm-transition-fast);
+
+    &:hover {
+        border-color: var(--ifm-color-emphasis-400);
+    }
+
+    &:active {
+        border-color: var(--ifm-color-emphasis-600);
+    }
+}
