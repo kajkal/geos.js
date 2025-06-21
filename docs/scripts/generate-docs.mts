@@ -993,6 +993,9 @@ void async function main() {
 
     }
 
+
+    console.log('API Documentation');
+
     /** Generate documentation files for functions */
     for (const [ _name, data ] of symbolMap) {
         if (data.kind !== Kind.function) continue;

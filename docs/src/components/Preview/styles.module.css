@@ -90,6 +90,23 @@
     right: var(--ifm-global-radius);
 }
 
+.checkboxLabel {
+    display: flex;
+    align-items: center;
+    border-radius: 0.25rem;
+    gap: 0.25rem;
+    line-height: 1;
+    user-select: none;
+
+    &:is(:hover,:focus-within) {
+        background-color: var(--ifm-menu-color-background-hover);
+    }
+
+    input[type='checkbox'] {
+        accent-color: var(--ifm-color-primary);
+    }
+}
+
 
 /* map controls */
 
@@ -135,20 +152,7 @@
 }
 
 .visibilityControlItem {
-    display: flex;
-    align-items: center;
-    border-radius: 0.25rem;
-    gap: 0.25rem;
     padding-right: 0.5rem;
-    line-height: 1;
-
-    &:is(:hover,:focus-within) {
-        background-color: var(--ifm-menu-color-background-hover);
-    }
-
-    input[type='checkbox'] {
-        accent-color: var(--ifm-color-primary);
-    }
 }
 
 
@@ -189,6 +193,14 @@
     list-style: none;
     margin: 0;
     padding: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--ifm-list-item-margin);
+
+    li {
+        margin: 0 !important;
+    }
 }
 
 .featurePopupAction {
@@ -198,5 +210,30 @@
     font-family: inherit;
     text-align: start;
     padding: 0.25rem 1rem;
-    margin-bottom: 0.25rem;
+}
+
+.featurePopupCheckbox {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.25rem 1rem 0.25rem 0;
+    border-radius: var(--ifm-global-radius);
+}
+
+.vertex:hover {
+    fill: var(--preview__active);
+}
+
+.vertexTooltip {
+    background-color: var(--preview-background-color);
+    border-color: var(--preview-border-color);
+    color: var(--preview-color);
+
+    font: 0.75rem/1 var(--ifm-font-family-monospace);
+    border-radius: var(--ifm-global-radius);
+    padding: 0.25em;
+    box-shadow: none;
+
+    &::before {
+        content: none;
+    }
 }

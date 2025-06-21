@@ -2,9 +2,9 @@ import React from 'react';
 import clsx from 'clsx';
 import copy from 'copy-text-to-clipboard';
 import type L from 'leaflet';
-import { circleMarker, CRS, DomEvent, latLngBounds } from 'leaflet';
+import { circleMarker, CRS, DomEvent, featureGroup, LatLng, LatLngBounds } from 'leaflet';
 import { GeoJSON, MapContainer, Popup, useMap } from 'react-leaflet';
-import { ACTIVE, COLOR, EvalCodeResult, FeatureData, GGEOM, KEY, LanguageJavaScript, LAYER, ValueData } from '@site/src/utils/LanguageJavaScript';
+import { EvalCodeResult, FeatureData, LanguageJavaScript, ValueData } from '@site/src/utils/LanguageJavaScript';
 import { Resizer } from '@site/src/components/Resizer';
 
 import styles from './styles.module.css';
@@ -60,7 +60,7 @@ export default function Preview(props: PreviewProps) {
 
 
 class GeoJSONErrorBoundary extends React.Component<
-    { children: React.ReactNode; data: FeatureData; onError: RenderErrorHandler; },
+    { children: React.ReactNode; f: FeatureData; onError: RenderErrorHandler; },
     { error?: Error; }
 > {
 
@@ -71,10 +71,10 @@ class GeoJSONErrorBoundary extends React.Component<
     }
 
     componentDidCatch(error: any) {
-        const { data } = this.props;
-        error.name = `Cannot render geometry "${data.id}"`;
-        error.WKT = window.geos.toWKT(data[ GGEOM ]);
-        this.props.onError(error, data.id);
+        const { f } = this.props;
+        error.name = `Cannot render geometry "${f.id}"`;
+        error.WKT = window.geos.toWKT(f.geosGeom);
+        this.props.onError(error, f.id);
     }
 
     render() {
@@ -168,7 +168,7 @@ interface MapPreviewProps {
 
 const MapPreview: React.FunctionComponent<MapPreviewProps> = ({ features = [], bbox: [ x1, y1, x2, y2 ], onError }) => {
     const [ map, setMap ] = React.useState<L.Map>(null);
-    const bounds = React.useMemo(() => latLngBounds([ [ y1, x1 ], [ y2, x2 ] ]), [ x1, y1, x2, y2 ]);
+    const bounds = React.useMemo(() => new LatLngBounds([ [ y1, x1 ], [ y2, x2 ] ]), [ x1, y1, x2, y2 ]);
 
     React.useEffect(() => {
         map?.whenReady((e) => {
@@ -227,18 +227,8 @@ const MapPreview: React.FunctionComponent<MapPreviewProps> = ({ features = [], b
                 inertia={false}
             >
                 {features.map((f) => (
-                    <GeoJSONErrorBoundary key={f[ KEY ]} data={f} onError={onError}>
-                        <GeoJSON
-                            ref={el => {
-                                f[ LAYER ] = el;
-                            }}
-                            data={f}
-                            style={defaultStyle}
-                            eventHandlers={featureLayerEventHandlers}
-                            pointToLayer={pointToLayer}
-                        >
-                            <FeaturePopup f={f} />
-                        </GeoJSON>
+                    <GeoJSONErrorBoundary key={f.key} f={f} onError={onError}>
+                        <GeoJSONFeature f={f} />
                     </GeoJSONErrorBoundary>
                 ))}
                 <VisibilityControl features={features} />
@@ -313,20 +303,20 @@ const VisibilityControl: React.FunctionComponent<{ features: FeatureData[] }> = 
         >
             {features.map((f) => (
                 <label
-                    key={f.id}
+                    key={f.key}
                     title={f.geometry.type}
-                    className={styles.visibilityControlItem}
-                    onPointerEnter={() => f[ LAYER ].setStyle(hoverStyle)}
-                    onPointerLeave={() => f[ LAYER ].setStyle(restStyle)}
+                    className={clsx(styles.checkboxLabel, styles.visibilityControlItem)}
+                    onPointerEnter={() => f.layer.setStyle(hoverStyle)}
+                    onPointerLeave={() => f.layer.setStyle(restStyle)}
                 >
                     <input
                         type='checkbox'
                         defaultChecked
                         onChange={(e) => {
                             if (e.target.checked) {
-                                map.addLayer(f[ LAYER ]);
+                                map.addLayer(f.layer);
                             } else {
-                                map.removeLayer(f[ LAYER ]);
+                                map.removeLayer(f.layer);
                             }
                         }}
                     />
@@ -337,7 +327,139 @@ const VisibilityControl: React.FunctionComponent<{ features: FeatureData[] }> = 
     );
 };
 
-const FeaturePopup: React.FunctionComponent<{ f: FeatureData }> = ({ f }) => {
+
+const GeoJSONFeature: React.FunctionComponent<{ f: FeatureData; }> = ({ f }) => {
+    const [ isVLayerVisible, handleVLayerVisibilityChange ] = useVerticesLayer(f, false);
+    return (
+        <GeoJSON
+            ref={el => {
+                f.layer = el;
+            }}
+            data={f}
+            style={defaultStyle}
+            eventHandlers={featureLayerEventHandlers}
+            pointToLayer={pointToLayer}
+        >
+            <FeaturePopup
+                f={f}
+                isVLayerVisible={isVLayerVisible}
+                onVLayerVisibilityChange={handleVLayerVisibilityChange}
+            />
+        </GeoJSON>
+    );
+};
+
+const useVerticesLayer = (f: FeatureData, initialVisibility: boolean) => {
+    const [ isVisible, setIsVisible ] = React.useState(initialVisibility);
+
+    React.useEffect(() => {
+        if (!isVisible) {
+            if (f.vLayer) {
+                f.layer.removeLayer(f.vLayer);
+            }
+            return;
+        }
+
+        if (!f.vLayer) {
+            const outerVertexStyle: L.CircleMarkerOptions = {
+                radius: 3.25,
+                color: `var(--ifm-color-emphasis-700)`,
+                fillColor: f.color,
+                fillOpacity: 1,
+                weight: 0.75,
+                className: styles.vertex,
+            };
+
+            const innerVertexStyle: L.CircleMarkerOptions = {
+                radius: 1.75,
+                color: `var(--ifm-color-emphasis-700)`,
+                fillColor: f.color,
+                fillOpacity: 1,
+                weight: 1.25,
+                className: styles.vertex,
+            };
+
+            const xyTooltipOptions: L.TooltipOptions = {
+                className: styles.vertexTooltip,
+                direction: 'top',
+                opacity: 1,
+            };
+
+            const vertexMarkers: L.CircleMarker[] = [];
+            const addVertexMarkers = (pts: number[][], style: L.CircleMarkerOptions) => {
+                for (const pt of pts) {
+                    const x = String(pt[ 0 ]), y = String(pt[ 1 ]);
+                    const marker = circleMarker(new LatLng(pt[ 1 ], pt[ 0 ], pt[ 2 ]), style)
+                        .bindTooltip(`[ ${x}, ${y} ]`, xyTooltipOptions);
+                    const diff = y.length - x.length;
+                    if (diff) { // to align space between numbers
+                        marker.on('tooltipopen', e => {
+                            e.tooltip.getElement().style.marginLeft = `${diff / 2}ch`;
+                        });
+                    }
+                    vertexMarkers.push(marker);
+                }
+            };
+
+            const visitVertices = (geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>) => {
+                switch (geometry.type) {
+                    case 'Point': {
+                        addVertexMarkers([ geometry.coordinates ], outerVertexStyle);
+                        break;
+                    }
+                    case 'MultiPoint':
+                    case 'LineString': {
+                        const pts = geometry.coordinates;
+                        addVertexMarkers(pts, outerVertexStyle);
+                        break;
+                    }
+                    case 'MultiLineString':
+                    case 'Polygon': {
+                        const ppts = geometry.coordinates;
+                        for (let i = 0; i < ppts.length; i++) {
+                            addVertexMarkers(ppts[ i ], (i && geometry.type === 'Polygon') ? innerVertexStyle : outerVertexStyle);
+                        }
+                        break;
+                    }
+                    case 'MultiPolygon': {
+                        const pppts = geometry.coordinates;
+                        for (const ppts of pppts) {
+                            for (let i = 0; i < ppts.length; i++) {
+                                addVertexMarkers(ppts[ i ], i ? innerVertexStyle : outerVertexStyle);
+                            }
+                        }
+                        break;
+                    }
+                    case 'GeometryCollection': {
+                        for (const geom of geometry.geometries) {
+                            visitVertices(geom);
+                        }
+                    }
+                }
+            };
+            visitVertices(f.geometry);
+
+            f.vLayer = featureGroup(vertexMarkers);
+        }
+
+        f.layer.addLayer(f.vLayer);
+    }, [ f, isVisible ]);
+
+    const handleVLayerVisibilityChange: React.ChangeEventHandler<HTMLInputElement> = React.useCallback((e) => {
+        setIsVisible(e.target.checked);
+    }, [ setIsVisible ]);
+
+    return [ isVisible, handleVLayerVisibilityChange ] as const;
+};
+
+
+interface FeaturePopupProps {
+    f: FeatureData;
+    isVLayerVisible: boolean;
+    onVLayerVisibilityChange: React.ChangeEventHandler<HTMLInputElement>;
+}
+
+const FeaturePopup: React.FunctionComponent<FeaturePopupProps> = ({ f, isVLayerVisible, onVLayerVisibilityChange }) => {
     const [ isCopied, setIsCopied ] = React.useState<'wkt' | 'json' | false>(false);
 
     React.useEffect(() => {
@@ -356,6 +478,16 @@ const FeaturePopup: React.FunctionComponent<{ f: FeatureData }> = ({ f }) => {
             </header>
             <ul className={styles.featurePopupActions}>
                 <li>
+                    <label className={clsx(styles.checkboxLabel, styles.featurePopupCheckbox)}>
+                        <input
+                            type='checkbox'
+                            checked={isVLayerVisible}
+                            onChange={onVLayerVisibilityChange}
+                        />
+                        show vertices
+                    </label>
+                </li>
+                <li>
                     <button
                         className={clsx('button', 'button--outline', styles.featurePopupAction, isCopied === 'json' ? 'button--success' : 'button--secondary')}
                         onClick={() => {
@@ -370,7 +502,7 @@ const FeaturePopup: React.FunctionComponent<{ f: FeatureData }> = ({ f }) => {
                     <button
                         className={clsx('button', 'button--outline', styles.featurePopupAction, isCopied === 'wkt' ? 'button--success' : 'button--secondary')}
                         onClick={() => {
-                            copy(window.geos.toWKT(f[ GGEOM ]));
+                            copy(window.geos.toWKT(f.geosGeom));
                             setIsCopied('wkt');
                         }}
                     >
@@ -382,11 +514,13 @@ const FeaturePopup: React.FunctionComponent<{ f: FeatureData }> = ({ f }) => {
     );
 };
 
+
 const defaultStyle: L.StyleFunction = (feature) => {
+    const f = feature as FeatureData;
     return {
         radius: 4,
-        color: `var(--preview__${feature[ COLOR ]})`,
-        fillColor: `var(--preview__${feature[ COLOR ]})`,
+        color: f.color,
+        fillColor: f.color,
         fillOpacity: 0.3,
         opacity: 0.5,
         stroke: true,
@@ -395,34 +529,46 @@ const defaultStyle: L.StyleFunction = (feature) => {
 };
 
 const hoverStyle: L.StyleFunction = (feature) => {
-    feature[ LAYER ].bringToFront();
-    if (feature[ ACTIVE ]) return;
-    return {
-        fillOpacity: 0.6,
-        opacity: 1,
-        color: 'var(--preview__active)',
-        weight: 2.5,
-    };
+    if (feature?.constructor === FeatureData) {
+        const f = feature as FeatureData;
+        f.layer.bringToFront();
+        if (f.isActive) return;
+        return {
+            fillOpacity: 0.6,
+            opacity: 1,
+            color: 'var(--preview__active)',
+            weight: 2.5,
+        };
+    }
 };
 
 const restStyle: L.StyleFunction = (feature) => {
-    if (feature[ ACTIVE ]) return;
-    return defaultStyle(feature);
+    if (feature?.constructor === FeatureData) {
+        const f = feature as FeatureData;
+        if (f.isActive) return;
+        return defaultStyle(feature);
+    }
 };
 
 const activeStyle: L.StyleFunction = (feature) => {
-    feature[ ACTIVE ] = true;
-    return {
-        fillOpacity: 0.85,
-        opacity: 1,
-        color: 'var(--preview__active)',
-        weight: 2.5,
-    };
+    if (feature?.constructor === FeatureData) {
+        const f = feature as FeatureData;
+        f.isActive = true;
+        return {
+            fillOpacity: 0.85,
+            opacity: 1,
+            color: 'var(--preview__active)',
+            weight: 2.5,
+        };
+    }
 };
 
 const resetActiveStyle: L.StyleFunction = (feature) => {
-    feature[ ACTIVE ] = false;
-    return defaultStyle(feature);
+    if (feature?.constructor === FeatureData) {
+        const f = feature as FeatureData;
+        f.isActive = false;
+        return defaultStyle(feature);
+    }
 };
 
 

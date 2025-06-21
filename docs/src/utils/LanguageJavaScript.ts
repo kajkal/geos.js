@@ -4,23 +4,37 @@ import { Options as AcornOptions, parse, Pattern, Program, Token, tokTypes } fro
 import { escapeHtml, Language } from '@site/src/utils/Language';
 
 
-export const KEY = Symbol('key');
-export const GGEOM = Symbol('geos-geom');
-export const LAYER = Symbol('layer');
-export const ACTIVE = Symbol('is-active');
-export const COLOR = Symbol('i');
+export class FeatureData {
 
-export interface FeatureData {
-    id: string; // variable name
-    type: 'Feature';
-    properties: object;
+    id: string;
+    type = 'Feature' as const;
     geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>;
-    [ KEY ]: string;
-    [ COLOR ]: number;
-    [ ACTIVE ]?: boolean;
-    [ GGEOM ]?: InstanceType<typeof window.geos.Geometry>;
-    [ LAYER ]?: L.GeoJSON;
+    properties: object;
+
+    key: string;
+    color: `var(--preview__${number})`;
+    geosGeom: InstanceType<typeof window.geos.Geometry>;
+    isActive?: boolean
+    layer?: L.GeoJSON;
+    vLayer?: L.FeatureGroup; // vertices layer
+
+    constructor(
+        name: string,
+        geosGeom: InstanceType<typeof window.geos.Geometry>,
+        keyPrefix: string,
+        colorIdx: number,
+    ) {
+        this.id = name;
+        this.geometry = geosGeom.toJSON();
+        this.properties = {};
+
+        this.key = keyPrefix + name;
+        this.color = `var(--preview__${colorIdx})`;
+        this.geosGeom = geosGeom;
+    }
+
 }
+
 
 export type ValueData = [ key: string, value: any ];
 
@@ -166,21 +180,13 @@ export class LanguageJavaScript extends Language {
             let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
             let i = 0;
 
-            const key = Math.random().toString(36).slice(2);
+            const keyPrefix = Math.random().toString(36).slice(2);
 
             function addFeature(k: string, v: InstanceType<typeof window.geos.Geometry>) {
                 if (!renderableGeometryTypes.has(v.type()) || window.geos.isEmpty(v)) {
                     values.push([ k, window.geos.toWKT(v) ]);
                 } else {
-                    features.push({
-                        id: k,
-                        type: 'Feature',
-                        properties: {},
-                        geometry: v.toJSON(),
-                        [ KEY ]: key + k,
-                        [ COLOR ]: (i++) % 8,
-                        [ GGEOM ]: v,
-                    });
+                    features.push(new FeatureData(k, v, keyPrefix, (i++) % 8));
                     const bbox = window.geos.bounds(v);
                     x1 = Math.min(x1, bbox[ 0 ]);
                     y1 = Math.min(y1, bbox[ 1 ]);
