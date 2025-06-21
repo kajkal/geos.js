@@ -26,6 +26,7 @@
     "copy-text-to-clipboard": "^3.2.0",
     "geos.js": "workspace:*",
     "leaflet": "^1.9.4",
+    "leaflet-rotatedmarker": "^0.2.0",
     "monaco-editor": "^0.52.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

@@ -17,6 +17,7 @@ export class FeatureData {
     isActive?: boolean
     layer?: L.GeoJSON;
     vLayer?: L.FeatureGroup; // vertices layer
+    dLayer?: L.FeatureGroup; // direction/winding layer
 
     constructor(
         name: string,

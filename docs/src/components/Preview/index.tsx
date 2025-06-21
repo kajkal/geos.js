@@ -2,8 +2,9 @@ import React from 'react';
 import clsx from 'clsx';
 import copy from 'copy-text-to-clipboard';
 import type L from 'leaflet';
-import { circleMarker, CRS, DomEvent, featureGroup, LatLng, LatLngBounds } from 'leaflet';
+import { circleMarker, CRS, divIcon, DomEvent, featureGroup, LatLng, LatLngBounds, marker } from 'leaflet';
 import { GeoJSON, MapContainer, Popup, useMap } from 'react-leaflet';
+import 'leaflet-rotatedmarker';
 import { EvalCodeResult, FeatureData, LanguageJavaScript, ValueData } from '@site/src/utils/LanguageJavaScript';
 import { Resizer } from '@site/src/components/Resizer';
 
@@ -329,7 +330,8 @@ const VisibilityControl: React.FunctionComponent<{ features: FeatureData[] }> = 
 
 
 const GeoJSONFeature: React.FunctionComponent<{ f: FeatureData; }> = ({ f }) => {
-    const [ isVLayerVisible, handleVLayerVisibilityChange ] = useVerticesLayer(f, false);
+    const [ isVLayerVisible, onVLayerVisibilityChange ] = useVerticesLayer(f, false);
+    const [ isDLayerVisible, onDLayerVisibilityChange ] = useDirectionLayer(f, false);
     return (
         <GeoJSON
             ref={el => {
@@ -343,7 +345,9 @@ const GeoJSONFeature: React.FunctionComponent<{ f: FeatureData; }> = ({ f }) => 
             <FeaturePopup
                 f={f}
                 isVLayerVisible={isVLayerVisible}
-                onVLayerVisibilityChange={handleVLayerVisibilityChange}
+                onVLayerVisibilityChange={onVLayerVisibilityChange}
+                isDLayerVisible={isDLayerVisible}
+                onDLayerVisibilityChange={onDLayerVisibilityChange}
             />
         </GeoJSON>
     );
@@ -445,11 +449,94 @@ const useVerticesLayer = (f: FeatureData, initialVisibility: boolean) => {
         f.layer.addLayer(f.vLayer);
     }, [ f, isVisible ]);
 
-    const handleVLayerVisibilityChange: React.ChangeEventHandler<HTMLInputElement> = React.useCallback((e) => {
+    const handleVisibilityChange: React.ChangeEventHandler<HTMLInputElement> = React.useCallback((e) => {
         setIsVisible(e.target.checked);
     }, [ setIsVisible ]);
 
-    return [ isVisible, handleVLayerVisibilityChange ] as const;
+    return [ isVisible, handleVisibilityChange ] as const;
+};
+
+const useDirectionLayer = (f: FeatureData, initialVisibility: boolean) => {
+    const [ isVisible, setIsVisible ] = React.useState(initialVisibility);
+
+    React.useEffect(() => {
+        if (!isVisible) {
+            if (f.dLayer) {
+                f.layer.removeLayer(f.dLayer);
+            }
+            return;
+        }
+
+        if (!f.dLayer) {
+            const getArrowIcon = (path: string, stroke: string) => {
+                const arrowSvg = `<svg viewBox='0 0 14 14'><path d='${path}' fill='none' stroke='${stroke}' stroke-width='1.5'/></svg>`;
+                return divIcon({
+                    className: 'arrow-icon',
+                    html: arrowSvg,
+                    iconSize: [ 14, 14 ],
+                    iconAnchor: [ 7, 7 ],
+                });
+            };
+            const outerArrowIcon = getArrowIcon('m4 2 7 5-7 5', f.color);
+            const innerArrowIcon = getArrowIcon('m5 4 5 3-5 3', f.color);
+
+            const arrows: L.Marker[] = [];
+            const addArrows = (pts: number[][], icon: L.DivIcon) => {
+                for (let i = 0; i < pts.length - 1; i++) {
+                    const [ x1, y1 ] = pts[ i ], [ x2, y2 ] = pts[ i + 1 ];
+                    const arrow = marker(new LatLng(y1 + (y2 - y1) / 3, x1 + (x2 - x1) / 3), {
+                        icon,
+                        interactive: false,
+                        rotationAngle: -Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI,
+                    } as (L.MarkerOptions & { rotationAngle: number; }));
+                    arrows.push(arrow);
+                }
+            };
+
+            const getArrows = (geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>) => {
+                switch (geometry.type) {
+                    case 'LineString': {
+                        const pts = geometry.coordinates;
+                        addArrows(pts, outerArrowIcon);
+                        break;
+                    }
+                    case 'MultiLineString':
+                    case 'Polygon': {
+                        const ppts = geometry.coordinates;
+                        for (let i = 0; i < ppts.length; i++) {
+                            addArrows(ppts[ i ], (i && geometry.type === 'Polygon') ? innerArrowIcon : outerArrowIcon);
+                        }
+                        break;
+                    }
+                    case 'MultiPolygon': {
+                        const pppts = geometry.coordinates;
+                        for (const ppts of pppts) {
+                            for (let i = 0; i < ppts.length; i++) {
+                                addArrows(ppts[ i ], i ? innerArrowIcon : outerArrowIcon);
+                            }
+                        }
+                        break;
+                    }
+                    case 'GeometryCollection': {
+                        for (const geom of geometry.geometries) {
+                            getArrows(geom);
+                        }
+                    }
+                }
+            };
+            getArrows(f.geometry);
+
+            f.dLayer = featureGroup(arrows);
+        }
+
+        f.layer.addLayer(f.dLayer);
+    }, [ f, isVisible ]);
+
+    const handleVisibilityChange: React.ChangeEventHandler<HTMLInputElement> = React.useCallback((e) => {
+        setIsVisible(e.target.checked);
+    }, [ setIsVisible ]);
+
+    return [ isVisible, handleVisibilityChange ] as const;
 };
 
 
@@ -457,9 +544,11 @@ interface FeaturePopupProps {
     f: FeatureData;
     isVLayerVisible: boolean;
     onVLayerVisibilityChange: React.ChangeEventHandler<HTMLInputElement>;
+    isDLayerVisible: boolean;
+    onDLayerVisibilityChange: React.ChangeEventHandler<HTMLInputElement>;
 }
 
-const FeaturePopup: React.FunctionComponent<FeaturePopupProps> = ({ f, isVLayerVisible, onVLayerVisibilityChange }) => {
+const FeaturePopup: React.FunctionComponent<FeaturePopupProps> = ({ f, ...props }) => {
     const [ isCopied, setIsCopied ] = React.useState<'wkt' | 'json' | false>(false);
 
     React.useEffect(() => {
@@ -481,10 +570,20 @@ const FeaturePopup: React.FunctionComponent<FeaturePopupProps> = ({ f, isVLayerV
                     <label className={clsx(styles.checkboxLabel, styles.featurePopupCheckbox)}>
                         <input
                             type='checkbox'
-                            checked={isVLayerVisible}
-                            onChange={onVLayerVisibilityChange}
+                            checked={props.isVLayerVisible}
+                            onChange={props.onVLayerVisibilityChange}
                         />
                         show vertices
+                    </label>
+                </li>
+                <li>
+                    <label className={clsx(styles.checkboxLabel, styles.featurePopupCheckbox)}>
+                        <input
+                            type='checkbox'
+                            checked={props.isDLayerVisible}
+                            onChange={props.onDLayerVisibilityChange}
+                        />
+                        show directions
                     </label>
                 </li>
                 <li>
@@ -532,6 +631,11 @@ const hoverStyle: L.StyleFunction = (feature) => {
     if (feature?.constructor === FeatureData) {
         const f = feature as FeatureData;
         f.layer.bringToFront();
+        if (f.dLayer && f.layer.hasLayer(f.dLayer)) {
+            // workaround to make `.bringToFront()` work (more or less) for markers
+            f.layer.removeLayer(f.dLayer);
+            f.layer.addLayer(f.dLayer);
+        }
         if (f.isActive) return;
         return {
             fillOpacity: 0.6,

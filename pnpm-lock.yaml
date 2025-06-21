@@ -86,6 +86,9 @@ importers:
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
+      leaflet-rotatedmarker:
+        specifier: ^0.2.0
+        version: 0.2.0
       monaco-editor:
         specifier: ^0.52.2
         version: 0.52.2
@@ -3451,6 +3454,9 @@ packages:
 
   launch-editor@2.10.0:
     resolution: {integrity: sha512-D7dBRJo/qcGX9xlvt/6wUYzQxjh5G1RvZPgPv8vi4KRU99DVQL/oW7tnVOCCTm2HGeo3C5HvGE5Yrh6UBoZ0vA==}
+
+  leaflet-rotatedmarker@0.2.0:
+    resolution: {integrity: sha512-yc97gxLXwbZa+Gk9VCcqI0CkvIBC9oNTTjFsHqq4EQvANrvaboib4UdeQLyTnEqDpaXHCqzwwVIDHtvz2mUiDg==}
 
   leaflet@1.9.4:
     resolution: {integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==}
@@ -9662,6 +9668,8 @@ snapshots:
     dependencies:
       picocolors: 1.1.1
       shell-quote: 1.8.3
+
+  leaflet-rotatedmarker@0.2.0: {}
 
   leaflet@1.9.4: {}
 
