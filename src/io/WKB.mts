@@ -1,3 +1,5 @@
+import type { OutPtr } from '../core/reusable-memory.mjs';
+import type { u32 } from '../core/types/WasmGEOS.mjs';
 import { POINTER } from '../core/symbols.mjs';
 import { Geometry } from '../geom/Geometry.mjs';
 import { geos } from '../core/geos.mjs';
@@ -135,7 +137,7 @@ export function toWKB(geometry: Geometry, options?: WKBOutputOptions): Uint8Arra
         writerPtr = cache[ key ] = ptr;
     }
 
-    const len = geos.u1;
+    const len = geos.u1 as OutPtr<u32>;
     const ptr = geos.GEOSWKBWriter_write(writerPtr, geometry[ POINTER ], len[ POINTER ]);
     const wkb = geos.U8.slice(ptr, ptr + len.get());
     geos.free(ptr);

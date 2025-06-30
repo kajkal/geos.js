@@ -28,20 +28,30 @@ export class ReusableBuffer {
 }
 
 
-export class ReusableU32 {
+type PtrTarget<T> = T extends Array<infer E> ? Ptr<E> : T;
+
+export interface OutPtr<T> {
+
+    [ POINTER ]: Ptr<T>;
+
+    get(): PtrTarget<T>;
+
+}
+
+export class ReusableU32<T = unknown> {
 
     /** @internal */
-    readonly [ POINTER ]: Ptr<any>;
+    readonly [ POINTER ]: Ptr<T>;
 
     private readonly i: number;
 
     constructor(ptr: number) {
-        this[ POINTER ] = ptr as Ptr<any>;
+        this[ POINTER ] = (ptr >>>= 0) as Ptr<T>;
         this.i = ptr / 4;
     }
 
-    get(): number {
-        return geos.U32[ this.i ];
+    get(): PtrTarget<T> {
+        return geos.U32[ this.i ] as PtrTarget<T>;
     }
 
     set(v: number): void {
@@ -59,7 +69,7 @@ export class ReusableF64 {
     private readonly i: number;
 
     constructor(ptr: number) {
-        this[ POINTER ] = ptr as Ptr<any>;
+        this[ POINTER ] = (ptr >>>= 0) as Ptr<any>;
         this.i = ptr / 8;
     }
 

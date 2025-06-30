@@ -1,5 +1,6 @@
 import type { Point as GeoJSON_Point } from 'geojson';
 import type { GEOSGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
+import type { OutPtr } from '../core/reusable-memory.mjs';
 import { POINTER } from '../core/symbols.mjs';
 import { Geometry } from '../geom/Geometry.mjs';
 import { GEOSError } from '../core/GEOSError.mjs';
@@ -118,13 +119,13 @@ export function isValid(geometry: Geometry, options?: IsValidOptions): boolean {
  * // TopologyValidationError { message: 'Self-intersection', location: [ 0.5, 0.5 ] }
  */
 export function isValidOrThrow(geometry: Geometry, options?: IsValidOptions): void {
-    const r = geos.u1;
-    const l = geos.u2;
+    const r = geos.u1 as OutPtr<string[]>;
+    const l = geos.u2 as OutPtr<GEOSGeometry[]>;
     const isValid = geos.GEOSisValidDetail(geometry[ POINTER ], options?.isInvertedRingValid ? 1 : 0, r[ POINTER ], l[ POINTER ]);
     if (!isValid) {
-        const reasonPtr = r.get() as Ptr<string>;
+        const reasonPtr = r.get();
         const reason = geos.decodeString(reasonPtr);
-        const pt = new Geometry(l.get() as Ptr<GEOSGeometry>, 'Point');
+        const pt = new Geometry(l.get(), 'Point');
         const location = jsonifyGeometry<GeoJSON_Point>(pt).coordinates;
         geos.free(reasonPtr);
         pt.free();
