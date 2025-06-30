@@ -2,6 +2,7 @@ import type { Point } from '../geom/types/Point.mjs';
 import { POINTER } from '../core/symbols.mjs';
 import { GEOSError } from '../core/GEOSError.mjs';
 import { Geometry } from '../geom/Geometry.mjs';
+import { isEmpty } from '../predicates/isEmpty.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -18,7 +19,8 @@ import { geos } from '../core/geos.mjs';
  * @throws {GEOSError} on unsupported geometry types (curved)
  * @throws {GEOSError} when either geometry is empty
  *
- * @see {@link distance} to calculate the distance between two geometries
+ * @see {@link distance} computes the distance between two geometries
+ * @see {@link distanceWithin} returns `true` when two geometries are within a given distance
  *
  * @example #live nearest points between point and line
  * const a = point([ 0, 0 ]);
@@ -50,5 +52,8 @@ export function nearestPoints(a: Geometry, b: Geometry): [ a: Point, b: Point ] 
             new Geometry(b_pt, 'Point') as Point,
         ];
     }
-    throw new GEOSError('"nearestPoints" called with empty inputs');
+    if (isEmpty(a) || isEmpty(b)) {
+        throw new GEOSError('"nearestPoints" called with empty inputs');
+    }
+    throw new GEOSError('Curved geometry types are not supported.');
 }

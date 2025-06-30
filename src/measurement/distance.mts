@@ -12,11 +12,12 @@ import { isEmpty } from '../predicates/isEmpty.mjs';
  *
  * @param a - First geometry
  * @param b - Second geometry
- * @returns The distance between the geometries
+ * @returns The distance between geometries
  * @throws {GEOSError} on unsupported geometry types (curved)
  * @throws {GEOSError} when either geometry is empty
  *
- * @see {@link nearestPoints} to find nearest points of two geometries
+ * @see {@link distanceWithin} returns `true` when two geometries are within a given distance
+ * @see {@link nearestPoints} finds the nearest points of two geometries
  *
  * @example #live distance between point and line
  * const a = point([ 0, 0 ]);

@@ -112,6 +112,7 @@ export { makeValid, type MakeValidOptions } from './operations/makeValid.mjs';
 export { isEmpty } from './predicates/isEmpty.mjs';
 export { isSimple } from './predicates/isSimple.mjs';
 export { isValid, isValidOrThrow, TopologyValidationError, type IsValidOptions } from './predicates/isValid.mjs';
+export { distanceWithin } from './predicates/distanceWithin.mjs';
 
 export { growMemory } from './other/growMemory.mjs';
 export { version } from './other/version.mjs';

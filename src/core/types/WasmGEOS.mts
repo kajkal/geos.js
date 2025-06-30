@@ -1264,7 +1264,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @param dist - The max distance
      * @returns 1 on true, 0 on false, 2 on exception
-     * @deprecated this function is not exported
      */
     GEOSDistanceWithin(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>, dist: f64): i8;
 

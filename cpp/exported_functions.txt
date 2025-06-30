@@ -127,7 +127,7 @@ GEOSLength_r
 
 ## Distance:
 GEOSDistance_r
-#   GEOSDistanceWithin_r
+GEOSDistanceWithin_r
 #   GEOSDistanceIndexed_r
 GEOSNearestPoints_r
 GEOSHausdorffDistance_r
