@@ -12,12 +12,17 @@ describe('Geometry#toJSON', () => {
 
     it('should return geometry GeoJSON representation', () => {
         const a = point([ 2, 8 ]);
-        assert.deepEqual(a.toJSON(), { type: 'Point', coordinates: [ 2, 8 ] });
+        assert.deepEqual(a.toJSON(), {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [ 2, 8 ] },
+            properties: null,
+            id: undefined,
+        });
     });
 
     it('should stringify geometry as GeoJSON string', () => {
         const a = point([ 2, 8 ]);
-        assert.deepEqual(JSON.stringify(a), '{"type":"Point","coordinates":[2,8]}');
+        assert.deepEqual(JSON.stringify(a), '{"type":"Feature","geometry":{"type":"Point","coordinates":[2,8]},"properties":null}');
     });
 
 });

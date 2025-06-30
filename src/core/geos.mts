@@ -6,6 +6,9 @@ import { GEOSError } from './GEOSError.mjs';
 import { initialize } from '../index.mjs';
 
 
+interface GEOS extends WasmGEOS, WasmOther {
+}
+
 class GEOS {
 
     /* WASM: memory */
@@ -35,7 +38,7 @@ class GEOS {
     buffByL(l: number): ReusableBuffer {
         let { buff } = this;
         if (l > buff.l) {
-            const tmpBuffPtr = (this as unknown as WasmOther).malloc(l);
+            const tmpBuffPtr = this.malloc(l);
             buff = new ReusableBuffer(tmpBuffPtr, l);
         }
         return buff;
@@ -45,7 +48,7 @@ class GEOS {
         let { buff } = this;
         if (l4 > buff.l4) {
             const tmpBuffLen = l4 * 4;
-            const tmpBuffPtr = (this as unknown as WasmOther).malloc(tmpBuffLen);
+            const tmpBuffPtr = this.malloc(tmpBuffLen);
             buff = new ReusableBuffer(tmpBuffPtr, tmpBuffLen);
         }
         return buff;
@@ -93,7 +96,7 @@ class GEOS {
         }
 
         fnIdx = this.freeTableIndexes.length
-            ? this.freeTableIndexes.pop()
+            ? this.freeTableIndexes.pop()!
             : this.table.grow(1);
 
         const asWasmFn = convertJsFunctionToWasm(fn, sig);
@@ -114,12 +117,12 @@ class GEOS {
 
     /* GEOS */
 
-    t_r: Record<null | string, Ptr<GEOSWKTReader>> = {};
-    t_w: Record<null | string, Ptr<GEOSWKTWriter>> = {};
-    b_r: Record<null | string, Ptr<GEOSWKBReader>> = {};
-    b_w: Record<null | string, Ptr<GEOSWKBWriter>> = {};
-    b_p: Record<null | string, Ptr<GEOSBufferParams>> = {};
-    m_v: Record<null | string, Ptr<GEOSMakeValidParams>> = {};
+    t_r: Record<string, Ptr<GEOSWKTReader>> = {};
+    t_w: Record<string, Ptr<GEOSWKTWriter>> = {};
+    b_r: Record<string, Ptr<GEOSWKBReader>> = {};
+    b_w: Record<string, Ptr<GEOSWKBWriter>> = {};
+    b_p: Record<string, Ptr<GEOSBufferParams>> = {};
+    m_v: Record<string, Ptr<GEOSMakeValidParams>> = {};
 
     onGEOSError: GEOSMessageHandler_r = (messagePtr, _userdata) => {
         const message = this.decodeString(messagePtr);
@@ -152,8 +155,10 @@ class GEOS {
         // bind ctx to all `_r` functions and remove `_r` from their name:
         for (const fnName in exports) {
             if (fnName.endsWith('_r')) {
+                // @ts-ignore
                 this[ fnName.slice(0, -2) ] = exports[ fnName ].bind(null, ctx);
             } else {
+                // @ts-ignore
                 this[ fnName ] = exports[ fnName ];
             }
         }
@@ -176,7 +181,7 @@ class GEOS {
 }
 
 
-type SimpleFunction = (...args: number[]) => number | void; // function callable by wasm - only numeric args/return
+type SimpleFunction = (...args: /* number[] */ any[]) => number | void; // function callable by wasm - only numeric args/return
 
 const convertJsFunctionToWasm = (fn: SimpleFunction, sig: string) => {
     const typeSectionBody = [ 1, 96 ];
@@ -191,12 +196,12 @@ const convertJsFunctionToWasm = (fn: SimpleFunction, sig: string) => {
     };
     uleb128Encode(sigParam.length, typeSectionBody);
     for (const paramType of sigParam) {
-        typeSectionBody.push(typeCodes[ paramType ]);
+        typeSectionBody.push(typeCodes[ paramType as keyof typeof typeCodes ]);
     }
     if (sigRet === 'v') {
         typeSectionBody.push(0);
     } else {
-        typeSectionBody.push(1, typeCodes[ sigRet ]);
+        typeSectionBody.push(1, typeCodes[ sigRet as keyof typeof typeCodes ]);
     }
     const bytes = [ 0, 97, 115, 109, 1, 0, 0, 0, 1 ];
     uleb128Encode(typeSectionBody.length, bytes);
@@ -236,7 +241,7 @@ const imports = {
 };
 
 
-const geosPlaceholder = new Proxy({}, {
+const geosPlaceholder = new Proxy({} as GEOS, {
     get(_, property) {
         if ((property as string).endsWith('destroy')) {
             // silently ignore GEOS destroy calls after `terminate` call
@@ -244,9 +249,9 @@ const geosPlaceholder = new Proxy({}, {
         }
         throw new GEOSError('GEOS.js not initialized');
     },
-}) as unknown as typeof geos;
+});
 
-export let geos: GEOS & WasmGEOS & WasmOther = geosPlaceholder;
+export let geos: GEOS = geosPlaceholder;
 
 
 export async function instantiate(source: Response | Promise<Response> | WebAssembly.Module): Promise<WebAssembly.Module> {
@@ -258,7 +263,7 @@ export async function instantiate(source: Response | Promise<Response> | WebAsse
     } else {
         ({ module, instance } = await WebAssembly.instantiateStreaming(source, imports));
     }
-    geos = new GEOS(instance) as typeof geos;
+    geos = new GEOS(instance);
     return module;
 }
 

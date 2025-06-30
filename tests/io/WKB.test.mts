@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { before, describe, it, mock } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import { lineString } from '../../src/helpers/helpers.mjs';
-import { fromWKB, toWKB } from '../../src/io/wkb.mjs';
-import { fromWKT } from '../../src/io/wkt.mjs';
+import { fromWKB, toWKB } from '../../src/io/WKB.mjs';
+import { fromWKT } from '../../src/io/WKT.mjs';
 import { geos } from '../../src/core/geos.mjs';
 
 
@@ -37,7 +37,7 @@ describe('WKB', () => {
             assert.equal(create.mock.callCount(), 3);
 
             assert.deepEqual(geos.b_r, {
-                null: create.mock.calls[ 0 ].result,
+                '': create.mock.calls[ 0 ].result,
                 'false': create.mock.calls[ 1 ].result,
                 'true': create.mock.calls[ 2 ].result,
             });
@@ -53,14 +53,14 @@ describe('WKB', () => {
                 name: 'GEOSError::IllegalArgumentException',
                 message: 'Points of LinearRing do not form a closed linestring',
             });
-            assert.deepEqual(fromWKB(input, { fix: true }).toJSON(), {
+            assert.deepEqual(fromWKB(input, { fix: true }).toJSON().geometry, {
                 type: 'Polygon',
                 coordinates: [ [ [ 0, 0 ], [ 1, 0 ], [ 1, 1 ], [ 0, 0 ] ] ],
             });
         });
 
         it('should read WKB geometries', () => {
-            const wkbToJSONStr = (hex: string) => JSON.stringify(fromWKB(fromHEX(hex)));
+            const wkbToJSONStr = (hex: string) => JSON.stringify(fromWKB(fromHEX(hex)).toJSON().geometry);
             let g: string;
 
             g = wkbToJSONStr('010100000000000000000000000000000000000000');
@@ -138,7 +138,7 @@ describe('WKB', () => {
                 new Uint8Array(coordinates.buffer), // coordinates
             ]);
 
-            const g = fromWKB(wkb).toJSON();
+            const { geometry: g } = fromWKB(wkb).toJSON();
             assert.equal(g.type, 'LineString');
             assert.equal(g.coordinates.length, coordinatesCount);
             for (let i = 0, c = 0; i < coordinatesCount; i++) {
@@ -173,7 +173,7 @@ describe('WKB', () => {
             assert.equal(create.mock.callCount(), 4);
 
             assert.deepEqual(geos.b_w, {
-                null: create.mock.calls[ 0 ].result,
+                '': create.mock.calls[ 0 ].result,
                 '2,,,': create.mock.calls[ 1 ].result,
                 '2,iso,,': create.mock.calls[ 2 ].result,
                 '3,,be,': create.mock.calls[ 3 ].result,

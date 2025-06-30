@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
+import type { Geometry } from '../../src/geom/Geometry.mjs';
 import { geometryCollection, lineString, multiLineString, multiPoint, multiPolygon, point, polygon } from '../../src/helpers/helpers.mjs';
 import { isEmpty } from '../../src/predicates/isEmpty.mjs';
-import { toWKT } from '../../src/io/wkt.mjs';
+import { toWKT } from '../../src/io/WKT.mjs';
 
 
 describe('miscellaneous helpers', () => {
@@ -13,7 +14,7 @@ describe('miscellaneous helpers', () => {
     });
 
     it('should create simple geometries', () => {
-        let g = point([ 1, 1 ]);
+        let g: Geometry = point([ 1, 1 ]);
         assert.equal(toWKT(g), 'POINT (1 1)');
 
         g = lineString([ [ 0, 0 ], [ 1, 1 ], [ 2, 2 ] ]);
@@ -54,6 +55,54 @@ describe('miscellaneous helpers', () => {
         const emptyCollection = geometryCollection([]);
         assert.ok(isEmpty(emptyCollection));
         assert.equal(toWKT(emptyCollection), 'GEOMETRYCOLLECTION EMPTY');
+    });
+
+    it('should assign id to new geometry', () => {
+        const options = { id: 0 };
+        let g: Geometry = point([], options);
+        assert.equal(g.id, 0);
+
+        g = lineString([], options);
+        assert.equal(g.id, 0);
+
+        g = polygon([], options);
+        assert.equal(g.id, 0);
+
+        g = multiPoint([], options);
+        assert.equal(g.id, 0);
+
+        g = multiLineString([], options);
+        assert.equal(g.id, 0);
+
+        g = multiPolygon([], options);
+        assert.equal(g.id, 0);
+
+        g = geometryCollection([], options);
+        assert.equal(g.id, 0);
+    });
+
+    it('should assign props to new geometry', () => {
+        const options = { properties: { some: 'prop' } };
+        let g: Geometry = point([], options);
+        assert.deepEqual(g.props, { some: 'prop' });
+
+        g = lineString([], options);
+        assert.deepEqual(g.props, { some: 'prop' });
+
+        g = polygon([], options);
+        assert.deepEqual(g.props, { some: 'prop' });
+
+        g = multiPoint([], options);
+        assert.deepEqual(g.props, { some: 'prop' });
+
+        g = multiLineString([], options);
+        assert.deepEqual(g.props, { some: 'prop' });
+
+        g = multiPolygon([], options);
+        assert.deepEqual(g.props, { some: 'prop' });
+
+        g = geometryCollection([], options);
+        assert.deepEqual(g.props, { some: 'prop' });
     });
 
 });

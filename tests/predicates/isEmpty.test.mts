@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import { isEmpty } from '../../src/predicates/isEmpty.mjs';
-import { fromWKT } from '../../src/io/wkt.mjs';
+import { fromWKT } from '../../src/io/WKT.mjs';
 
 
 describe('isEmpty', () => {

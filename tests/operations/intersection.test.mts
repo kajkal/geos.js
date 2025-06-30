@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import { intersection } from '../../src/operations/intersection.mjs';
-import { fromWKT, toWKT } from '../../src/io/wkt.mjs';
+import { fromWKT, toWKT } from '../../src/io/WKT.mjs';
 
 
 describe('intersection', () => {

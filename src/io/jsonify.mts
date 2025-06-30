@@ -21,7 +21,7 @@
  */
 declare const THIS_FILE: symbol; // to omit ^ @file doc from the bundle
 
-import type { Geometry as GeoJSONGeometry, Position } from 'geojson';
+import type { Feature as GeoJSON_Feature, Geometry as GeoJSON_Geometry, Position } from 'geojson';
 import type { Ptr, u32 } from '../core/types/WasmGEOS.mjs';
 import { POINTER } from '../core/symbols.mjs';
 import { Geometry, GEOSGeometryTypeDecoder } from '../geom/Geometry.mjs';
@@ -36,29 +36,29 @@ interface JsonifyState {
     f: number; // to read (Multi)Point coordinates
 }
 
-const jsonifyGeom = (s: JsonifyState): GeoJSONGeometry => {
+const jsonifyGeom = (s: JsonifyState): GeoJSON_Geometry => {
     const { B, F } = s;
     const header = B[ s.b++ ];
-    const type = header & 15;
+    const typeId = header & 15;
     const isEmpty = header & 16;
     const hasZ = header & 32;
     const hasM = header & 64;
     const skip = !hasZ as any + !!hasM;
 
     if (isEmpty) {
-        if (type < 7) {
-            return { type: GEOSGeometryTypeDecoder[ type as 0 | 1 | 3 | 4 | 5 | 6 ], coordinates: [] };
+        if (typeId < 7) {
+            return { type: GEOSGeometryTypeDecoder[ typeId as 0 | 1 | 3 | 4 | 5 | 6 ], coordinates: [] };
         }
-        return { type: GEOSGeometryTypeDecoder[ type as 7 ], geometries: [] };
+        return { type: GEOSGeometryTypeDecoder[ typeId as 7 ], geometries: [] };
     }
 
-    switch (type) {
+    switch (typeId) {
 
         case 0: { // Point
             const pt: Position = hasZ
                 ? [ F[ s.f++ ], F[ s.f++ ], F[ s.f++ ] ]
                 : [ F[ s.f++ ], F[ s.f++ ] ];
-            return { type: GEOSGeometryTypeDecoder[ type ], coordinates: pt };
+            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pt };
         }
 
         case 1: { // LineString
@@ -70,7 +70,7 @@ const jsonifyGeom = (s: JsonifyState): GeoJSONGeometry => {
                     ? [ F[ f++ ], F[ f++ ], F[ f++ ] ]
                     : [ F[ f++ ], F[ f++ ] ];
             }
-            return { type: GEOSGeometryTypeDecoder[ type ], coordinates: pts };
+            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pts };
         }
 
         case 4: { // MultiPoint
@@ -81,7 +81,7 @@ const jsonifyGeom = (s: JsonifyState): GeoJSONGeometry => {
                     ? [ F[ s.f++ ], F[ s.f++ ], F[ s.f++ ] ]
                     : [ F[ s.f++ ], F[ s.f++ ] ];
             }
-            return { type: GEOSGeometryTypeDecoder[ type ], coordinates: pts };
+            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pts };
         }
 
         case 3: // Polygon
@@ -98,7 +98,7 @@ const jsonifyGeom = (s: JsonifyState): GeoJSONGeometry => {
                         : [ F[ f++ ], F[ f++ ] ];
                 }
             }
-            return { type: GEOSGeometryTypeDecoder[ type ], coordinates: ppts };
+            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: ppts };
         }
 
         case 6: { // MultiPolygon
@@ -118,21 +118,21 @@ const jsonifyGeom = (s: JsonifyState): GeoJSONGeometry => {
                     }
                 }
             }
-            return { type: GEOSGeometryTypeDecoder[ type ], coordinates: pppts };
+            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pppts };
         }
 
         case 7: { // GeometryCollection
             const geomsLength = B[ s.b++ ];
-            const geoms = Array<GeoJSONGeometry>(geomsLength);
+            const geoms = Array<GeoJSON_Geometry>(geomsLength);
             for (let i = 0; i < geomsLength; i++) {
                 geoms[ i ] = jsonifyGeom(s);
             }
-            return { type: GEOSGeometryTypeDecoder[ type ], geometries: geoms };
+            return { type: GEOSGeometryTypeDecoder[ typeId ], geometries: geoms };
         }
 
     }
 
-    throw new GEOSError(`Unsupported geometry type ${GEOSGeometryTypeDecoder[ type ]}`);
+    throw new GEOSError(`Unsupported geometry type ${GEOSGeometryTypeDecoder[ typeId ]}`);
 };
 
 
@@ -143,15 +143,15 @@ const jsonifyGeom = (s: JsonifyState): GeoJSONGeometry => {
  * @returns A GeoJSON representation of the geometry
  * @throws {GEOSError} when called with an unsupported geometry type (not GeoJSON)
  *
- * @example #live
- * const pt = fromWKT('POINT (1 1)');
- * const line = fromWKT('LINESTRING (0 0, 1 1)');
- * const collection = fromWKT('GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 1 1))');
- * const pt_json = jsonifyGeometry(pt); // { type: 'Point', coordinates: [ 1, 1 ] }
- * const line_json = jsonifyGeometry(line); // { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] }
- * const collection_json = jsonifyGeometry(collection); // { type: 'GeometryCollection', geometries: [ { type: 'Point', coordinates: [ 1, 1 ] }, { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] } ] }
+ * @example
+ * const a = point([ 0, 0 ]);
+ * const b = lineString([ [ 0, 0 ], [ 1, 1 ] ]);
+ * const c = polygon([ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ]);
+ * const a_json = jsonifyGeometry(a); // { type: 'Point', coordinates: [ 0, 0 ] };
+ * const b_json = jsonifyGeometry(b); // { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] };
+ * const c_json = jsonifyGeometry(c); // { type: 'Polygon', coordinates: [ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ] };
  */
-export function jsonifyGeometry(geometry: Geometry): GeoJSONGeometry {
+export function jsonifyGeometry<T extends GeoJSON_Geometry>(geometry: Geometry): T {
     const buff = geos.buff;
     let tmpOutBuffPtr: 0 | Ptr<u32>;
     try {
@@ -172,33 +172,48 @@ export function jsonifyGeometry(geometry: Geometry): GeoJSONGeometry {
             s.b = tmpOutBuffPtr / 4;
         }
 
-        return jsonifyGeom(s);
+        return jsonifyGeom(s) as T;
     } finally {
-        if (tmpOutBuffPtr) {
+        if (tmpOutBuffPtr!) {
             geos.free(tmpOutBuffPtr);
         }
     }
 }
 
+
 /**
- * Converts an array of geometry objects to its GeoJSON representation.
+ * Converts an array of geometries to an array of GeoJSON `Feature` objects.
  *
- * @param geometries - Array of geometry objects to be converted
- * @returns Array of GeoJSON representations of the geometries
+ * @param geometries - Array of geometries to be converted
+ * @returns Array of GeoJSON `Feature` objects
  * @throws {GEOSError} when called with an unsupported geometry type (not GeoJSON)
  *
- * @example #live
- * const pt = fromWKT('POINT (1 1)');
- * const line = fromWKT('LINESTRING (0 0, 1 1)');
- * const collection = fromWKT('GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 1 1))');
- * const geojsons = jsonifyGeometries([ pt, line, collection ]);
+ * @example
+ * const a = point([ 0, 0 ], { id: 1, properties: { name: 'A' } });
+ * const b = lineString([ [ 0, 0 ], [ 1, 1 ] ], { id: 2 });
+ * const c = polygon([ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ]);
+ * const features = jsonifyFeatures([ a, b, c ]);
  * // [
- * //     { type: 'Point', coordinates: [ 1, 1 ] },
- * //     { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
- * //     { type: 'GeometryCollection', geometries: [ { type: 'Point', coordinates: [ 1, 1 ] }, { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] } ] },
- * // ]
+ * //     {
+ * //         id: 1,
+ * //         type: 'Feature',
+ * //         geometry: { type: 'Point', coordinates: [ 0, 0 ] },
+ * //         properties: { name: 'A' },
+ * //     },
+ * //     {
+ * //         id: 2,
+ * //         type: 'Feature',
+ * //         geometry: { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
+ * //         properties: null,
+ * //     },
+ * //     {
+ * //         type: 'Feature',
+ * //         geometry: { type: 'Polygon', coordinates: [ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ] },
+ * //         properties: null,
+ * //     },
+ * // ];
  */
-export function jsonifyGeometries(geometries: Geometry[]): GeoJSONGeometry[] {
+export function jsonifyFeatures<P>(geometries: Geometry<P>[]): GeoJSON_Feature<GeoJSON_Geometry, P>[] {
     const geometriesLength = geometries.length;
     const buffNeededL4 = geometriesLength + 3;
     const buff = geos.buffByL4(buffNeededL4);
@@ -223,14 +238,20 @@ export function jsonifyGeometries(geometries: Geometry[]): GeoJSONGeometry[] {
             s.b = tmpOutBuffPtr / 4;
         }
 
-        const geoms = Array<GeoJSONGeometry>(geometriesLength);
+        const features = Array<GeoJSON_Feature<GeoJSON_Geometry, P>>(geometriesLength);
         for (let i = 0; i < geometriesLength; i++) {
-            geoms[ i ] = jsonifyGeom(s);
+            const geometry = geometries[ i ];
+            features[ i ] = {
+                id: geometry.id,
+                type: 'Feature',
+                geometry: jsonifyGeom(s),
+                properties: geometry.props! ?? null,
+            };
         }
-        return geoms;
+        return features;
     } finally {
         buff.freeIfTmp();
-        if (tmpOutBuffPtr) {
+        if (tmpOutBuffPtr!) {
             geos.free(tmpOutBuffPtr);
         }
     }

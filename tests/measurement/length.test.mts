@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import { length } from '../../src/measurement/length.mjs';
-import { fromWKT } from '../../src/io/wkt.mjs';
+import { fromWKT } from '../../src/io/WKT.mjs';
 
 
 describe('length', () => {

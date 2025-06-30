@@ -36,7 +36,7 @@ export function fromWKB(wkb: Uint8Array, options?: WKBInputOptions): Geometry {
     const cache = geos.b_r;
     const key = options
         ? [ options.fix ].join()
-        : null;
+        : '';
 
     let readerPtr = cache[ key ];
     if (!readerPtr) {
@@ -112,7 +112,7 @@ export function toWKB(geometry: Geometry, options?: WKBOutputOptions): Uint8Arra
     const cache = geos.b_w;
     const key = options
         ? [ options.dim, options.flavor, options.byteOrder, options.srid ].join()
-        : null;
+        : '';
 
     let writerPtr = cache[ key ];
     if (!writerPtr) {

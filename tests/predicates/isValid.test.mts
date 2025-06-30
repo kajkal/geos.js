@@ -4,7 +4,7 @@ import { initializeForTest } from '../tests-utils.mjs';
 import type { Geometry } from '../../src/geom/Geometry.mjs';
 import { lineString, multiPoint, multiPolygon, point, polygon } from '../../src/helpers/helpers.mjs';
 import { isValid, isValidOrThrow } from '../../src/predicates/isValid.mjs';
-import { fromWKT } from '../../src/io/wkt.mjs';
+import { fromWKT } from '../../src/io/WKT.mjs';
 
 
 describe('isValid and isValidOrThrow', () => {

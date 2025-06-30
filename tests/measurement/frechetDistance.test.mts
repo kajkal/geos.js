@@ -3,7 +3,7 @@ import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import type { Geometry } from '../../src/geom/Geometry.mjs';
 import { frechetDistance } from '../../src/measurement/frechetDistance.mjs';
-import { fromWKT } from '../../src/io/wkt.mjs';
+import { fromWKT } from '../../src/io/WKT.mjs';
 
 
 describe('frechetDistance', () => {

@@ -5,7 +5,7 @@ import type { Geometry } from '../../src/geom/Geometry.mjs';
 import { distance } from '../../src/measurement/distance.mjs';
 import { nearestPoints } from '../../src/measurement/nearestPoints.mjs';
 import { lineString } from '../../src/helpers/helpers.mjs';
-import { fromWKT } from '../../src/io/wkt.mjs';
+import { fromWKT } from '../../src/io/WKT.mjs';
 
 
 describe('distance and nearestPoints', () => {
@@ -14,8 +14,8 @@ describe('distance and nearestPoints', () => {
 
     function assertNearestPoints(a: Geometry, b: Geometry, expected: [ a: [ number, number ], b: [ number, number ] ]) {
         const [ aPt, bPt ] = nearestPoints(a, b);
-        assert.deepEqual((aPt.toJSON() as any).coordinates, expected[ 0 ]);
-        assert.deepEqual((bPt.toJSON() as any).coordinates, expected[ 1 ]);
+        assert.deepEqual(aPt.toJSON().geometry.coordinates, expected[ 0 ]);
+        assert.deepEqual(bPt.toJSON().geometry.coordinates, expected[ 1 ]);
     }
 
     before(async () => {

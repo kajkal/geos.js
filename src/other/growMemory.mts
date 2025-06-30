@@ -27,7 +27,7 @@ import { geos } from '../core/geos.mjs';
  * growMemory({ by: 512 * 1024 * 1024 });
  *
  * @example grow memory to 1GB
- * growMemory({ to: 1204 * 1024 * 1024 });
+ * growMemory({ to: 1024 * 1024 * 1024 });
  *
  * @example reserve all available memory (limited to 4GB for wasm32 target)
  * growMemory({ to: Infinity });

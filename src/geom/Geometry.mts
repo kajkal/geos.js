@@ -1,4 +1,4 @@
-import type { Geometry as GeoJSONGeometry } from 'geojson';
+import type { Feature as GeoJSON_Feature, Geometry as GeoJSON_Geometry } from 'geojson';
 import type { GEOSGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
 import { CLEANUP, FINALIZATION, POINTER } from '../core/symbols.mjs';
 import { jsonifyGeometry } from '../io/jsonify.mjs';
@@ -37,41 +37,61 @@ export const GEOSGeometryTypeDecoder = [
     /* 12 */ 'MultiSurface',
 ] as const;
 
+export interface GeometryExtras<P> {
+    id?: number | string;
+    properties?: P;
+}
+
 
 /**
  * Class representing a GEOS geometry that exists in the Wasm memory.
+ *
+ * Creating new Geometries via `new Geometry(...)` is intended to be called
+ * only by other `geos.js` functions and is not part of the public API.
+ *
+ * @template P - The type of optional data assigned to a geometry instance.
+ * Similar to the type of GeoJSON `Feature` properties field.
  */
-export class Geometry {
+export class Geometry<P = unknown> {
+
+    /**
+     * Geometry type
+     *
+     * @example #live
+     * const type1 = fromWKT('POINT (1 1)').type; // 'Point'
+     * const type2 = fromWKT('LINESTRING (0 0, 1 1)').type; // 'LineString'
+     * const type3 = fromWKT('CIRCULARSTRING (0 0, 1 1, 2 0)').type; // 'CircularString'
+     */
+    readonly type: GeometryType;
+
+    /**
+     * Geometry identifier, either number or string.
+     *
+     * Equivalent of GeoJSON feature id.
+     */
+    id?: number | string;
+
+    /**
+     * Geometry additional data.
+     *
+     * Equivalent of GeoJSON feature properties or GEOS geometry user data.
+     */
+    props: P;
 
     /**
      * Geometry can become detached when passed to a function that consumes
      * it, for example {@link geometryCollection}, or when manually
      * [freed]{@link Geometry#free}. Although this Geometry object still exists, the GEOS
      * object that it used to represent no longer exists.
+     *
+     * @example #live
+     * const pt = point([ 0, 0 ]);
+     * const before = pt.detached; // falsy (undefined)
+     * pt.free(); // `pt` is no longer usable as a geometry
+     * const after = pt.detached; // true
      */
     detached?: boolean;
 
-    /** @internal */
-    [ POINTER ]: Ptr<GEOSGeometry>;
-
-    /** @internal */
-    constructor(ptr: Ptr<GEOSGeometry>) {
-        this[ POINTER ] = ptr;
-        Geometry[ FINALIZATION ].register(this, ptr, this);
-    }
-
-    /**
-     * Returns geometry type.
-     *
-     * @example #live
-     * const type1 = fromWKT('POINT (1 1)').type();
-     * const type2 = fromWKT('LINESTRING (0 0, 1 1)').type();
-     * const type3 = fromWKT('CIRCULARSTRING (0 0, 1 1, 2 0)').type();
-     */
-    type(): GeometryType {
-        const typeId = geos.GEOSGeomTypeId(this[ POINTER ]);
-        return GEOSGeometryTypeDecoder[ typeId ];
-    }
 
     /**
      * Organizes the elements, rings, and coordinate order of geometries in a
@@ -127,36 +147,47 @@ export class Geometry {
      * const copy = original.clone();
      * // copy can be modified without affecting the original
      */
-    clone(): Geometry {
+    clone(): Geometry<P> {
         const geomPtr = geos.GEOSGeom_clone(this[ POINTER ]);
-        return new Geometry(geomPtr);
+        const copy = new Geometry<P>(geomPtr);
+        if (this.id != null) {
+            copy.id = this.id;
+        }
+        if (this.props != null) {
+            copy.props = this.props; // shallow copy
+        }
+        return copy;
     }
 
     /**
-     * Converts the geometry to a GeoJSON geometry object.
+     * Converts the geometry to a GeoJSON `Feature` object.
+     *
      * This method allows the geometry to be serialized to JSON
      * and is automatically called by `JSON.stringify()`.
      *
-     * @returns A GeoJSON geometry representation of this geometry
+     * @returns A GeoJSON `Feature` representation of this geometry
      *
-     * @example #live converting a geometry to GeoJSON
+     * @see {@link toGeoJSON} converts geometry to a GeoJSON `Feature`
+     * or a GeoJSON `FeatureCollection` object.
+     *
+     * @example #live
      * const geom = point([ 1, 2, 3 ]);
-     * const geojson = geom.toJSON(); // {"type":"Point","coordinates":[1,2,3]}
-     * const geojsonStr = JSON.stringify(geom); // '{"type":"Point","coordinates":[1,2,3]}'
+     * const geojson = geom.toJSON();
+     * // {
+     * //     type: 'Feature',
+     * //     geometry: { type: 'Point', coordinates: [ 1, 2, 3 ] },
+     * //     properties: null,
+     * // }
+     * const geojsonStr = JSON.stringify(geom);
+     * // '{"type":"Feature","geometry":{"type":"Point","coordinates":[1,2,3]},"properties":null}'
      */
-    toJSON(): GeoJSONGeometry {
-        return jsonifyGeometry(this);
-    }
-
-
-    /** @internal */
-    static readonly [ FINALIZATION ] = (
-        new FinalizationRegistry(Geometry[ CLEANUP ])
-    );
-
-    /** @internal */
-    static [ CLEANUP ](ptr: Ptr<GEOSGeometry>): void {
-        geos.GEOSGeom_destroy(ptr);
+    toJSON(): GeoJSON_Feature<GeoJSON_Geometry, P> {
+        return {
+            id: this.id,
+            type: 'Feature',
+            geometry: jsonifyGeometry(this),
+            properties: this.props! ?? null,
+        };
     }
 
     /**
@@ -178,6 +209,35 @@ export class Geometry {
         Geometry[ FINALIZATION ].unregister(this);
         Geometry[ CLEANUP ](this[ POINTER ]);
         this.detached = true;
+    }
+
+
+    /** @internal */
+    [ POINTER ]: Ptr<GEOSGeometry>;
+
+    /** @internal */
+    constructor(ptr: Ptr<GEOSGeometry>, type?: typeof GEOSGeometryTypeDecoder[number], extras?: GeometryExtras<P>) {
+        Geometry[ FINALIZATION ].register(this, ptr, this);
+        this[ POINTER ] = ptr;
+        this.type = type || GEOSGeometryTypeDecoder[ geos.GEOSGeomTypeId(ptr) ];
+        if (extras) {
+            if (extras.id != null) {
+                this.id = extras.id;
+            }
+            if (extras.properties != null) {
+                this.props = extras.properties;
+            }
+        }
+    }
+
+    /** @internal */
+    static readonly [ FINALIZATION ] = (
+        new FinalizationRegistry(Geometry[ CLEANUP ])
+    );
+
+    /** @internal */
+    static [ CLEANUP ](ptr: Ptr<GEOSGeometry>): void {
+        geos.GEOSGeom_destroy(ptr);
     }
 
 }

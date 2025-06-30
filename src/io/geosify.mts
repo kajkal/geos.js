@@ -88,32 +88,19 @@
  */
 declare const THIS_FILE: symbol; // to omit ^ @file doc from the bundle
 
-import type { Geometry as GeoJSONGeometry, GeometryCollection, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon } from 'geojson';
+import type { Feature as GeoJSON_Feature, Geometry as GeoJSON_Geometry } from 'geojson';
 import type { GEOSGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry, GEOSGeometryTypeDecoder } from '../geom/Geometry.mjs';
+import { Geometry, type GeometryExtras } from '../geom/Geometry.mjs';
 import { GEOSError } from '../core/GEOSError.mjs';
 import { geos } from '../core/geos.mjs';
 
 
-interface GEOSGeometryType {
-    Point: 0,
-    LineString: 1,
-    '': 2,
-    Polygon: 3,
-    MultiPoint: 4,
-    MultiLineString: 5,
-    MultiPolygon: 6,
-    GeometryCollection: 7,
-}
-
-const GEOSGeometryType: GEOSGeometryType = GEOSGeometryTypeDecoder.reduce((a, t, i) => (a[ t ] = i, a), {} as any);
-
-
 export class InvalidGeoJSONError extends GEOSError {
     /** @internal */
-    constructor(type: number, geom: GeoJSONGeometry) {
-        super(`Invalid ${GEOSGeometryTypeDecoder[ type ]} ${JSON.stringify(geom)}`);
+    constructor(geom: GeoJSON_Geometry, invalidType?: boolean) {
+        super(`Invalid ${invalidType ? 'GeoJSON geometry' : geom.type}: ${JSON.stringify(geom)}`);
+        this.name = 'InvalidGeoJSONError';
     }
 }
 
@@ -124,66 +111,65 @@ interface GeosifyCounter {
     f: number; // number of records in `F` (embedded coordinates of (Multi)Points)
 }
 
-const geosifyMeasureAndValidateGeom = (geom: GeoJSONGeometry, c: GeosifyCounter): void => {
-    const type = GEOSGeometryType[ geom.type ];
-    switch (type) {
+const geosifyMeasureAndValidateGeom = (geom: GeoJSON_Geometry, c: GeosifyCounter): void => {
+    switch (geom?.type) {
 
-        case 0: { // Point
-            const pt = (geom as Point).coordinates;
+        case 'Point': {
+            const pt = geom.coordinates;
             const dim = pt.length > 2 ? 3 : 2;
             c.f += dim;
             c.d += 1; // [header]
-            break;
+            return;
         }
 
-        case 4 : { // MultiPoint
-            const pts = (geom as MultiPoint).coordinates;
+        case 'MultiPoint' : {
+            const pts = geom.coordinates;
             const dim = pts[ 0 ]?.length > 2 ? 3 : 2;
             c.f += pts.length * dim;
             c.d += 2; // [header][numPoints]
-            break;
+            return;
         }
 
-        case 1: { // LineString
-            const pts = (geom as LineString).coordinates;
+        case 'LineString': {
+            const pts = geom.coordinates;
             if (pts.length === 1) {
-                throw new InvalidGeoJSONError(type, geom);
+                throw new InvalidGeoJSONError(geom);
             }
             c.s += 1; // [cs->data]
             c.d += 2; // [header][cs->size/ptr]
-            break;
+            return;
         }
 
-        case 3: { // Polygon
-            const ppts = (geom as Polygon).coordinates;
+        case 'Polygon': {
+            const ppts = geom.coordinates;
             const pptsLength = ppts.length;
             for (const pts of ppts) {
                 const ptsLength = pts.length;
                 const f = pts[ 0 ], l = pts[ ptsLength - 1 ];
                 if (ptsLength && (ptsLength < 3 || f[ 0 ] !== l[ 0 ] || f[ 1 ] !== l[ 1 ])) {
-                    throw new InvalidGeoJSONError(type, geom);
+                    throw new InvalidGeoJSONError(geom);
                 }
             }
             c.s += pptsLength; // [R1:cs->data]…[RN:cs->data]
             c.d += 2 + pptsLength; // [header][numRings] [R1:cs->size/ptr]…[RN:cs->size/ptr]
-            break;
+            return;
         }
 
-        case 5: { // MultiLineString
-            const ppts = (geom as MultiLineString).coordinates;
+        case 'MultiLineString': {
+            const ppts = geom.coordinates;
             const pptsLength = ppts.length;
             for (const pts of ppts) {
                 if (pts.length === 1) {
-                    throw new InvalidGeoJSONError(type, geom);
+                    throw new InvalidGeoJSONError(geom);
                 }
             }
             c.s += pptsLength; // [L1:cs->data]…[LN:cs->data]
             c.d += 2 + pptsLength; // [header][numLines] [L1:cs->size/ptr]…[LN:cs->size/ptr]
-            break;
+            return;
         }
 
-        case 6: { // MultiPolygon
-            const pppts = (geom as MultiPolygon).coordinates;
+        case 'MultiPolygon': {
+            const pppts = geom.coordinates;
             c.d += 2 + pppts.length; // [header][numPolygons] [P1:numRings]…[PN:numRings]
             for (const ppts of pppts) {
                 const pptsLength = ppts.length;
@@ -191,29 +177,27 @@ const geosifyMeasureAndValidateGeom = (geom: GeoJSONGeometry, c: GeosifyCounter)
                     const ptsLength = pts.length;
                     const f = pts[ 0 ], l = pts[ ptsLength - 1 ];
                     if (ptsLength && (ptsLength < 3 || f[ 0 ] !== l[ 0 ] || f[ 1 ] !== l[ 1 ])) {
-                        throw new InvalidGeoJSONError(type, geom);
+                        throw new InvalidGeoJSONError(geom);
                     }
                 }
                 c.s += pptsLength; // [R1:cs->data]…[RN:cs->data]
                 c.d += pptsLength; // [R1:cs->size/ptr]…[RN:cs->size/ptr]
             }
-            break;
+            return;
         }
 
-        case 7: { // GeometryCollection
-            const geoms = (geom as GeometryCollection).geometries;
+        case 'GeometryCollection': {
+            const geoms = geom.geometries;
             for (const g of geoms) {
                 geosifyMeasureAndValidateGeom(g, c);
             }
             c.d += 2; // [header][numGeometries]
-            break;
-        }
-
-        default: {
-            throw new GEOSError(`Unexpected geometry type. Expected one of [${GEOSGeometryTypeDecoder.slice(0, 2)},${GEOSGeometryTypeDecoder.slice(3, 8)}] received "${geom.type}"`);
+            return;
         }
 
     }
+
+    throw new InvalidGeoJSONError(geom, true);
 };
 
 
@@ -224,35 +208,34 @@ interface GeosifyEncodeState {
     f: number; // `F` iterator
 }
 
-const geosifyEncodeGeom = (geom: GeoJSONGeometry, s: GeosifyEncodeState): void => {
+const geosifyEncodeGeom = (geom: GeoJSON_Geometry, s: GeosifyEncodeState): void => {
     const { B, F } = s;
     let { d, f } = s;
-    const type = GEOSGeometryType[ geom.type ];
-    switch (type) {
+    switch (geom.type) {
 
-        case 0: { // Point
-            const pt = (geom as Point).coordinates;
+        case 'Point': {
+            const pt = geom.coordinates;
             const dim = pt.length;
-            // B[ b++ ] = type | (isEmpty << 4) | (+hasZ << 5);
+            // B[ b++ ] = typeId | (isEmpty << 4) | (+hasZ << 5);
             if (dim) {
                 F[ f++ ] = pt[ 0 ];
                 F[ f++ ] = pt[ 1 ];
                 if (dim > 2) {
                     F[ f++ ] = pt[ 2 ];
-                    B[ d++ ] = 32; // type | (0 << 4) | (1 << 5)
+                    B[ d++ ] = 32; // typeId | (0 << 4) | (1 << 5)
                 } else {
-                    B[ d++ ] = 0; // type | (0 << 4) | (0 << 5)
+                    B[ d++ ] = 0; // typeId | (0 << 4) | (0 << 5)
                 }
             } else {
-                B[ d++ ] = 16; // type | (1 << 4) | (0 << 5)
+                B[ d++ ] = 16; // typeId | (1 << 4) | (0 << 5)
             }
             break;
         }
 
-        case 4 : { // MultiPoint
-            const pts = (geom as MultiPoint).coordinates;
+        case 'MultiPoint': {
+            const pts = geom.coordinates;
             const hasZ = pts[ 0 ]?.length > 2;
-            B[ d++ ] = hasZ ? 36 : 4; // type | (+hasZ << 5);
+            B[ d++ ] = hasZ ? 36 : 4; // typeId | (+hasZ << 5);
             B[ d++ ] = pts.length;
             for (const pt of pts) {
                 F[ f++ ] = pt[ 0 ];
@@ -264,19 +247,18 @@ const geosifyEncodeGeom = (geom: GeoJSONGeometry, s: GeosifyEncodeState): void =
             break;
         }
 
-        case 1: { // LineString
-            const pts = (geom as LineString).coordinates;
+        case 'LineString': {
+            const pts = geom.coordinates;
             const hasZ = pts[ 0 ]?.length > 2;
-            B[ d++ ] = hasZ ? 33 : 1; // type | (+hasZ << 5);
+            B[ d++ ] = hasZ ? 33 : 1; // typeId | (+hasZ << 5);
             B[ d++ ] = pts.length;
             break;
         }
 
-        case 3: // Polygon
-        case 5: { // MultiLineString
-            const ppts = (geom as Polygon | MultiLineString).coordinates;
+        case 'Polygon': {
+            const ppts = geom.coordinates;
             const hasZ = ppts[ 0 ]?.[ 0 ]?.length > 2;
-            B[ d++ ] = type | (+hasZ << 5);
+            B[ d++ ] = hasZ ? 35 : 3; // typeId | (+hasZ << 5);
             B[ d++ ] = ppts.length;
             for (const pts of ppts) {
                 B[ d++ ] = pts.length;
@@ -284,10 +266,21 @@ const geosifyEncodeGeom = (geom: GeoJSONGeometry, s: GeosifyEncodeState): void =
             break;
         }
 
-        case 6: { // MultiPolygon
-            const pppts = (geom as MultiPolygon).coordinates;
+        case 'MultiLineString': {
+            const ppts = geom.coordinates;
+            const hasZ = ppts[ 0 ]?.[ 0 ]?.length > 2;
+            B[ d++ ] = hasZ ? 37 : 5; // typeId | (+hasZ << 5);
+            B[ d++ ] = ppts.length;
+            for (const pts of ppts) {
+                B[ d++ ] = pts.length;
+            }
+            break;
+        }
+
+        case 'MultiPolygon': {
+            const pppts = geom.coordinates;
             const hasZ = pppts[ 0 ]?.[ 0 ]?.[ 0 ]?.length > 2;
-            B[ d++ ] = type | (+hasZ << 5);
+            B[ d++ ] = hasZ ? 38 : 6; // typeId | (+hasZ << 5);
             B[ d++ ] = pppts.length;
             for (const ppts of pppts) {
                 B[ d++ ] = ppts.length;
@@ -298,9 +291,9 @@ const geosifyEncodeGeom = (geom: GeoJSONGeometry, s: GeosifyEncodeState): void =
             break;
         }
 
-        case 7: { // GeometryCollection
-            const geoms = (geom as GeometryCollection).geometries;
-            B[ s.d++ ] = type;
+        case 'GeometryCollection': {
+            const geoms = geom.geometries;
+            B[ s.d++ ] = 7;
             B[ s.d++ ] = geoms.length;
             for (const g of geoms) {
                 geosifyEncodeGeom(g, s);
@@ -320,15 +313,14 @@ interface GeosifyPopulateState {
     F: Float64Array;
 }
 
-const geosifyPopulateGeom = (geom: GeoJSONGeometry, s: GeosifyPopulateState): void => {
+const geosifyPopulateGeom = (geom: GeoJSON_Geometry, s: GeosifyPopulateState): void => {
     const { B, F } = s;
-    const type = GEOSGeometryType[ geom.type ];
-    switch (type) {
+    switch (geom.type) {
 
         // Point & MultiPoint - skip
 
-        case 1: { // LineString
-            const pts = (geom as LineString).coordinates;
+        case 'LineString': {
+            const pts = geom.coordinates;
             let f = B[ s.s++ ];
             for (const pt of pts) {
                 F[ f++ ] = pt[ 0 ];
@@ -338,9 +330,9 @@ const geosifyPopulateGeom = (geom: GeoJSONGeometry, s: GeosifyPopulateState): vo
             break;
         }
 
-        case 3: // Polygon
-        case 5: { // MultiLineString
-            const ppts = (geom as Polygon | MultiLineString).coordinates;
+        case 'Polygon':
+        case 'MultiLineString': {
+            const ppts = geom.coordinates;
             for (const pts of ppts) {
                 let f = B[ s.s++ ];
                 for (const pt of pts) {
@@ -352,8 +344,8 @@ const geosifyPopulateGeom = (geom: GeoJSONGeometry, s: GeosifyPopulateState): vo
             break;
         }
 
-        case 6: { // MultiPolygon
-            const pppts = (geom as MultiPolygon).coordinates;
+        case 'MultiPolygon': {
+            const pppts = geom.coordinates;
             for (const ppts of pppts) {
                 for (const pts of ppts) {
                     let f = B[ s.s++ ];
@@ -367,8 +359,8 @@ const geosifyPopulateGeom = (geom: GeoJSONGeometry, s: GeosifyPopulateState): vo
             break;
         }
 
-        case 7: { // GeometryCollection
-            const geoms = (geom as GeometryCollection).geometries;
+        case 'GeometryCollection': {
+            const geoms = geom.geometries;
             for (const g of geoms) {
                 geosifyPopulateGeom(g, s);
             }
@@ -382,10 +374,11 @@ const geosifyPopulateGeom = (geom: GeoJSONGeometry, s: GeosifyPopulateState): vo
  * Creates a {@link Geometry} from GeoJSON geometry object.
  *
  * @param geojson - GeoJSON geometry object
+ * @param extras - Optional geometry extras
  * @returns A new geometry
  * @throws {InvalidGeoJSONError} on invalid GeoJSON geometry
  *
- * @example #live
+ * @example
  * const pt = geosifyGeometry({ type: 'Point', coordinates: [ 1, 1 ] });
  * const line = geosifyGeometry({ type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] });
  * const collection = geosifyGeometry({
@@ -395,11 +388,11 @@ const geosifyPopulateGeom = (geom: GeoJSONGeometry, s: GeosifyPopulateState): vo
  *         { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
  *     ],
  * });
- * pt.type(); // 'Point'
- * line.type(); // 'LineString'
- * collection.type(); // 'GeometryCollection'
+ * pt.type; // 'Point'
+ * line.type; // 'LineString'
+ * collection.type; // 'GeometryCollection'
  */
-export function geosifyGeometry(geojson: GeoJSONGeometry): Geometry {
+export function geosifyGeometry<P>(geojson: GeoJSON_Geometry, extras?: GeometryExtras<P>): Geometry<P> {
     const c: GeosifyCounter = { d: 0, s: 0, f: 0 };
     geosifyMeasureAndValidateGeom(geojson, c);
     const buff = geos.buffByL4(3 + c.d + c.s + c.f * 2);
@@ -423,39 +416,56 @@ export function geosifyGeometry(geojson: GeoJSONGeometry): Geometry {
         geos.geosify_geoms(buff[ POINTER ]);
 
         B = geos.U32;
-        return new Geometry(B[ d ] as Ptr<GEOSGeometry>);
+        return new Geometry(
+            B[ d ] as Ptr<GEOSGeometry>,
+            geojson.type,
+            extras,
+        );
     } finally {
         buff.freeIfTmp();
     }
 }
 
 /**
- * Creates an array of {@link Geometry} from an array of GeoJSON geometry objects.
+ * Creates an array of {@link Geometry} from an array of GeoJSON feature objects.
  *
- * @param geojsons - Array of GeoJSON geometry objects
+ * @param geojsons - Array of GeoJSON feature objects
  * @returns An array of new geometries
+ * @throws {InvalidGeoJSONError} on GeoJSON feature without geometry
  * @throws {InvalidGeoJSONError} on invalid GeoJSON geometry
  *
- * @example #live
- * const [ pt, line, collection ] = geosifyGeometries([
- *     { type: 'Point', coordinates: [ 1, 1 ] },
- *     { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
+ * @example
+ * const [ pt, line, collection ] = geosifyFeatures([
  *     {
- *         type: 'GeometryCollection',
- *         geometries: [
- *             { type: 'Point', coordinates: [ 1, 1 ] },
- *             { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
- *         ],
- *     }
+ *         type: 'Feature',
+ *         geometry: { type: 'Point', coordinates: [ 1, 1 ] },
+ *         properties: null,
+ *     },
+ *     {
+ *         type: 'Feature',
+ *         geometry: { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
+ *         properties: null,
+ *     },
+ *     {
+ *         type: 'Feature',
+ *         geometry: {
+ *             type: 'GeometryCollection',
+ *             geometries: [
+ *                 { type: 'Point', coordinates: [ 1, 1 ] },
+ *                 { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] },
+ *             ],
+ *         },
+ *         properties: null,
+ *     },
  * ]);
- * pt.type(); // 'Point'
- * line.type(); // 'LineString'
- * collection.type(); // 'GeometryCollection'
+ * pt.type; // 'Point'
+ * line.type; // 'LineString'
+ * collection.type; // 'GeometryCollection'
  */
-export function geosifyGeometries(geojsons: GeoJSONGeometry[]): Geometry[] {
+export function geosifyFeatures<P>(geojsons: GeoJSON_Feature<GeoJSON_Geometry, P>[]): Geometry<P>[] {
     const c: GeosifyCounter = { d: 0, s: 0, f: 0 };
     for (const geom of geojsons) {
-        geosifyMeasureAndValidateGeom(geom, c);
+        geosifyMeasureAndValidateGeom(geom.geometry, c);
     }
     const buff = geos.buffByL4(3 + c.d + c.s + c.f * 2);
     try {
@@ -468,14 +478,14 @@ export function geosifyGeometries(geojsons: GeoJSONGeometry[]): Geometry[] {
 
         const es: GeosifyEncodeState = { B, d, F: geos.F64, f };
         for (const geom of geojsons) {
-            geosifyEncodeGeom(geom, es);
+            geosifyEncodeGeom(geom.geometry, es);
         }
 
         if (c.s) {
             geos.geosify_geomsCoords(buff[ POINTER ]);
             const ps: GeosifyPopulateState = { B: geos.U32, s, F: geos.F64 };
             for (const geom of geojsons) {
-                geosifyPopulateGeom(geom, ps);
+                geosifyPopulateGeom(geom.geometry, ps);
             }
         }
 
@@ -483,9 +493,14 @@ export function geosifyGeometries(geojsons: GeoJSONGeometry[]): Geometry[] {
 
         B = geos.U32;
         const geometriesLength = geojsons.length;
-        const geosGeometries = Array<Geometry>(geometriesLength);
+        const geosGeometries = Array<Geometry<P>>(geometriesLength);
         for (let i = 0; i < geometriesLength; i++) {
-            geosGeometries[ i ] = new Geometry(B[ d++ ] as Ptr<GEOSGeometry>);
+            const feature = geojsons[ i ];
+            geosGeometries[ i ] = new Geometry(
+                B[ d++ ] as Ptr<GEOSGeometry>,
+                feature.geometry.type,
+                feature,
+            );
         }
         return geosGeometries;
     } finally {

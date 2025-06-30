@@ -1,4 +1,6 @@
 import type { GEOSBufCapStyles, GEOSBufJoinStyles } from '../core/types/WasmGEOS.mjs';
+import type { Polygon } from '../geom/types/Polygon.mjs';
+import type { MultiPolygon } from '../geom/types/MultiPolygon.mjs';
 import { POINTER } from '../core/symbols.mjs';
 import { Geometry } from '../geom/Geometry.mjs';
 import { geos } from '../core/geos.mjs';
@@ -89,11 +91,11 @@ export interface BufferOptions {
  * const empty2 = buffer(lineString([ [ 0, 0 ], [ 10, 10 ] ]), 0); // 'POLYGON EMPTY'
  * const empty3 = buffer(point([ 0, 0 ]), 0); // 'POLYGON EMPTY'
  */
-export function buffer(geometry: Geometry, distance: number, options?: BufferOptions): Geometry {
+export function buffer(geometry: Geometry, distance: number, options?: BufferOptions): Polygon | MultiPolygon {
     const cache = geos.b_p;
     const key = options
         ? [ options.quadrantSegments, options.endCapStyle, options.joinStyle, options.mitreLimit, options.singleSided ].join()
-        : null;
+        : '';
 
     let paramsPtr = cache[ key ];
     if (!paramsPtr) {
@@ -104,7 +106,7 @@ export function buffer(geometry: Geometry, distance: number, options?: BufferOpt
                 geos.GEOSBufferParams_setQuadrantSegments(ptr, quadrantSegments);
             }
             if (endCapStyle != null) {
-                const endCapStyleMap: Record<BufferOptions['endCapStyle'], GEOSBufCapStyles> = {
+                const endCapStyleMap: Record<Required<BufferOptions>['endCapStyle'], GEOSBufCapStyles> = {
                     round: 1,
                     flat: 2,
                     square: 3,
@@ -112,7 +114,7 @@ export function buffer(geometry: Geometry, distance: number, options?: BufferOpt
                 geos.GEOSBufferParams_setEndCapStyle(ptr, endCapStyleMap[ endCapStyle ]);
             }
             if (joinStyle != null) {
-                const joinStyleMap: Record<BufferOptions['joinStyle'], GEOSBufJoinStyles> = {
+                const joinStyleMap: Record<Required<BufferOptions>['joinStyle'], GEOSBufJoinStyles> = {
                     round: 1,
                     mitre: 2,
                     bevel: 3,
@@ -130,5 +132,5 @@ export function buffer(geometry: Geometry, distance: number, options?: BufferOpt
     }
 
     const geomPtr = geos.GEOSBufferWithParams(geometry[ POINTER ], paramsPtr, distance);
-    return new Geometry(geomPtr);
+    return new Geometry(geomPtr) as Polygon | MultiPolygon;
 }

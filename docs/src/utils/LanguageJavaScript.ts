@@ -6,15 +6,15 @@ import { escapeHtml, Language } from '@site/src/utils/Language';
 
 export class FeatureData {
 
-    id: string;
     type = 'Feature' as const;
-    geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>;
+    geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>['geometry'];
     properties: object;
 
+    name: string;
     key: string;
     color: `var(--preview__${number})`;
     geosGeom: InstanceType<typeof window.geos.Geometry>;
-    isActive?: boolean
+    isActive?: boolean;
     layer?: L.GeoJSON;
     vLayer?: L.FeatureGroup; // vertices layer
     dLayer?: L.FeatureGroup; // direction/winding layer
@@ -25,10 +25,10 @@ export class FeatureData {
         keyPrefix: string,
         colorIdx: number,
     ) {
-        this.id = name;
-        this.geometry = geosGeom.toJSON();
+        this.geometry = geosGeom.toJSON().geometry;
         this.properties = {};
 
+        this.name = name;
         this.key = keyPrefix + name;
         this.color = `var(--preview__${colorIdx})`;
         this.geosGeom = geosGeom;
@@ -184,7 +184,9 @@ export class LanguageJavaScript extends Language {
             const keyPrefix = Math.random().toString(36).slice(2);
 
             function addFeature(k: string, v: InstanceType<typeof window.geos.Geometry>) {
-                if (!renderableGeometryTypes.has(v.type()) || window.geos.isEmpty(v)) {
+                if (v.detached) {
+                    values.push([ k, 'Detached Geometry' ]);
+                } else if (!renderableGeometryTypes.has(v.type) || window.geos.isEmpty(v)) {
                     values.push([ k, window.geos.toWKT(v) ]);
                 } else {
                     features.push(new FeatureData(k, v, keyPrefix, (i++) % 8));

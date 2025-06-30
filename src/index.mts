@@ -62,12 +62,34 @@ export { terminate } from './core/geos.mjs';
 
 export { GEOSError } from './core/GEOSError.mjs';
 export { Geometry, type GeometryType } from './geom/Geometry.mjs';
-export { point, lineString, polygon, multiPoint, multiLineString, multiPolygon, geometryCollection } from './helpers/helpers.mjs';
+export { type Point } from './geom/types/Point.mjs';
+export { type LineString } from './geom/types/LineString.mjs';
+export { type LinearRing } from './geom/types/LinearRing.mjs';
+export { type Polygon } from './geom/types/Polygon.mjs';
+export { type MultiPoint } from './geom/types/MultiPoint.mjs';
+export { type MultiLineString } from './geom/types/MultiLineString.mjs';
+export { type MultiPolygon } from './geom/types/MultiPolygon.mjs';
+export { type GeometryCollection } from './geom/types/GeometryCollection.mjs';
+export { type CircularString } from './geom/types/CircularString.mjs';
+export { type CompoundCurve } from './geom/types/CompoundCurve.mjs';
+export { type CurvePolygon } from './geom/types/CurvePolygon.mjs';
+export { type MultiCurve } from './geom/types/MultiCurve.mjs';
+export { type MultiSurface } from './geom/types/MultiSurface.mjs';
+export {
+    type GeometryOptions,
+    point,
+    lineString,
+    polygon,
+    multiPoint,
+    multiLineString,
+    multiPolygon,
+    geometryCollection,
+} from './helpers/helpers.mjs';
 
-export { geosifyGeometry, geosifyGeometries, InvalidGeoJSONError } from './io/geosify.mjs';
-export { jsonifyGeometry, jsonifyGeometries } from './io/jsonify.mjs';
-export { fromWKT, type WKTInputOptions, toWKT, type WKTOutputOptions } from './io/wkt.mjs';
-export { fromWKB, type WKBInputOptions, toWKB, type WKBOutputOptions } from './io/wkb.mjs';
+export { InvalidGeoJSONError } from './io/geosify.mjs';
+export { fromGeoJSON, toGeoJSON } from './io/GeoJSON.mjs';
+export { fromWKT, type WKTInputOptions, toWKT, type WKTOutputOptions } from './io/WKT.mjs';
+export { fromWKB, type WKBInputOptions, toWKB, type WKBOutputOptions } from './io/WKB.mjs';
 
 export { type DensifyOptions } from './measurement/types/DensifyOptions.mjs';
 export { bounds } from './measurement/bounds.mjs';

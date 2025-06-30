@@ -15,11 +15,25 @@ describe('Geometry#clone', () => {
         const original = lineString([ [ 10, 10 ], [ 0, 0 ] ]);
         const copy = original.clone();
         assert.notEqual(original[ POINTER ], copy[ POINTER ]);
-        assert.deepEqual(original.toJSON(), { type: 'LineString', coordinates: [ [ 10, 10 ], [ 0, 0 ] ] });
-        assert.deepEqual(copy.toJSON(), { type: 'LineString', coordinates: [ [ 10, 10 ], [ 0, 0 ] ] });
+        assert.deepEqual(original.toJSON().geometry, { type: 'LineString', coordinates: [ [ 10, 10 ], [ 0, 0 ] ] });
+        assert.deepEqual(copy.toJSON().geometry, { type: 'LineString', coordinates: [ [ 10, 10 ], [ 0, 0 ] ] });
         original.normalize(); // mutate original
-        assert.deepEqual(original.toJSON(), { type: 'LineString', coordinates: [ [ 0, 0 ], [ 10, 10 ] ] });
-        assert.deepEqual(copy.toJSON(), { type: 'LineString', coordinates: [ [ 10, 10 ], [ 0, 0 ] ] });
+        assert.deepEqual(original.toJSON().geometry, { type: 'LineString', coordinates: [ [ 0, 0 ], [ 10, 10 ] ] });
+        assert.deepEqual(copy.toJSON().geometry, { type: 'LineString', coordinates: [ [ 10, 10 ], [ 0, 0 ] ] });
+    });
+
+    it('should clone geometry extra attributes like id or props', () => {
+        const original = lineString([ [ 10, 10 ], [ 0, 0 ] ], { id: 0, properties: { some: 'prop' } });
+        const copy = original.clone();
+        assert.equal(copy.id, 0);
+        assert.equal(copy.props, original.props);
+        assert.deepEqual(copy.props, { some: 'prop' });
+        assert.deepEqual(copy.toJSON(), {
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: [ [ 10, 10 ], [ 0, 0 ] ] },
+            properties: { some: 'prop' },
+            id: 0,
+        });
     });
 
 });

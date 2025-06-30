@@ -1,27 +1,38 @@
 import assert from 'node:assert/strict';
 import { before, describe, it, mock } from 'node:test';
+import type { Feature as GeoJSON_Feature, Geometry as GeoJSON_Geometry } from 'geojson';
 import { initializeForTest } from '../tests-utils.mjs';
-import { geosifyGeometries, geosifyGeometry } from '../../src/io/geosify.mjs';
+import { geosifyFeatures, geosifyGeometry } from '../../src/io/geosify.mjs';
 import { bounds } from '../../src/measurement/bounds.mjs';
-import { toWKT } from '../../src/io/wkt.mjs';
+import { toWKT } from '../../src/io/WKT.mjs';
 import { geos } from '../../src/core/geos.mjs';
 
 
 describe('geosify - GeoJSON to GEOS', () => {
+
+    function verifyResults(geometries: GeoJSON_Geometry[], expectedWKTs: string[]) {
+        // geosifyGeometry
+        const fromGeometries = geometries.map(g => geosifyGeometry(g));
+        assert.deepEqual(fromGeometries.map(g => toWKT(g)), expectedWKTs);
+
+        // geosifyFeatures
+        const features = geometries.map<GeoJSON_Feature>(geometry => ({ type: 'Feature', geometry, properties: null }));
+        const fromFeatures = geosifyFeatures(features);
+        assert.deepEqual(fromFeatures.map(g => toWKT(g)), expectedWKTs);
+    }
 
     before(async () => {
         await initializeForTest();
     });
 
     it('should geosify Point', () => {
-        const geometries = geosifyGeometries([
+        verifyResults([
             { type: 'Point', coordinates: [] },
             { type: 'Point', coordinates: [ 19.847169006933854, 50.06004985917869 ] },
             { type: 'Point', coordinates: [ 19.8471, 50.0600, 271 ] },
             { type: 'Point', coordinates: [ 19.8471, 50.0600, NaN ] },
             { type: 'Point', coordinates: [ 19.8471 ] },
-        ]);
-        assert.deepEqual(geometries.map(g => toWKT(g)), [
+        ], [
             'POINT EMPTY',
             'POINT (19.847169006933854 50.06004985917869)',
             'POINT Z (19.8471 50.06 271)',
@@ -31,13 +42,12 @@ describe('geosify - GeoJSON to GEOS', () => {
     });
 
     it('should geosify LineString', () => {
-        const geometries = geosifyGeometries([
+        verifyResults([
             { type: 'LineString', coordinates: [] },
             { type: 'LineString', coordinates: [ [ 19.9384, 50.0548 ], [ 19.9376, 50.0605 ], [ 19.9390, 50.0620 ] ] },
             { type: 'LineString', coordinates: [ [ 19.9384, 50.0548, 213 ], [ 19.9376, 50.0605, 221 ], [ 19.9390, 50.0620, 222 ] ] },
             { type: 'LineString', coordinates: [ [ 19.9384, 50.0548, 213 ], [ 19.9376, 50.0605 ] ] },
-        ]);
-        assert.deepEqual(geometries.map(g => toWKT(g)), [
+        ], [
             'LINESTRING EMPTY',
             'LINESTRING (19.9384 50.0548, 19.9376 50.0605, 19.939 50.062)',
             'LINESTRING Z (19.9384 50.0548 213, 19.9376 50.0605 221, 19.939 50.062 222)',
@@ -50,13 +60,24 @@ describe('geosify - GeoJSON to GEOS', () => {
             type: 'LineString',
             coordinates: [ [ 19.9384, 50.0548, 213 ] ],
         }), {
-            name: 'GEOSError',
-            message: 'Invalid LineString {"type":"LineString","coordinates":[[19.9384,50.0548,213]]}',
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid LineString: {"type":"LineString","coordinates":[[19.9384,50.0548,213]]}',
+        });
+        assert.throws(() => geosifyFeatures([ {
+            type: 'Feature',
+            geometry: {
+                type: 'LineString',
+                coordinates: [ [ 19.9384, 50.0548, 213 ] ],
+            },
+            properties: null,
+        } ]), {
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid LineString: {"type":"LineString","coordinates":[[19.9384,50.0548,213]]}',
         });
     });
 
     it('should geosify Polygon', () => {
-        const geometries = geosifyGeometries([
+        verifyResults([
             { type: 'Polygon', coordinates: [] },
             { type: 'Polygon', coordinates: [ [] ] },
             {
@@ -78,8 +99,7 @@ describe('geosify - GeoJSON to GEOS', () => {
                     [ [ 19.9069, 50.0602, 205 ], [ 19.9155, 50.0591, 206 ], [ 19.9091, 50.0583, 207 ], [ 19.9069, 50.0602, 205 ] ],
                 ],
             },
-        ]);
-        assert.deepEqual(geometries.map(g => toWKT(g)), [
+        ], [
             'POLYGON EMPTY',
             'POLYGON EMPTY',
             'POLYGON ((19.9068 50.0569, 19.9226 50.0591, 19.9024 50.0623, 19.9068 50.0569))',
@@ -97,20 +117,30 @@ describe('geosify - GeoJSON to GEOS', () => {
             type: 'Polygon',
             coordinates: [ [ [ 19.9068, 50.0569 ], [ 19.9226, 50.0591 ] ] ],
         }), {
-            name: 'GEOSError',
-            message: 'Invalid Polygon {"type":"Polygon","coordinates":[[[19.9068,50.0569],[19.9226,50.0591]]]}',
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid Polygon: {"type":"Polygon","coordinates":[[[19.9068,50.0569],[19.9226,50.0591]]]}',
+        });
+        assert.throws(() => geosifyFeatures([ {
+            type: 'Feature',
+            geometry: {
+                type: 'Polygon',
+                coordinates: [ [ [ 19.9068, 50.0569 ], [ 19.9226, 50.0591 ] ] ],
+            },
+            properties: null,
+        } ]), {
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid Polygon: {"type":"Polygon","coordinates":[[[19.9068,50.0569],[19.9226,50.0591]]]}',
         });
     });
 
     it('should geosify MultiPoint', () => {
-        const geometries = geosifyGeometries([
+        verifyResults([
             { type: 'MultiPoint', coordinates: [] },
             { type: 'MultiPoint', coordinates: [ [ 19.9283, 50.0540 ] ] },
             { type: 'MultiPoint', coordinates: [ [ 19.9283, 50.0540, 206 ] ] },
             { type: 'MultiPoint', coordinates: [ [ 19.9283, 50.0540 ], [ 19.9343, 50.0497 ], [ 19.9449, 50.0455 ] ] },
             { type: 'MultiPoint', coordinates: [ [ 19.9283, 50.0540, 206 ], [ 19.9343, 50.0497, 205.5 ], [ 19.9449, 50.0455, 205 ] ] },
-        ]);
-        assert.deepEqual(geometries.map(g => toWKT(g)), [
+        ], [
             'MULTIPOINT EMPTY',
             'MULTIPOINT ((19.9283 50.054))',
             'MULTIPOINT Z ((19.9283 50.054 206))',
@@ -120,7 +150,7 @@ describe('geosify - GeoJSON to GEOS', () => {
     });
 
     it('should geosify MultiLineString', () => {
-        const geometries = geosifyGeometries([
+        verifyResults([
             { type: 'MultiLineString', coordinates: [] },
             { type: 'MultiLineString', coordinates: [ [ [ 19.9383, 50.0545 ], [ 19.9382, 50.0540 ] ] ] },
             {
@@ -136,8 +166,7 @@ describe('geosify - GeoJSON to GEOS', () => {
                     [ [ 19.9386, 50.0542, 216 ], [ 19.9359, 50.0534, 222 ], [ 19.9354, 50.0529, 218 ] ],
                 ],
             },
-        ]);
-        assert.deepEqual(geometries.map(g => toWKT(g)), [
+        ], [
             'MULTILINESTRING EMPTY',
             'MULTILINESTRING ((19.9383 50.0545, 19.9382 50.054))',
             'MULTILINESTRING ((19.9383 50.0545, 19.9382 50.054), (19.9386 50.0542, 19.9359 50.0534, 19.9354 50.0529))',
@@ -151,13 +180,24 @@ describe('geosify - GeoJSON to GEOS', () => {
             type: 'MultiLineString',
             coordinates: [ [ [ 19.9383, 50.0545 ] ] ],
         }), {
-            name: 'GEOSError',
-            message: 'Invalid MultiLineString {"type":"MultiLineString","coordinates":[[[19.9383,50.0545]]]}',
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid MultiLineString: {"type":"MultiLineString","coordinates":[[[19.9383,50.0545]]]}',
+        });
+        assert.throws(() => geosifyFeatures([ {
+            type: 'Feature',
+            geometry: {
+                type: 'MultiLineString',
+                coordinates: [ [ [ 19.9383, 50.0545 ] ] ],
+            },
+            properties: null,
+        } ]), {
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid MultiLineString: {"type":"MultiLineString","coordinates":[[[19.9383,50.0545]]]}',
         });
     });
 
     it('should geosify MultiPolygon', () => {
-        const geometries = geosifyGeometries([
+        verifyResults([
             { type: 'MultiPolygon', coordinates: [] },
             {
                 type: 'MultiPolygon', coordinates: [
@@ -181,8 +221,7 @@ describe('geosify - GeoJSON to GEOS', () => {
                     ],
                 ],
             },
-        ]);
-        assert.deepEqual(geometries.map(g => toWKT(g)), [
+        ], [
             'MULTIPOLYGON EMPTY',
             'MULTIPOLYGON (' +
             '((19.9068 50.0569, 19.9226 50.0591, 19.9024 50.0623, 19.9068 50.0569),' +
@@ -202,13 +241,24 @@ describe('geosify - GeoJSON to GEOS', () => {
             type: 'MultiPolygon',
             coordinates: [ [ [ [ 19.9068, 50.0569 ], [ 19.9226, 50.0591 ] ] ] ],
         }), {
-            name: 'GEOSError',
-            message: 'Invalid MultiPolygon {"type":"MultiPolygon","coordinates":[[[[19.9068,50.0569],[19.9226,50.0591]]]]}',
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid MultiPolygon: {"type":"MultiPolygon","coordinates":[[[[19.9068,50.0569],[19.9226,50.0591]]]]}',
+        });
+        assert.throws(() => geosifyFeatures([ {
+            type: 'Feature',
+            geometry: {
+                type: 'MultiPolygon',
+                coordinates: [ [ [ [ 19.9068, 50.0569 ], [ 19.9226, 50.0591 ] ] ] ],
+            },
+            properties: null,
+        } ]), {
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid MultiPolygon: {"type":"MultiPolygon","coordinates":[[[[19.9068,50.0569],[19.9226,50.0591]]]]}',
         });
     });
 
     it('should geosify GeometryCollection', () => {
-        const geometries = geosifyGeometries([
+        verifyResults([
             { type: 'GeometryCollection', geometries: [] },
             {
                 type: 'GeometryCollection', geometries: [
@@ -221,8 +271,7 @@ describe('geosify - GeoJSON to GEOS', () => {
                     { type: 'Point', coordinates: [ 19.9379879336, 50.0615117772 ] },
                 ],
             },
-        ]);
-        assert.deepEqual(geometries.map(g => toWKT(g)), [
+        ], [
             'GEOMETRYCOLLECTION EMPTY',
             'GEOMETRYCOLLECTION (' +
             'POINT (19.9379879336 50.0615117772), ' +
@@ -233,13 +282,30 @@ describe('geosify - GeoJSON to GEOS', () => {
     });
 
     it('should throw on invalid GeoJSON geometry', () => {
+        // feature instead of geometry
         assert.throws(() => geosifyGeometry({
             type: 'Feature',
-            properties: {},
             geometry: { type: 'Point', coordinates: [ 1, 1 ] },
+            properties: null,
         } as any), {
-            name: 'GEOSError',
-            message: 'Unexpected geometry type. Expected one of [Point,LineString,Polygon,MultiPoint,MultiLineString,MultiPolygon,GeometryCollection] received "Feature"',
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid GeoJSON geometry: {"type":"Feature","geometry":{"type":"Point","coordinates":[1,1]},"properties":null}',
+        });
+        // geometry instead of feature
+        assert.throws(() => geosifyFeatures([
+            { type: 'Point', coordinates: [ 1, 1 ] } as any,
+        ]), {
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid GeoJSON geometry: undefined',
+        });
+        // feature with `null` geometry
+        assert.throws(() => geosifyFeatures([ {
+            type: 'Feature',
+            geometry: null!,
+            properties: null,
+        } ]), {
+            name: 'InvalidGeoJSONError',
+            message: 'Invalid GeoJSON geometry: null',
         });
     });
 
@@ -292,16 +358,20 @@ describe('geosify - GeoJSON to GEOS', () => {
         const malloc = mock.method(geos, 'malloc');
         const free = mock.method(geos, 'free');
 
-        geosifyGeometries([
-            { type: 'Point', coordinates: [ 1, 2, 3 ] },
-        ]);
+        geosifyFeatures([ {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [ Math.random(), Math.random() ] },
+            properties: null,
+        } ]);
 
         assert.equal(malloc.mock.callCount(), 0);
         assert.equal(free.mock.callCount(), 0);
 
-        geosifyGeometries(Array.from({ length: 1000 }, () => (
-            { type: 'Point', coordinates: [ Math.random(), Math.random() ] }
-        )));
+        geosifyFeatures(Array.from({ length: 1000 }, () => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [ Math.random(), Math.random() ] },
+            properties: null,
+        })));
 
         assert.equal(malloc.mock.callCount(), 1);
         const mallocCall = malloc.mock.calls[ 0 ];

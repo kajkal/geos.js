@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
-import { fromWKT, toWKT } from '../../src/io/wkt.mjs';
+import { fromWKT, toWKT } from '../../src/io/WKT.mjs';
 
 
 describe('Geometry#orientPolygons', () => {

@@ -6,7 +6,7 @@ import { POINTER } from '../../src/core/symbols.mjs';
 import { makeValid } from '../../src/operations/makeValid.mjs';
 import { isValid } from '../../src/predicates/isValid.mjs';
 import { lineString, point } from '../../src/helpers/helpers.mjs';
-import { fromWKT, toWKT } from '../../src/io/wkt.mjs';
+import { fromWKT, toWKT } from '../../src/io/WKT.mjs';
 import { geos } from '../../src/core/geos.mjs';
 
 
@@ -37,7 +37,7 @@ describe('makeValid', () => {
         assert.equal(create.mock.callCount(), 3);
 
         assert.deepEqual(geos.m_v, {
-            null: create.mock.calls[ 0 ].result,
+            '': create.mock.calls[ 0 ].result,
             'structure,': create.mock.calls[ 1 ].result,
             'structure,true': create.mock.calls[ 2 ].result,
         });

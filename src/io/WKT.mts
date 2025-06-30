@@ -35,7 +35,7 @@ export function fromWKT(wkt: string, options?: WKTInputOptions): Geometry {
     const cache = geos.t_r;
     const key = options
         ? [ options.fix ].join()
-        : null;
+        : '';
 
     let readerPtr = cache[ key ];
     if (!readerPtr) {
@@ -100,7 +100,7 @@ export function toWKT(geometry: Geometry, options?: WKTOutputOptions): string {
     const cache = geos.t_w;
     const key = options
         ? [ options.dim, options.precision, options.trim ].join()
-        : null;
+        : '';
 
     let writerPtr = cache[ key ];
     if (!writerPtr) {

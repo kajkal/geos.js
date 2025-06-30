@@ -1,4 +1,4 @@
-import type { Point as GeoJSONPoint } from 'geojson';
+import type { Point as GeoJSON_Point } from 'geojson';
 import type { GEOSGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
 import { POINTER } from '../core/symbols.mjs';
 import { Geometry } from '../geom/Geometry.mjs';
@@ -86,7 +86,7 @@ export interface IsValidOptions {
  * const poly_valid2 = isValid(poly, { isInvertedRingValid: true }); // true
  */
 export function isValid(geometry: Geometry, options?: IsValidOptions): boolean {
-    return Boolean(geos.GEOSisValidDetail(geometry[ POINTER ], +options?.isInvertedRingValid, 0 as Ptr<string[]>, 0 as Ptr<GEOSGeometry[]>));
+    return Boolean(geos.GEOSisValidDetail(geometry[ POINTER ], options?.isInvertedRingValid ? 1 : 0, 0 as Ptr<string[]>, 0 as Ptr<GEOSGeometry[]>));
 }
 
 
@@ -120,12 +120,12 @@ export function isValid(geometry: Geometry, options?: IsValidOptions): boolean {
 export function isValidOrThrow(geometry: Geometry, options?: IsValidOptions): void {
     const r = geos.u1;
     const l = geos.u2;
-    const isValid = geos.GEOSisValidDetail(geometry[ POINTER ], +options?.isInvertedRingValid, r[ POINTER ], l[ POINTER ]);
+    const isValid = geos.GEOSisValidDetail(geometry[ POINTER ], options?.isInvertedRingValid ? 1 : 0, r[ POINTER ], l[ POINTER ]);
     if (!isValid) {
         const reasonPtr = r.get() as Ptr<string>;
         const reason = geos.decodeString(reasonPtr);
-        const pt = new Geometry(l.get() as Ptr<GEOSGeometry>);
-        const location = (jsonifyGeometry(pt) as GeoJSONPoint).coordinates;
+        const pt = new Geometry(l.get() as Ptr<GEOSGeometry>, 'Point');
+        const location = jsonifyGeometry<GeoJSON_Point>(pt).coordinates;
         geos.free(reasonPtr);
         pt.free();
         throw new TopologyValidationError(reason, location);

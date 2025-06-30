@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { before, describe, it, mock } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
-import { fromWKT, toWKT } from '../../src/io/wkt.mjs';
+import { fromWKT, toWKT } from '../../src/io/WKT.mjs';
 import { geos } from '../../src/core/geos.mjs';
 
 
@@ -32,7 +32,7 @@ describe('WKT', () => {
             assert.equal(create.mock.callCount(), 3);
 
             assert.deepEqual(geos.t_r, {
-                null: create.mock.calls[ 0 ].result,
+                '': create.mock.calls[ 0 ].result,
                 'false': create.mock.calls[ 1 ].result,
                 'true': create.mock.calls[ 2 ].result,
             });
@@ -48,7 +48,7 @@ describe('WKT', () => {
                 name: 'GEOSError::IllegalArgumentException',
                 message: 'Points of LinearRing do not form a closed linestring',
             });
-            assert.deepEqual(fromWKT(input, { fix: true }).toJSON(), {
+            assert.deepEqual(fromWKT(input, { fix: true }).toJSON().geometry, {
                 type: 'Polygon',
                 coordinates: [ [ [ 0, 0 ], [ 1, 0 ], [ 1, 1 ], [ 0, 0 ] ] ],
             });
@@ -81,7 +81,7 @@ describe('WKT', () => {
             assert.equal(create.mock.callCount(), 4);
 
             assert.deepEqual(geos.t_w, {
-                null: create.mock.calls[ 0 ].result,
+                '': create.mock.calls[ 0 ].result,
                 '2,,': create.mock.calls[ 1 ].result,
                 '2,8,': create.mock.calls[ 2 ].result,
                 '3,6,': create.mock.calls[ 3 ].result,

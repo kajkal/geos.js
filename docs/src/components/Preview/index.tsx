@@ -18,7 +18,7 @@ interface PreviewProps {
     isMapOptional?: boolean;
 }
 
-type RenderErrorHandler = (error: Error, id: string) => void;
+type RenderErrorHandler = (error: Error, feature: FeatureData) => void;
 
 
 export default function Preview(props: PreviewProps) {
@@ -33,11 +33,11 @@ export default function Preview(props: PreviewProps) {
         setData(js.evalCode(code));
     }, [ code ]);
 
-    const handleError: RenderErrorHandler = React.useCallback((error, id) => {
+    const handleError: RenderErrorHandler = React.useCallback((error, feature) => {
         setData(prevState => ({
             ...prevState,
             errors: [ ...prevState.errors || [], error ],
-            features: prevState.features.filter(f => f.id !== id),
+            features: prevState.features.filter(f => f !== feature),
         }));
     }, []);
 
@@ -73,9 +73,9 @@ class GeoJSONErrorBoundary extends React.Component<
 
     componentDidCatch(error: any) {
         const { f } = this.props;
-        error.name = `Cannot render geometry "${f.id}"`;
+        error.name = `Cannot render geometry "${f.name}"`;
         error.WKT = window.geos.toWKT(f.geosGeom);
-        this.props.onError(error, f.id);
+        this.props.onError(error, f);
     }
 
     render() {
@@ -142,13 +142,19 @@ const ValuePreview: React.FunctionComponent<{ entry: ValueData; }> = ({ entry: [
     );
 };
 
-const ValuesPreview: React.FunctionComponent<{ values?: ValueData[] }> = ({ values }) => {
+interface ValuesPreviewProps {
+    values?: ValueData[];
+    label?: string;
+    className?: string;
+}
+
+const ValuesPreview: React.FunctionComponent<ValuesPreviewProps> = ({ values, label = 'Outcome', className }) => {
     if (!values?.length) {
         return null;
     }
     return (
-        <div className={styles.previewSection}>
-            <span className={styles.previewSectionBar}>Outcome</span>
+        <div className={clsx(styles.previewSection, className)}>
+            <span className={styles.previewSectionBar}>{label}</span>
             <pre className={styles.previewSectionBody}>
                 {values.map((entry) => (
                     <ValuePreview key={entry[ 0 ]} entry={entry} />
@@ -321,7 +327,7 @@ const VisibilityControl: React.FunctionComponent<{ features: FeatureData[] }> = 
                             }
                         }}
                     />
-                    {f.id}
+                    {f.name}
                 </label>
             ))}
         </div>
@@ -405,7 +411,7 @@ const useVerticesLayer = (f: FeatureData, initialVisibility: boolean) => {
                 }
             };
 
-            const visitVertices = (geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>) => {
+            const visitVertices = (geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>['geometry']) => {
                 switch (geometry.type) {
                     case 'Point': {
                         addVertexMarkers([ geometry.coordinates ], outerVertexStyle);
@@ -493,7 +499,7 @@ const useDirectionLayer = (f: FeatureData, initialVisibility: boolean) => {
                 }
             };
 
-            const getArrows = (geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>) => {
+            const getArrows = (geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>['geometry']) => {
                 switch (geometry.type) {
                     case 'LineString': {
                         const pts = geometry.coordinates;
@@ -563,8 +569,20 @@ const FeaturePopup: React.FunctionComponent<FeaturePopupProps> = ({ f, ...props 
     return (
         <Popup className={styles.featurePopup}>
             <header className={styles.featurePopupHeader}>
-                <code>{f.id}</code><i>{f.geometry.type}</i>
+                <code>{f.name}</code><i>{f.geometry.type}</i>
             </header>
+            {f.geosGeom.id != null ? (
+                <div className={clsx(styles.featurePopupId, styles.value)}>
+                    <span>ID</span>: <strong className={styles.valueValue}>{JSON.stringify(f.geosGeom.id)}</strong>
+                </div>
+            ) : null}
+            {f.geosGeom.props ? (
+                <ValuesPreview
+                    values={Object.entries(f.geosGeom.props)}
+                    label='Properties'
+                    className={clsx(styles.miniPreviewSection, styles.featurePopupProperties)}
+                />
+            ) : null}
             <ul className={styles.featurePopupActions}>
                 <li>
                     <label className={clsx(styles.checkboxLabel, styles.featurePopupCheckbox)}>
@@ -590,7 +608,7 @@ const FeaturePopup: React.FunctionComponent<FeaturePopupProps> = ({ f, ...props 
                     <button
                         className={clsx('button', 'button--outline', styles.featurePopupAction, isCopied === 'json' ? 'button--success' : 'button--secondary')}
                         onClick={() => {
-                            copy(JSON.stringify(f.geometry));
+                            copy(JSON.stringify(window.geos.toGeoJSON(f.geosGeom)));
                             setIsCopied('json');
                         }}
                     >

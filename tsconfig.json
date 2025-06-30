@@ -6,7 +6,9 @@
     "verbatimModuleSyntax": true,
     "stripInternal": true,
     "isolatedDeclarations": true,
-    "declaration": true
+    "declaration": true,
+    "strict": true,
+    "strictPropertyInitialization": false
   },
   "include": [
     "src/**/*",

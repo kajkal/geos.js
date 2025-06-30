@@ -3,7 +3,7 @@ import { before, describe, it, mock } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import type { Geometry } from '../../src/geom/Geometry.mjs';
 import { lineString, point } from '../../src/helpers/helpers.mjs';
-import { fromWKT, toWKT } from '../../src/io/wkt.mjs';
+import { fromWKT, toWKT } from '../../src/io/WKT.mjs';
 import { area } from '../../src/measurement/area.mjs';
 import { buffer } from '../../src/operations/buffer.mjs';
 import { geos } from '../../src/core/geos.mjs';
@@ -34,7 +34,7 @@ describe('buffer', () => {
         assert.equal(create.mock.callCount(), 3);
 
         assert.deepEqual(geos.b_p, {
-            null: create.mock.calls[ 0 ].result,
+            '': create.mock.calls[ 0 ].result,
             '12,flat,,,': create.mock.calls[ 1 ].result,
             '12,,,,': create.mock.calls[ 2 ].result,
         });
@@ -111,6 +111,20 @@ describe('buffer', () => {
         assert.equal(toWKT(o), 'POLYGON EMPTY');
         o = buffer(fromWKT('POLYGON ((0 0, 1 0, 1 1, 0 0))'), -1);
         assert.equal(toWKT(o), 'POLYGON EMPTY');
+    });
+
+    it('should return buffered point', () => {
+        let i: Geometry, o: Geometry;
+
+        i = fromWKT('POINT (0 0)');
+        o = buffer(i, 1, { quadrantSegments: 1 });
+        assert.equal(area(o), 2);
+        assert.equal(toWKT(o), 'POLYGON ((1 0, 0 -1, -1 0, 0 1, 1 0))');
+
+        i = fromWKT('MULTIPOINT (0 0, 4 4)');
+        o = buffer(i, 1, { quadrantSegments: 1 });
+        assert.equal(area(o), 4);
+        assert.equal(toWKT(o), 'MULTIPOLYGON (((5 4, 4 3, 3 4, 4 5, 5 4)), ((1 0, 0 -1, -1 0, 0 1, 1 0)))');
     });
 
     it('should return buffered linestring', () => {

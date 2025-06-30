@@ -3,27 +3,35 @@
     flex-direction: column;
     gap: var(--ifm-pre-padding);
     padding: var(--ifm-pre-padding);
-
-    --section-bar-offset: -0.25rem;
-    --section-bar-padding: 0.2rem 1rem;
-    --section-bar-font: 0.75rem / var(--ifm-pre-line-height) var(--ifm-font-family-monospace);
 }
 
 .previewSection {
     position: relative;
+    --bar-offset: -0.25rem;
+    --bar-padding: 0.2rem 1rem;
     --bar-background-color: var(--preview-background-color);
     --bar-border-color: var(--preview-border-color);
     --bar-color: var(--preview-color);
+    --bar-font: 0.75rem / var(--ifm-pre-line-height) var(--ifm-font-family-monospace);
+    --body-padding: 2rem 1rem 1rem;
     --body-background-color: var(--code-background);
     --body-border-color: var(--bar-border-color);
+    --body-font: 0.875rem / var(--ifm-pre-line-height) var(--ifm-font-family-monospace);
+}
+
+.miniPreviewSection {
+    --bar-padding: 0.125rem 0.625rem;
+    --body-padding: 1.625rem 0.625rem 0.625rem;
+    --bar-font: 0.6875rem / var(--ifm-pre-line-height) var(--ifm-font-family-monospace);
+    --body-font: 0.75rem / var(--ifm-pre-line-height) var(--ifm-font-family-monospace);
 }
 
 .previewSectionBar {
     position: absolute;
-    top: var(--section-bar-offset);
-    left: var(--section-bar-offset);
-    padding: var(--section-bar-padding);
-    font: var(--section-bar-font);
+    top: var(--bar-offset);
+    left: var(--bar-offset);
+    padding: var(--bar-padding);
+    font: var(--bar-font);
 
     border: 1px solid var(--bar-border-color);
     background-color: var(--bar-background-color);
@@ -35,8 +43,8 @@
 }
 
 .previewSectionBody {
-    font-size: 0.875rem;
-    padding-top: 2rem;
+    font: var(--body-font);
+    padding: var(--body-padding);
     margin: 0;
     border: 1px solid var(--body-border-color);
     background-color: var(--body-background-color);
@@ -173,6 +181,7 @@
 
     :global .leaflet-popup-content {
         margin: 0.625rem 0.875rem 1rem;
+        font-size: inherit;
     }
 }
 
@@ -187,6 +196,16 @@
     code {
         padding: 0 0.25rem;
     }
+}
+
+.featurePopupId {
+    font: 0.6875rem / var(--ifm-pre-line-height) var(--ifm-font-family-monospace);
+    margin: 0.5rem 0 var(--ifm-list-item-margin) !important;
+}
+
+.featurePopupProperties {
+    --body-background-color: var(--preview-background-color);
+    margin: 1rem 0 var(--ifm-list-item-margin) !important;
 }
 
 .featurePopupActions {

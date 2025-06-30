@@ -1,5 +1,11 @@
 .monaco-editor {
     outline-width: 0 !important;
+    font-family: var(--ifm-font-family-base) !important;
+    --monaco-monospace-font: var(--ifm-font-family-monospace) !important;
+
+    .shadow-root-host {
+        font-family: var(--ifm-font-family-base) !important;
+    }
 }
 
 .decorationsOverviewRuler {
@@ -7,6 +13,7 @@
     top: -1px !important;
 }
 
-.overflowingContentWidgets > div {
+.overflowingContentWidgets > div,
+.overflowingOverlayWidgets > div {
     z-index: 1500 !important;
 }
