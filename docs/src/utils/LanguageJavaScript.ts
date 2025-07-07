@@ -1,19 +1,21 @@
 import React from 'react';
 import type L from 'leaflet';
 import { Options as AcornOptions, parse, Pattern, Program, Token, tokTypes } from 'acorn';
+import { type Geometry as GeoJSON_Geometry } from 'geojson';
+import { type Geometry } from 'geos.js';
 import { escapeHtml, Language } from '@site/src/utils/Language';
 
 
 export class FeatureData {
 
     type = 'Feature' as const;
-    geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>['geometry'];
+    geometry: GeoJSON_Geometry;
     properties: object;
 
     name: string;
     key: string;
     color: `var(--preview__${number})`;
-    geosGeom: InstanceType<typeof window.geos.Geometry>;
+    geosGeom: Geometry;
     isActive?: boolean;
     layer?: L.GeoJSON;
     vLayer?: L.FeatureGroup; // vertices layer
@@ -21,7 +23,7 @@ export class FeatureData {
 
     constructor(
         name: string,
-        geosGeom: InstanceType<typeof window.geos.Geometry>,
+        geosGeom: Geometry,
         keyPrefix: string,
         colorIdx: number,
     ) {
@@ -183,7 +185,7 @@ export class LanguageJavaScript extends Language {
 
             const keyPrefix = Math.random().toString(36).slice(2);
 
-            function addFeature(k: string, v: InstanceType<typeof window.geos.Geometry>) {
+            function addFeature(k: string, v: Geometry) {
                 if (v.detached) {
                     values.push([ k, 'Detached Geometry' ]);
                 } else if (!renderableGeometryTypes.has(v.type) || window.geos.isEmpty(v)) {
@@ -200,11 +202,11 @@ export class LanguageJavaScript extends Language {
 
             for (const k in result) {
                 const v = result[ k ];
-                if (Array.isArray(v) && v.every(el => el instanceof window.geos.Geometry)) {
+                if (Array.isArray(v) && v.length && v.every(window.geos.isGeometry)) {
                     for (let j = 0; j < v.length; j++) {
                         addFeature(`${k}[${j}]`, v[ j ]);
                     }
-                } else if (v instanceof window.geos.Geometry) {
+                } else if (window.geos.isGeometry(v)) {
                     addFeature(k, v);
                 } else {
                     values.push([ k, v ]);

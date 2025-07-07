@@ -1,5 +1,5 @@
 import type { Feature as GeoJSON_Feature, FeatureCollection as GeoJSON_FeatureCollection, Geometry as GeoJSON_Geometry } from 'geojson';
-import { Geometry } from '../geom/Geometry.mjs';
+import { type Geometry, GeometryRef } from '../geom/Geometry.mjs';
 import { geosifyFeatures, geosifyGeometry } from './geosify.mjs';
 import { jsonifyFeatures } from './jsonify.mjs';
 
@@ -11,7 +11,7 @@ import { jsonifyFeatures } from './jsonify.mjs';
  * - GeoJSON `Geometry` or GeoJSON `Feature` it returns a **single** geometry,
  * - GeoJSON `FeatureCollection` it returns an **array** of geometries.
  *
- * GeoJSON `Feature` properties are saved in the [`props`]{@link Geometry#props}
+ * GeoJSON `Feature` properties are saved in the [`props`]{@link GeometryRef#props}
  * field of the created geometry object.
  *
  * Loading multiple geometries from a single `FeatureCollection` is faster
@@ -87,7 +87,7 @@ export function fromGeoJSON<P>(geojson: GeoJSON_Geometry | GeoJSON_Feature<GeoJS
  * @returns GeoJSON `Feature` or GeoJSON `FeatureCollection` object
  * @throws {GEOSError} when called with an unsupported geometry type (not GeoJSON)
  *
- * @see {@link Geometry#toJSON} converts geometry to a GeoJSON `Feature` object
+ * @see {@link GeometryRef#toJSON} converts geometry to a GeoJSON `Feature` object
  *
  * @example #live
  * const a = point([ 0, 0 ]);

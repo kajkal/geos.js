@@ -1,9 +1,9 @@
 import type { Feature as GeoJSON_Feature, MultiPoint as GeoJSON_MultiPoint } from 'geojson';
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
 /**
- * MultiPoint is an instance of {@link Geometry} that represents the multi point geometry.
+ * MultiPoint is an instance of {@link GeometryRef} that represents the multi point geometry.
  *
  * @see {@link multiPoint} creates a multi point geometry from an array of positions
  *
@@ -15,7 +15,7 @@ import { Geometry } from '../Geometry.mjs';
  * const b = multiPoint([ [ 0, 0 ], [ 1, 1 ], [ 2, 2 ] ]); // shortcut to above
  * const c = fromWKT('MULTIPOINT (0 0, 1 1, 2 2)');
  */
-export interface MultiPoint<P = unknown> extends Geometry<P> {
+export interface MultiPoint<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'MultiPoint';
 

@@ -24,7 +24,7 @@ declare const THIS_FILE: symbol; // to omit ^ @file doc from the bundle
 import type { Feature as GeoJSON_Feature, Geometry as GeoJSON_Geometry, Position } from 'geojson';
 import type { Ptr, u32 } from '../core/types/WasmGEOS.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry, GEOSGeometryTypeDecoder } from '../geom/Geometry.mjs';
+import { type Geometry, GeometryRef, GEOSGeometryTypeDecoder } from '../geom/Geometry.mjs';
 import { GEOSError } from '../core/GEOSError.mjs';
 import { geos } from '../core/geos.mjs';
 
@@ -151,7 +151,7 @@ const jsonifyGeom = (s: JsonifyState): GeoJSON_Geometry => {
  * const b_json = jsonifyGeometry(b); // { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] };
  * const c_json = jsonifyGeometry(c); // { type: 'Polygon', coordinates: [ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ] };
  */
-export function jsonifyGeometry<T extends GeoJSON_Geometry>(geometry: Geometry): T {
+export function jsonifyGeometry<T extends GeoJSON_Geometry>(geometry: GeometryRef): T {
     const buff = geos.buff;
     let tmpOutBuffPtr: 0 | Ptr<u32>;
     try {

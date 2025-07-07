@@ -1,6 +1,6 @@
 import type { PrecisionGridOptions } from './types/PrecisionGridOptions.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry } from '../geom/Geometry.mjs';
+import { type Geometry, GeometryRef } from '../geom/Geometry.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -26,5 +26,5 @@ export function union(a: Geometry, b: Geometry, options?: PrecisionGridOptions):
     const geomPtr = (options?.gridSize != null)
         ? geos.GEOSUnionPrec(a[ POINTER ], b[ POINTER ], options.gridSize)
         : geos.GEOSUnion(a[ POINTER ], b[ POINTER ]);
-    return new Geometry(geomPtr);
+    return new GeometryRef(geomPtr) as Geometry;
 }

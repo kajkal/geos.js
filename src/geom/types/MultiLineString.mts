@@ -1,9 +1,9 @@
 import type { Feature as GeoJSON_Feature, MultiLineString as GeoJSON_MultiLineString } from 'geojson';
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
 /**
- * MultiLineString is an instance of {@link Geometry} that represents the multi line string geometry.
+ * MultiLineString is an instance of {@link GeometryRef} that represents the multi line string geometry.
  *
  * @see {@link multiLineString} creates a multi line string geometry from an array of line strings coordinates
  *
@@ -21,7 +21,7 @@ import { Geometry } from '../Geometry.mjs';
  * ]);
  * const c = fromWKT('MULTILINESTRING ((0 0, 1 1), (2 2, 3 3))');
  */
-export interface MultiLineString<P = unknown> extends Geometry<P> {
+export interface MultiLineString<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'MultiLineString';
 

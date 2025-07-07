@@ -33,6 +33,7 @@ const apiSidebar: SidebarCategory[] = [
     {
         label: 'Other',
         dir: '/other',
+        forced: new Set([ 'prepare', 'unprepare' ]),
     },
     {
         label: 'Types',
@@ -83,6 +84,7 @@ namespace TS {
         ReferenceType |
         ArrayType | // a[][]
         UnionType | // a | b
+        IntersectionType | // a & b
         TypeLiteral | // { a: b }
         TupleType // [ a, b ]
 
@@ -116,6 +118,11 @@ namespace TS {
 
     export interface UnionType {
         type: 'union',
+        types: Type[];
+    }
+
+    export interface IntersectionType {
+        type: 'intersection',
         types: Type[];
     }
 
@@ -401,8 +408,14 @@ void async function main() {
                 case ts.SyntaxKind.ObjectKeyword:
                 case ts.SyntaxKind.VoidKeyword:
                 case ts.SyntaxKind.NeverKeyword:
+                case ts.SyntaxKind.UnknownKeyword:
                 case ts.SyntaxKind.LiteralType: {
                     return { type: 'simple', value: typeNode.getText() };
+                }
+                case ts.SyntaxKind.TypePredicate: {
+                    assert.ok(ts.isTypePredicateNode(typeNode));
+                    assert.ok(!typeNode.assertsModifier);
+                    return { type: 'simple', value: 'boolean' };
                 }
                 case ts.SyntaxKind.ThisType: {
                     assert.ok(ts.isThisTypeNode(typeNode));
@@ -449,6 +462,13 @@ void async function main() {
                     assert.ok(ts.isUnionTypeNode(typeNode));
                     return {
                         type: 'union',
+                        types: typeNode.types.map(node => this.processTypeNode(node)),
+                    };
+                }
+                case ts.SyntaxKind.IntersectionType: {
+                    assert.ok(ts.isIntersectionTypeNode(typeNode));
+                    return {
+                        type: 'intersection',
                         types: typeNode.types.map(node => this.processTypeNode(node)),
                     };
                 }
@@ -612,6 +632,7 @@ void async function main() {
         readonly kind = 'type';
 
         definition: TS.Type;
+        typeParams?: TS.TypeParamData[];
         jsDoc: JSDoc.Data;
 
         constructor(symbol: ts.Symbol, node?: ts.TypeAliasDeclaration) {
@@ -625,6 +646,10 @@ void async function main() {
 
             this.name = node.name.text;
             this.definition = this.processTypeNode(node.type);
+            this.typeParams = node.typeParameters
+                ?.map(typeParamNode => ({
+                    name: typeParamNode.name.text,
+                }));
             this.jsDoc = JSDoc.readJSDoc(node);
         }
 
@@ -877,7 +902,7 @@ void async function main() {
                 case 'this': {
                     let linkTarget: string;
                     if (this.symbol.kind === 'class') {
-                        linkTarget = '#'; // ref to the current page
+                        linkTarget = symbolMap.relativeURL(this.symbol, this.symbol); // ref to the current page
                     } else if (this.symbol.kind === 'function') {
                         assert.ok(this.symbol.parent);
                         linkTarget = symbolMap.relativeURL(this.symbol, this.symbol.parent); // ref to parent
@@ -917,9 +942,14 @@ void async function main() {
                         .map(t => wrapper(this.formatType(t)))
                         .join(' \\| ');
                 }
+                case 'intersection': {
+                    return type.types
+                        .map(t => wrapper(this.formatType(t)))
+                        .join(' & ');
+                }
                 case 'typeLiteral': {
                     const body = type.members
-                        .map(m => `${m.name}${m.optional ? '?' : ''}: ${this.formatType(m.type)}`)
+                        .map(m => `${m.name.replace(/(_)/g, '\\$1')}${m.optional ? '?' : ''}: ${this.formatType(m.type)}`)
                         .join(', ');
                     return wrapper(`\\{ ${body} }`);
                 }
@@ -973,8 +1003,8 @@ void async function main() {
             header: 'Description',
             format: '---',
             toCell: (_tsData: TS.ParamData, jsDocData: Pick<JSDoc.ParamData, 'description'>) => {
-                const desc = jsDocData.description;
-                if (!desc.length) return '';
+                const desc = jsDocData?.description;
+                if (!desc?.length) return '';
 
                 const rawLines = this.formatRichText(desc).replace(/^[\s-]*/, '').split(/\r?\n/);
                 const lines = [];
@@ -1013,11 +1043,13 @@ void async function main() {
             },
         };
 
-        writeTypeParameters(data: FunctionSymbol | ClassLikeSymbol, options: { heading: '##' | '###' }) {
+        writeTypeParameters(data: TypeSymbol | FunctionSymbol | ClassLikeSymbol, options: { heading: null | '##' | '###' }) {
             const { name, typeParams, jsDoc } = data;
             if (!typeParams?.length) return;
 
-            this.lines.push(`${options.heading} Type Parameters`, '');
+            if (options.heading) {
+                this.lines.push(`${options.heading} Type Parameters`, '');
+            }
             for (const typeParam of typeParams) {
                 const jsDocData = jsDoc.typeParams.find(tp => tp.name === typeParam.name);
                 const id = `${name}:${typeParam.name}`;
@@ -1196,7 +1228,7 @@ void async function main() {
                 .join(', ');
             const returns = this.formatType(data.returns);
             const signature = `(${params}) -> ${returns}`;
-            this.lines.push(`<pre className='beefy-code-line'>${signature}</pre>`);
+            this.lines.push(`<pre className='beefy-code-line'>${signature}</pre>`, '');
         }
 
         writeMethods(data: ClassLikeSymbol, options: { heading: '##' | '###', abbreviated?: boolean }) {
@@ -1375,7 +1407,8 @@ void async function main() {
             writer.lines.push(`<div className='indented-section'>`);
 
             if (data.kind === 'type') {
-                writer.lines.push(`<pre className='beefy-code-line'>${writer.formatType(data.definition)}</pre>`);
+                writer.lines.push(`<pre className='beefy-code-line'>${writer.formatType(data.definition)}</pre>`, '');
+                writer.writeTypeParameters(data, { heading: null });
                 writer.writeDescription(data);
             } else {
                 writer.writeDescription(data);

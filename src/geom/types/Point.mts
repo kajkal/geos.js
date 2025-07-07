@@ -1,9 +1,9 @@
 import type { Feature as GeoJSON_Feature, Point as GeoJSON_Point } from 'geojson';
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
 /**
- * Point is an instance of {@link Geometry} that represents the point geometry.
+ * Point is an instance of {@link GeometryRef} that represents the point geometry.
  *
  * @see {@link point} creates a point geometry from a single coordinate
  *
@@ -12,7 +12,7 @@ import { Geometry } from '../Geometry.mjs';
  * const b = point([ 0, 0 ]); // shortcut to above
  * const c = fromWKT('POINT (0 0)');
  */
-export interface Point<P = unknown> extends Geometry<P> {
+export interface Point<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'Point';
 

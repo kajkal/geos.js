@@ -37,6 +37,7 @@
     "@docusaurus/module-type-aliases": "3.8.1",
     "@docusaurus/tsconfig": "3.8.1",
     "@docusaurus/types": "3.8.1",
+    "@types/geojson": "^7946.0.16",
     "@types/leaflet": "^1.9.18",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",

@@ -215,8 +215,8 @@ GEOSBufferWithParams_r
 #   GEOSRelateBoundaryNodeRule_r
 
 ## Prepared Geometry:
-#   GEOSPrepare_r
-#   GEOSPreparedGeom_destroy_r
+GEOSPrepare_r
+GEOSPreparedGeom_destroy_r
 #   GEOSPreparedContains_r
 #   GEOSPreparedContainsXY_r
 #   GEOSPreparedContainsProperly_r
@@ -231,9 +231,9 @@ GEOSBufferWithParams_r
 #   GEOSPreparedWithin_r
 #   GEOSPreparedRelate_r
 #   GEOSPreparedRelatePattern_r
-#   GEOSPreparedNearestPoints_r
-#   GEOSPreparedDistance_r
-#   GEOSPreparedDistanceWithin_r
+GEOSPreparedNearestPoints_r
+GEOSPreparedDistance_r
+GEOSPreparedDistanceWithin_r
 
 ## STRtree:
 #   GEOSSTRtree_create_r

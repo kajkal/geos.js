@@ -1,7 +1,7 @@
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
-export interface CompoundCurve<P = unknown> extends Geometry<P> {
+export interface CompoundCurve<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'CompoundCurve',
 

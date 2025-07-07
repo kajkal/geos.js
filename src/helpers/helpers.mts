@@ -1,6 +1,6 @@
 import type { Position } from 'geojson';
 import { FINALIZATION, POINTER } from '../core/symbols.mjs';
-import { Geometry } from '../geom/Geometry.mjs';
+import { type Geometry, GeometryRef } from '../geom/Geometry.mjs';
 import { geosifyGeometry } from '../io/geosify.mjs';
 import { geos } from '../core/geos.mjs';
 import type { Point } from '../geom/types/Point.mjs';
@@ -169,7 +169,7 @@ export function multiPolygon<P>(pppts: Position[][][], options?: GeometryOptions
  * Creates a {@link GeometryCollection} geometry from an array of geometries.
  *
  * The collection consumes the input geometries - after creating
- * the collection, the input geometries become {@link Geometry#detached|detached},
+ * the collection, the input geometries become [detached]{@link GeometryRef#detached},
  * are no longer valid and should **not** be used.
  *
  * @param geometries - Array of geometry objects to be included in the collection
@@ -192,10 +192,10 @@ export function geometryCollection<P>(geometries: Geometry[], options?: Geometry
         }
         const geomPtr = geos.GEOSGeom_createCollection(7, buff[ POINTER ], geometriesLength);
         for (const geometry of geometries) {
-            Geometry[ FINALIZATION ].unregister(geometry);
+            GeometryRef[ FINALIZATION ].unregister(geometry);
             geometry.detached = true;
         }
-        return new Geometry(geomPtr, 'GeometryCollection', options) as GeometryCollection<P>;
+        return new GeometryRef(geomPtr, 'GeometryCollection', options) as GeometryCollection<P>;
     } finally {
         buff.freeIfTmp();
     }

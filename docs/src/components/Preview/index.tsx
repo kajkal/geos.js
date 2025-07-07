@@ -1,6 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import copy from 'copy-text-to-clipboard';
+import { type Geometry as GeoJSON_Geometry } from 'geojson';
 import type L from 'leaflet';
 import { circleMarker, CRS, divIcon, DomEvent, featureGroup, LatLng, LatLngBounds, marker } from 'leaflet';
 import { GeoJSON, MapContainer, Popup, useMap } from 'react-leaflet';
@@ -411,7 +412,7 @@ const useVerticesLayer = (f: FeatureData, initialVisibility: boolean) => {
                 }
             };
 
-            const visitVertices = (geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>['geometry']) => {
+            const visitVertices = (geometry: GeoJSON_Geometry) => {
                 switch (geometry.type) {
                     case 'Point': {
                         addVertexMarkers([ geometry.coordinates ], outerVertexStyle);
@@ -499,7 +500,7 @@ const useDirectionLayer = (f: FeatureData, initialVisibility: boolean) => {
                 }
             };
 
-            const getArrows = (geometry: ReturnType<typeof window.geos.Geometry.prototype.toJSON>['geometry']) => {
+            const getArrows = (geometry: GeoJSON_Geometry) => {
                 switch (geometry.type) {
                     case 'LineString': {
                         const pts = geometry.coordinates;

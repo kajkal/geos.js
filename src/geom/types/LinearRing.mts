@@ -1,7 +1,7 @@
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
-export interface LinearRing<P = unknown> extends Geometry<P> {
+export interface LinearRing<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'LinearRing';
 

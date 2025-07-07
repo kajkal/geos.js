@@ -1,6 +1,19 @@
 import type { Feature as GeoJSON_Feature, Geometry as GeoJSON_Geometry } from 'geojson';
-import type { GEOSGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
-import { CLEANUP, FINALIZATION, POINTER } from '../core/symbols.mjs';
+import type { GEOSGeometry, GEOSPreparedGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
+import type { Point } from './/types/Point.mjs';
+import type { LineString } from './/types/LineString.mjs';
+import type { LinearRing } from './/types/LinearRing.mjs';
+import type { Polygon } from './/types/Polygon.mjs';
+import type { MultiPoint } from './/types/MultiPoint.mjs';
+import type { MultiLineString } from './/types/MultiLineString.mjs';
+import type { MultiPolygon } from './/types/MultiPolygon.mjs';
+import type { GeometryCollection } from './/types/GeometryCollection.mjs';
+import type { CircularString } from './/types/CircularString.mjs';
+import type { CompoundCurve } from './/types/CompoundCurve.mjs';
+import type { CurvePolygon } from './/types/CurvePolygon.mjs';
+import type { MultiCurve } from './/types/MultiCurve.mjs';
+import type { MultiSurface } from './/types/MultiSurface.mjs';
+import { CLEANUP, FINALIZATION, P_CLEANUP, P_FINALIZATION, P_POINTER, POINTER } from '../core/symbols.mjs';
 import { jsonifyGeometry } from '../io/jsonify.mjs';
 import { geos } from '../core/geos.mjs';
 
@@ -44,15 +57,35 @@ export interface GeometryExtras<P> {
 
 
 /**
- * Class representing a GEOS geometry that exists in the Wasm memory.
+ * Union type of all possible geometry types.
  *
- * Creating new Geometries via `new Geometry(...)` is intended to be called
- * only by other `geos.js` functions and is not part of the public API.
+ * Each geometry type is an instance of {@link GeometryRef}.
+ *
+ * @template P - The type of optional data assigned to a geometry instance.
+ */
+export type Geometry<P = unknown> =
+    Point<P> |
+    LineString<P> |
+    LinearRing<P> |
+    Polygon<P> |
+    MultiPoint<P> |
+    MultiLineString<P> |
+    MultiPolygon<P> |
+    GeometryCollection<P> |
+    CircularString<P> |
+    CompoundCurve<P> |
+    CurvePolygon<P> |
+    MultiCurve<P> |
+    MultiSurface<P>;
+
+
+/**
+ * Class representing a GEOS geometry that exists in the Wasm memory.
  *
  * @template P - The type of optional data assigned to a geometry instance.
  * Similar to the type of GeoJSON `Feature` properties field.
  */
-export class Geometry<P = unknown> {
+export class GeometryRef<P = unknown> {
 
     /**
      * Geometry type
@@ -81,7 +114,7 @@ export class Geometry<P = unknown> {
     /**
      * Geometry can become detached when passed to a function that consumes
      * it, for example {@link geometryCollection}, or when manually
-     * [freed]{@link Geometry#free}. Although this Geometry object still exists, the GEOS
+     * [freed]{@link GeometryRef#free}. Although this Geometry object still exists, the GEOS
      * object that it used to represent no longer exists.
      *
      * @example #live
@@ -97,6 +130,7 @@ export class Geometry<P = unknown> {
      * Organizes the elements, rings, and coordinate order of geometries in a
      * consistent way, so that geometries that represent the same object can
      * be easily compared.
+     *
      * Modifies the geometry in-place.
      *
      * Normalization ensures the following:
@@ -119,6 +153,7 @@ export class Geometry<P = unknown> {
      * Enforces a ring orientation on all polygonal elements in the input geometry.
      * Polygon exterior ring can be oriented clockwise (CW) or counter-clockwise (CCW),
      * interior rings (holes) are oriented in the opposite direction.
+     *
      * Modifies the geometry in-place. Non-polygonal geometries will not be modified.
      *
      * @param [exterior='cw'] - Exterior ring orientation. Interior rings are
@@ -138,7 +173,7 @@ export class Geometry<P = unknown> {
     }
 
     /**
-     * Creates a deep copy of this Geometry object.
+     * Creates a deep copy of this geometry object.
      *
      * @returns A new geometry that is a copy of this geometry
      *
@@ -147,9 +182,9 @@ export class Geometry<P = unknown> {
      * const copy = original.clone();
      * // copy can be modified without affecting the original
      */
-    clone(): Geometry<P> {
+    clone(): GeometryRef<P> {
         const geomPtr = geos.GEOSGeom_clone(this[ POINTER ]);
-        const copy = new Geometry<P>(geomPtr);
+        const copy = new GeometryRef<P>(geomPtr);
         if (this.id != null) {
             copy.id = this.id;
         }
@@ -193,7 +228,7 @@ export class Geometry<P = unknown> {
     /**
      * Frees the Wasm memory allocated for the GEOS geometry object.
      *
-     * {@link Geometry} objects are automatically freed when they are out of scope.
+     * {@link GeometryRef} objects are automatically freed when they are out of scope.
      * This mechanism is provided by the [`FinalizationRegistry`]{@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry}
      * that binds the lifetime of the Wasm resources to the lifetime of the JS objects.
      *
@@ -203,11 +238,15 @@ export class Geometry<P = unknown> {
      * Use with caution, as when the object is manually freed, the underlying
      * Wasm resource becomes invalid and cannot be used anymore.
      *
-     * @see {@link Geometry#detached}
+     * @see {@link GeometryRef#detached}
      */
     free(): void {
-        Geometry[ FINALIZATION ].unregister(this);
-        Geometry[ CLEANUP ](this[ POINTER ]);
+        if (this[ P_POINTER ]) {
+            GeometryRef[ P_FINALIZATION ].unregister(this);
+            GeometryRef[ P_CLEANUP ](this[ P_POINTER ]);
+        }
+        GeometryRef[ FINALIZATION ].unregister(this);
+        GeometryRef[ CLEANUP ](this[ POINTER ]);
         this.detached = true;
     }
 
@@ -216,8 +255,11 @@ export class Geometry<P = unknown> {
     [ POINTER ]: Ptr<GEOSGeometry>;
 
     /** @internal */
+    declare [ P_POINTER ]?: Ptr<GEOSPreparedGeometry>;
+
+    /** @internal */
     constructor(ptr: Ptr<GEOSGeometry>, type?: typeof GEOSGeometryTypeDecoder[number], extras?: GeometryExtras<P>) {
-        Geometry[ FINALIZATION ].register(this, ptr, this);
+        GeometryRef[ FINALIZATION ].register(this, ptr, this);
         this[ POINTER ] = ptr;
         this.type = type || GEOSGeometryTypeDecoder[ geos.GEOSGeomTypeId(ptr) ];
         if (extras) {
@@ -232,12 +274,22 @@ export class Geometry<P = unknown> {
 
     /** @internal */
     static readonly [ FINALIZATION ] = (
-        new FinalizationRegistry(Geometry[ CLEANUP ])
+        new FinalizationRegistry(GeometryRef[ CLEANUP ])
+    );
+
+    /** @internal */
+    static readonly [ P_FINALIZATION ] = (
+        new FinalizationRegistry(GeometryRef[ P_CLEANUP ])
     );
 
     /** @internal */
     static [ CLEANUP ](ptr: Ptr<GEOSGeometry>): void {
         geos.GEOSGeom_destroy(ptr);
+    }
+
+    /** @internal */
+    static [ P_CLEANUP ](ptr: Ptr<GEOSPreparedGeometry>): void {
+        geos.GEOSPreparedGeom_destroy(ptr);
     }
 
 }

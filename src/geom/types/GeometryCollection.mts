@@ -1,9 +1,9 @@
 import type { Feature as GeoJSON_Feature, GeometryCollection as GeoJSON_GeometryCollection } from 'geojson';
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
 /**
- * GeometryCollection is an instance of {@link Geometry} that represents the geometry collection.
+ * GeometryCollection is an instance of {@link GeometryRef} that represents the geometry collection.
  *
  * @see {@link geometryCollection} creates a geometry collection from an array of geometries
  *
@@ -20,7 +20,7 @@ import { Geometry } from '../Geometry.mjs';
  *     lineString([ [ 0, 1 ], [ 1, 0 ] ]),
  * ]);
  */
-export interface GeometryCollection<P = unknown> extends Geometry<P> {
+export interface GeometryCollection<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'GeometryCollection';
 

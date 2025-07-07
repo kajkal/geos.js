@@ -1,7 +1,7 @@
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
-export interface CircularString<P = unknown> extends Geometry<P> {
+export interface CircularString<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'CircularString',
 

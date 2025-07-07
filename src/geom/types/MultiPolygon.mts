@@ -1,9 +1,9 @@
 import type { Feature as GeoJSON_Feature, MultiPolygon as GeoJSON_MultiPolygon } from 'geojson';
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
 /**
- * MultiPolygon is an instance of {@link Geometry} that represents the multi polygon geometry.
+ * MultiPolygon is an instance of {@link GeometryRef} that represents the multi polygon geometry.
  *
  * @see {@link multiPolygon} creates a multi polygon geometry from an array of polygon coordinates
  *
@@ -21,7 +21,7 @@ import { Geometry } from '../Geometry.mjs';
  * ]);
  * const c = fromWKT('MULTIPOLYGON (((0 1, 1 0, 1 1, 0 1)), ((1 1, 1 3, 3 1, 1 1)))');
  */
-export interface MultiPolygon<P = unknown> extends Geometry<P> {
+export interface MultiPolygon<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'MultiPolygon';
 

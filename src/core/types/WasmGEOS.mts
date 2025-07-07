@@ -1972,14 +1972,12 @@ export interface WasmGEOS {
      * Create a Prepared Geometry. The caller retains ownership of the base geometry, and after processing is complete, must free **both** the prepared and the base geometry. (Ideally, destroy the prepared geometry first, as it has an internal reference to the base geometry.)
      * @param g - The base geometry to wrap in a prepared geometry.
      * @returns A prepared geometry. Caller is responsible for freeing with GEOSPreparedGeom_destroy()
-     * @deprecated this function is not exported
      */
     GEOSPrepare(g: ConstPtr<GEOSGeometry>): ConstPtr<GEOSPreparedGeometry>;
 
     /**
      * Free the memory associated with a {@link GEOSPreparedGeometry}. Caller must separately free the base {@link GEOSGeometry} used to create the prepared geometry.
      * @param g - Prepared geometry to destroy.
-     * @deprecated this function is not exported
      */
     GEOSPreparedGeom_destroy(g: ConstPtr<GEOSPreparedGeometry>): void;
 
@@ -2134,7 +2132,6 @@ export interface WasmGEOS {
      * @param pg1 - The prepared geometry
      * @param g2 - The geometry to test
      * @returns A coordinate sequence containing the nearest points, or NULL on exception. The first point in the sequence is from the prepared geometry, and the seconds is from the other argument.
-     * @deprecated this function is not exported
      */
     GEOSPreparedNearestPoints(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): Ptr<GEOSCoordSequence>;
 
@@ -2144,7 +2141,6 @@ export interface WasmGEOS {
      * @param g2 (in) - The geometry to test
      * @param dist (out) - Pointer to store the result in
      * @returns 1 on success
-     * @deprecated this function is not exported
      */
     GEOSPreparedDistance(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>, dist: Ptr<f64>): i32;
 
@@ -2154,7 +2150,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @param dist - The max distance
      * @returns 1 on success
-     * @deprecated this function is not exported
      */
     GEOSPreparedDistanceWithin(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>, dist: f64): i8;
 

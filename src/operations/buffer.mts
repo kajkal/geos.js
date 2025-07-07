@@ -2,7 +2,7 @@ import type { GEOSBufCapStyles, GEOSBufJoinStyles } from '../core/types/WasmGEOS
 import type { Polygon } from '../geom/types/Polygon.mjs';
 import type { MultiPolygon } from '../geom/types/MultiPolygon.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry } from '../geom/Geometry.mjs';
+import { type Geometry, GeometryRef } from '../geom/Geometry.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -132,5 +132,5 @@ export function buffer(geometry: Geometry, distance: number, options?: BufferOpt
     }
 
     const geomPtr = geos.GEOSBufferWithParams(geometry[ POINTER ], paramsPtr, distance);
-    return new Geometry(geomPtr) as Polygon | MultiPolygon;
+    return new GeometryRef(geomPtr) as Polygon | MultiPolygon;
 }

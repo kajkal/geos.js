@@ -1,9 +1,9 @@
 import type { Feature as GeoJSON_Feature, Polygon as GeoJSON_Polygon } from 'geojson';
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
 /**
- * Polygon is an instance of {@link Geometry} that represents the polygon geometry.
+ * Polygon is an instance of {@link GeometryRef} that represents the polygon geometry.
  *
  * @see {@link polygon} creates a polygon geometry from an array of linear rings coordinates
  *
@@ -24,7 +24,7 @@ import { Geometry } from '../Geometry.mjs';
  *     [ [ 2, 2 ], [ 2, 3 ], [ 3, 2 ], [ 2, 2 ] ], // hole 2
  * ]);
  */
-export interface Polygon<P = unknown> extends Geometry<P> {
+export interface Polygon<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'Polygon';
 

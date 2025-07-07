@@ -61,7 +61,8 @@ export { initializeFromBase64, initialize };
 export { terminate } from './core/geos.mjs';
 
 export { GEOSError } from './core/GEOSError.mjs';
-export { Geometry, type GeometryType } from './geom/Geometry.mjs';
+export { type Geometry, type GeometryRef, type GeometryType } from './geom/Geometry.mjs';
+export { type Prepared, prepare, unprepare } from './geom/PreparedGeometry.mjs';
 export { type Point } from './geom/types/Point.mjs';
 export { type LineString } from './geom/types/LineString.mjs';
 export { type LinearRing } from './geom/types/LinearRing.mjs';
@@ -109,6 +110,8 @@ export { unaryUnion } from './operations/unaryUnion.mjs';
 export { union } from './operations/union.mjs';
 export { makeValid, type MakeValidOptions } from './operations/makeValid.mjs';
 
+export { isGeometry } from './predicates/isGeometry.mjs';
+export { isPrepared } from './predicates/isPrepared.mjs';
 export { isEmpty } from './predicates/isEmpty.mjs';
 export { isSimple } from './predicates/isSimple.mjs';
 export { isValid, isValidOrThrow, TopologyValidationError, type IsValidOptions } from './predicates/isValid.mjs';

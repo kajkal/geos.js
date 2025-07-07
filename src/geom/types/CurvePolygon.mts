@@ -1,7 +1,7 @@
-import { Geometry } from '../Geometry.mjs';
+import { GeometryRef } from '../Geometry.mjs';
 
 
-export interface CurvePolygon<P = unknown> extends Geometry<P> {
+export interface CurvePolygon<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'CurvePolygon',
 

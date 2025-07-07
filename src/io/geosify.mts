@@ -91,7 +91,7 @@ declare const THIS_FILE: symbol; // to omit ^ @file doc from the bundle
 import type { Feature as GeoJSON_Feature, Geometry as GeoJSON_Geometry } from 'geojson';
 import type { GEOSGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry, type GeometryExtras } from '../geom/Geometry.mjs';
+import { type Geometry, type GeometryExtras, GeometryRef } from '../geom/Geometry.mjs';
 import { GEOSError } from '../core/GEOSError.mjs';
 import { geos } from '../core/geos.mjs';
 
@@ -416,18 +416,18 @@ export function geosifyGeometry<P>(geojson: GeoJSON_Geometry, extras?: GeometryE
         geos.geosify_geoms(buff[ POINTER ]);
 
         B = geos.U32;
-        return new Geometry(
+        return new GeometryRef(
             B[ d ] as Ptr<GEOSGeometry>,
             geojson.type,
             extras,
-        );
+        ) as Geometry<P>;
     } finally {
         buff.freeIfTmp();
     }
 }
 
 /**
- * Creates an array of {@link Geometry} from an array of GeoJSON feature objects.
+ * Creates an array of {@link GeometryRef} from an array of GeoJSON feature objects.
  *
  * @param geojsons - Array of GeoJSON feature objects
  * @returns An array of new geometries
@@ -496,11 +496,11 @@ export function geosifyFeatures<P>(geojsons: GeoJSON_Feature<GeoJSON_Geometry, P
         const geosGeometries = Array<Geometry<P>>(geometriesLength);
         for (let i = 0; i < geometriesLength; i++) {
             const feature = geojsons[ i ];
-            geosGeometries[ i ] = new Geometry(
+            geosGeometries[ i ] = new GeometryRef(
                 B[ d++ ] as Ptr<GEOSGeometry>,
                 feature.geometry.type,
                 feature,
-            );
+            ) as Geometry<P>;
         }
         return geosGeometries;
     } finally {

@@ -5,6 +5,7 @@ import type { Geometry } from '../../src/geom/Geometry.mjs';
 import { distance } from '../../src/measurement/distance.mjs';
 import { nearestPoints } from '../../src/measurement/nearestPoints.mjs';
 import { distanceWithin } from '../../src/predicates/distanceWithin.mjs';
+import { prepare } from '../../src/geom/PreparedGeometry.mjs';
 import { lineString } from '../../src/helpers/helpers.mjs';
 import { fromWKT } from '../../src/io/WKT.mjs';
 
@@ -30,6 +31,19 @@ describe('distance and distanceWithin and nearestPoints', () => {
         const [ aPt, bPt ] = nearestPoints(a, b);
         assert.deepEqual(aPt.toJSON().geometry.coordinates, expectedPtFromA);
         assert.deepEqual(bPt.toJSON().geometry.coordinates, expectedPtFromB);
+
+        // with prepared geometry:
+        const aPrepared = prepare(a);
+        assert.ok(Math.abs(distance(aPrepared, b) - expectedDist) <= 1e-15);
+
+        assert.equal(distanceWithin(aPrepared, b, expectedDist), true);
+        assert.equal(distanceWithin(aPrepared, b, expectedDist + epsilon), true);
+        // TODO https://github.com/libgeos/geos/issues/1277
+        // assert.equal(distanceWithin(aPrepared, b, expectedDist - epsilon), false);
+
+        const [ aPt2, bPt2 ] = nearestPoints(aPrepared, b);
+        assert.deepEqual(aPt2.toJSON().geometry.coordinates, expectedPtFromA);
+        assert.deepEqual(bPt2.toJSON().geometry.coordinates, expectedPtFromB);
     }
 
     before(async () => {

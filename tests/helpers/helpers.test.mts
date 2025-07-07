@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
-import type { Geometry } from '../../src/geom/Geometry.mjs';
+import type { Geometry, GeometryRef } from '../../src/geom/Geometry.mjs';
 import { geometryCollection, lineString, multiLineString, multiPoint, multiPolygon, point, polygon } from '../../src/helpers/helpers.mjs';
 import { isEmpty } from '../../src/predicates/isEmpty.mjs';
 import { toWKT } from '../../src/io/WKT.mjs';
@@ -59,7 +59,7 @@ describe('miscellaneous helpers', () => {
 
     it('should assign id to new geometry', () => {
         const options = { id: 0 };
-        let g: Geometry = point([], options);
+        let g: GeometryRef = point([], options);
         assert.equal(g.id, 0);
 
         g = lineString([], options);
@@ -83,7 +83,7 @@ describe('miscellaneous helpers', () => {
 
     it('should assign props to new geometry', () => {
         const options = { properties: { some: 'prop' } };
-        let g: Geometry = point([], options);
+        let g: GeometryRef = point([], options);
         assert.deepEqual(g.props, { some: 'prop' });
 
         g = lineString([], options);

@@ -1,6 +1,6 @@
 import { POINTER } from '../core/symbols.mjs';
 import type { PrecisionGridOptions } from './types/PrecisionGridOptions.mjs';
-import { Geometry } from '../geom/Geometry.mjs';
+import { type Geometry, GeometryRef } from '../geom/Geometry.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -31,5 +31,5 @@ export function difference(a: Geometry, b: Geometry, options?: PrecisionGridOpti
     const geomPtr = (options?.gridSize != null)
         ? geos.GEOSDifferencePrec(a[ POINTER ], b[ POINTER ], options.gridSize)
         : geos.GEOSDifference(a[ POINTER ], b[ POINTER ]);
-    return new Geometry(geomPtr);
+    return new GeometryRef(geomPtr) as Geometry;
 }

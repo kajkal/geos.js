@@ -1,5 +1,5 @@
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry } from '../geom/Geometry.mjs';
+import { type Geometry, GeometryRef } from '../geom/Geometry.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -52,7 +52,7 @@ export function fromWKT(wkt: string, options?: WKTInputOptions): Geometry {
     const buff = geos.encodeString(wkt);
     try {
         const geomPtr = geos.GEOSWKTReader_read(readerPtr, buff[ POINTER ]);
-        return new Geometry(geomPtr);
+        return new GeometryRef(geomPtr) as Geometry;
     } finally {
         buff.freeIfTmp();
     }

@@ -2,7 +2,7 @@ import type { Point as GeoJSON_Point } from 'geojson';
 import type { GEOSGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
 import type { OutPtr } from '../core/reusable-memory.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry } from '../geom/Geometry.mjs';
+import { type Geometry, GeometryRef } from '../geom/Geometry.mjs';
 import { GEOSError } from '../core/GEOSError.mjs';
 import { jsonifyGeometry } from '../io/jsonify.mjs';
 import { geos } from '../core/geos.mjs';
@@ -125,7 +125,7 @@ export function isValidOrThrow(geometry: Geometry, options?: IsValidOptions): vo
     if (!isValid) {
         const reasonPtr = r.get();
         const reason = geos.decodeString(reasonPtr);
-        const pt = new Geometry(l.get(), 'Point');
+        const pt = new GeometryRef(l.get(), 'Point');
         const location = jsonifyGeometry<GeoJSON_Point>(pt).coordinates;
         geos.free(reasonPtr);
         pt.free();

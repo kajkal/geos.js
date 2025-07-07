@@ -1,7 +1,7 @@
 import type { OutPtr } from '../core/reusable-memory.mjs';
 import type { u32 } from '../core/types/WasmGEOS.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { Geometry } from '../geom/Geometry.mjs';
+import { type Geometry, GeometryRef } from '../geom/Geometry.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -57,7 +57,7 @@ export function fromWKB(wkb: Uint8Array, options?: WKBInputOptions): Geometry {
     try {
         geos.U8.set(wkb, buff[ POINTER ]);
         const geomPtr = geos.GEOSWKBReader_read(readerPtr, buff[ POINTER ], wkbLen);
-        return new Geometry(geomPtr);
+        return new GeometryRef(geomPtr) as Geometry;
     } finally {
         buff.freeIfTmp();
     }
