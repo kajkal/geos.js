@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execSync } from 'node:child_process';
 import { basename, dirname, join, relative, sep } from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import ts from 'typescript';
@@ -378,6 +379,9 @@ void async function main() {
     const DOCS_DIR = join(ROOT_DIR, './docs');
     const DOCS_API_DIR = join(DOCS_DIR, './docs/api');
 
+    const sha = execSync(`git -C ${ROOT_DIR} rev-parse --verify HEAD`, { encoding: 'utf8' }).trim();
+    const EDIT_BASE_URL = `https://github.com/kajkal/geos.js/blob/${sha.slice(0, 7)}`;
+
     /** Process source files */
     const program = ts.createProgram([ SRC_INDEX_FILE_PATH ], {});
     const checker = program.getTypeChecker();
@@ -396,8 +400,31 @@ void async function main() {
             id?: string;
         };
 
+        editUrl: string; // url to src file
+
         constructor(symbol: ts.Symbol) {
             this.symbol = symbol;
+            assert.ok(!(symbol.flags & ts.SymbolFlags.Alias)); // not an alias
+            const sources = symbol.getDeclarations()
+                .map(declaration => {
+                    const sourceFile = declaration.getSourceFile();
+                    const start = declaration.getStart(sourceFile, true);
+                    const { line: startLine } = ts.getLineAndCharacterOfPosition(sourceFile, start);
+                    const end = declaration.getEnd();
+                    const { line: endLine } = ts.getLineAndCharacterOfPosition(sourceFile, end);
+                    return {
+                        path: relative(ROOT_DIR, sourceFile.fileName).replaceAll(sep, '/'),
+                        start: startLine + 1, // 0-based to 1-based
+                        end: endLine + 1,
+                    };
+                });
+            const { path, start, end } = sources.reduce((acc, src) => {
+                assert.equal(acc.path, src.path);
+                assert.equal(acc.end, src.start - 1); // assert that ranges are adjacent
+                return { ...acc, end: src.end };
+            });
+            const lines = start === end ? `L${start}` : `L${start}-L${end}`;
+            this.editUrl = `${EDIT_BASE_URL}/${path}#${lines}`;
         }
 
         processTypeNode(typeNode: ts.TypeNode): TS.Type {
@@ -1267,7 +1294,11 @@ void async function main() {
             }
         }
 
-        async saveToFile(sidebarLabel: string) {
+        writeEditThisSectionLink(data: AnySymbol) {
+            this.lines.push(`<span className='edit-this-section' title='Edit this section'>[edit](${data.editUrl})</span>`, '');
+        }
+
+        async saveToFile(options: { sidebarLabel: string; editUrl?: string; }) {
             const { category, path } = this.symbol.docFile;
 
             await DocumentationWriter.createCategoryDirectory(category);
@@ -1277,8 +1308,11 @@ void async function main() {
 
             const frontMatterFileMetadata = [
                 '---',
-                `sidebar_label: '${sidebarLabel}'`,
+                `sidebar_label: '${options.sidebarLabel}'`,
                 `sidebar_position: ${category.childPositionCounter++}`,
+                ...options.editUrl ? [
+                    `custom_edit_url: ${options.editUrl}`,
+                ] : [],
                 '---',
                 '',
             ];
@@ -1327,35 +1361,35 @@ void async function main() {
     console.log('API Documentation');
 
     /** Generate documentation files for functions */
-    for (const data of symbolMap.exportedSymbols()) {
-        if (data.kind !== 'function') continue;
+    for (const fnData of symbolMap.exportedSymbols()) {
+        if (fnData.kind !== 'function') continue;
 
-        const writer = new DocumentationWriter(data);
-        writer.writeHeader(data);
-        writer.writeDescription(data);
-        writer.writeTypeParameters(data, { heading: '##' });
-        writer.writeParameters(data, { heading: '##' });
-        writer.writeReturns(data, { heading: '##' });
-        writer.writeThrows(data, { heading: '##' });
-        writer.writeSee(data, { heading: '##' });
-        writer.writeExamples(data, { heading: '##' });
-        await writer.saveToFile(data.name);
+        const writer = new DocumentationWriter(fnData);
+        writer.writeHeader(fnData);
+        writer.writeDescription(fnData);
+        writer.writeTypeParameters(fnData, { heading: '##' });
+        writer.writeParameters(fnData, { heading: '##' });
+        writer.writeReturns(fnData, { heading: '##' });
+        writer.writeThrows(fnData, { heading: '##' });
+        writer.writeSee(fnData, { heading: '##' });
+        writer.writeExamples(fnData, { heading: '##' });
+        await writer.saveToFile({ sidebarLabel: fnData.name, editUrl: fnData.editUrl });
     }
 
     /** Generate documentation files for classes */
-    for (const data of symbolMap.exportedSymbols()) {
-        if (data.kind !== 'class' || data.prototypeChain.includes('Error')) continue;
+    for (const classData of symbolMap.exportedSymbols()) {
+        if (classData.kind !== 'class' || classData.prototypeChain.includes('Error')) continue;
 
-        const writer = new DocumentationWriter(data);
-        writer.writeHeader(data);
-        writer.writeDescription(data);
-        writer.writeTypeParameters(data, { heading: '##' });
-        writer.writePrototypeChain(data);
-        writer.writeProperties(data, { heading: '##' });
-        writer.writeMethods(data, { heading: '##', abbreviated: true });
-        await writer.saveToFile(data.name);
+        const writer = new DocumentationWriter(classData);
+        writer.writeHeader(classData);
+        writer.writeDescription(classData);
+        writer.writeTypeParameters(classData, { heading: '##' });
+        writer.writePrototypeChain(classData);
+        writer.writeProperties(classData, { heading: '##' });
+        writer.writeMethods(classData, { heading: '##', abbreviated: true });
+        await writer.saveToFile({ sidebarLabel: classData.name, editUrl: classData.editUrl });
 
-        for (const methodData of data.methods) {
+        for (const methodData of classData.methods) {
             const writer = new DocumentationWriter(methodData);
             const sidebarLabel = methodData.name;
             writer.writeHeader(methodData);
@@ -1365,29 +1399,30 @@ void async function main() {
             writer.writeThrows(methodData, { heading: '###' });
             writer.writeSee(methodData, { heading: '###' });
             writer.writeExamples(methodData, { heading: '###' });
-            await writer.saveToFile(sidebarLabel);
+            await writer.saveToFile({ sidebarLabel, editUrl: methodData.editUrl });
         }
     }
 
     /** Generate documentation for errors */
     {
         let writer: DocumentationWriter;
-        for (const data of symbolMap.exportedSymbols()) {
-            if (data.kind !== 'class' || !data.prototypeChain.includes('Error')) continue;
+        for (const errData of symbolMap.exportedSymbols()) {
+            if (errData.kind !== 'class' || !errData.prototypeChain.includes('Error')) continue;
 
             if (!writer) {
-                writer = new DocumentationWriter(data);
+                writer = new DocumentationWriter(errData);
                 writer.lines.push(`# Errors`, '');
             }
 
-            writer.lines.push(`## ${data.name} {#${data.name}}`, '');
+            writer.lines.push(`## ${errData.name} {#${errData.name}}`, '');
             writer.lines.push(`<div className='indented-section'>`);
-            writer.writeDescription(data);
-            writer.writePrototypeChain(data);
-            writer.writeProperties(data, { heading: '###' });
+            writer.writeEditThisSectionLink(errData);
+            writer.writeDescription(errData);
+            writer.writePrototypeChain(errData);
+            writer.writeProperties(errData, { heading: '###' });
             writer.lines.push(`</div>`, '');
         }
-        await writer.saveToFile('Errors');
+        await writer.saveToFile({ sidebarLabel: 'Errors' });
     }
 
     /** Generate documentation for types */
@@ -1405,6 +1440,7 @@ void async function main() {
             writer.symbol = data;
             writer.lines.push(`## ${data.name} {#${data.name}}`, '');
             writer.lines.push(`<div className='indented-section'>`);
+            writer.writeEditThisSectionLink(data);
 
             if (data.kind === 'type') {
                 writer.lines.push(`<pre className='beefy-code-line'>${writer.formatType(data.definition)}</pre>`, '');
@@ -1423,7 +1459,7 @@ void async function main() {
 
             writer.lines.push(`</div>`, '');
         }
-        await writer?.saveToFile('Type Definitions');
+        await writer?.saveToFile({ sidebarLabel: 'Type Definitions' });
     }
 
 

@@ -150,6 +150,26 @@ code {
     color: var(--code-token-type-parameter) !important;
 }
 
+.indented-section:has(.edit-this-section) {
+    position: relative;
+
+    .edit-this-section {
+        opacity: 0;
+        font-size: 0.75rem;
+        line-height: 1.25;
+        position: absolute;
+        top: -1rem;
+        right: 0;
+        left: 0;
+        text-align: end;
+        transition: opacity var(--ifm-transition-fast) ease-in-out;
+    }
+
+    &:is(:hover) .edit-this-section {
+        opacity: 1;
+    }
+}
+
 
 .code-token {
     &[data-type="comment"] {
