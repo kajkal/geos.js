@@ -1812,7 +1812,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::disjoint
-     * @deprecated this function is not exported
      */
     GEOSDisjoint(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1822,7 +1821,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::touches
-     * @deprecated this function is not exported
      */
     GEOSTouches(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1832,7 +1830,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::intersects
-     * @deprecated this function is not exported
      */
     GEOSIntersects(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1842,7 +1839,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::crosses
-     * @deprecated this function is not exported
      */
     GEOSCrosses(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1852,7 +1848,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::within
-     * @deprecated this function is not exported
      */
     GEOSWithin(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1862,7 +1857,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::contains
-     * @deprecated this function is not exported
      */
     GEOSContains(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1872,7 +1866,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::overlaps
-     * @deprecated this function is not exported
      */
     GEOSOverlaps(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1882,7 +1875,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::equals
-     * @deprecated this function is not exported
      */
     GEOSEquals(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1892,7 +1884,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::covers
-     * @deprecated this function is not exported
      */
     GEOSCovers(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1902,7 +1893,6 @@ export interface WasmGEOS {
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::coveredBy
-     * @deprecated this function is not exported
      */
     GEOSCoveredBy(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1913,7 +1903,6 @@ export interface WasmGEOS {
      * @param tolerance - Tolerance to determine vertex equality
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSNormalize()
-     * @deprecated this function is not exported
      */
     GEOSEqualsExact(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>, tolerance: f64): i8;
 
@@ -1922,7 +1911,6 @@ export interface WasmGEOS {
      * @param g1 - Input geometry
      * @param g2 - Input geometry
      * @returns 1 on true, 0 on false, 2 on exception
-     * @deprecated this function is not exported
      */
     GEOSEqualsIdentical(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -1933,7 +1921,6 @@ export interface WasmGEOS {
      * @param imPattern - DE9IM pattern to match
      * @returns 1 on true, 0 on false, 2 on exception
      * @see geos::geom::Geometry::relate
-     * @deprecated this function is not exported
      */
     GEOSRelatePattern(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>, imPattern: ConstPtr<string>): i8;
 
@@ -1943,7 +1930,6 @@ export interface WasmGEOS {
      * @param g2 - Second geometry in pair
      * @returns DE9IM string. Caller is responsible for freeing with GEOSFree(). NULL on exception
      * @see geos::geom::Geometry::relate
-     * @deprecated this function is not exported
      */
     GEOSRelate(g1: ConstPtr<GEOSGeometry>, g2: ConstPtr<GEOSGeometry>): Ptr<string>;
 
@@ -1987,7 +1973,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSContains
-     * @deprecated this function is not exported
      */
     GEOSPreparedContains(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2007,7 +1992,6 @@ export interface WasmGEOS {
      * @param pg1 - The prepared geometry
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
-     * @deprecated this function is not exported
      */
     GEOSPreparedContainsProperly(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2017,7 +2001,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSCoveredBy
-     * @deprecated this function is not exported
      */
     GEOSPreparedCoveredBy(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2027,7 +2010,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSCovers
-     * @deprecated this function is not exported
      */
     GEOSPreparedCovers(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2037,7 +2019,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSCrosses
-     * @deprecated this function is not exported
      */
     GEOSPreparedCrosses(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2047,7 +2028,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSDisjoint
-     * @deprecated this function is not exported
      */
     GEOSPreparedDisjoint(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2057,7 +2037,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSIntersects
-     * @deprecated this function is not exported
      */
     GEOSPreparedIntersects(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2078,7 +2057,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSOverlaps
-     * @deprecated this function is not exported
      */
     GEOSPreparedOverlaps(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2088,7 +2066,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSTouches
-     * @deprecated this function is not exported
      */
     GEOSPreparedTouches(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2098,7 +2075,6 @@ export interface WasmGEOS {
      * @param g2 - The geometry to test
      * @returns 1 on true, 0 on false, 2 on exception
      * @see GEOSWithin
-     * @deprecated this function is not exported
      */
     GEOSPreparedWithin(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): i8;
 
@@ -2110,7 +2086,6 @@ export interface WasmGEOS {
      * @see GEOSPrepare
      * @see GEOSRelate
      * @see GEOSPreparedRelatePattern
-     * @deprecated this function is not exported
      */
     GEOSPreparedRelate(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>): Ptr<string>;
 
@@ -2123,7 +2098,6 @@ export interface WasmGEOS {
      * @see GEOSPrepare
      * @see GEOSRelatePattern
      * @see GEOSPreparedRelate
-     * @deprecated this function is not exported
      */
     GEOSPreparedRelatePattern(pg1: ConstPtr<GEOSPreparedGeometry>, g2: ConstPtr<GEOSGeometry>, imPattern: ConstPtr<string>): i8;
 

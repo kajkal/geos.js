@@ -24,6 +24,10 @@ const apiSidebar: SidebarCategory[] = [
         dir: '/predicates',
     },
     {
+        label: 'Spatial Predicates',
+        dir: '/spatial-predicates',
+    },
+    {
         label: 'Operations',
         dir: '/operations',
     },
@@ -173,9 +177,26 @@ namespace TS {
 
 namespace JSDoc {
 
-    export interface RichTextNode {
+    export type RichTextNode =
+        TextNode |
+        LinkNode |
+        AdmonitionNode
+
+    interface TextNode {
+        type: 'text',
         text: string;
-        link?: string;
+    }
+
+    interface LinkNode {
+        type: 'link',
+        text: string;
+        target: string;
+    }
+
+    interface AdmonitionNode {
+        type: 'admonition',
+        aType: 'note' | 'tip' | 'info' | 'warning' | 'danger';
+        body: RichTextNode[];
     }
 
     export interface TypeParamData {
@@ -211,39 +232,78 @@ namespace JSDoc {
     }
 
     export function readJSDocRichText(nodeOrNodes: string | ts.NodeArray<ts.JSDocComment>): RichTextNode[] {
-        if (typeof nodeOrNodes === 'string') return [ { text: nodeOrNodes } ];
-        const textNodes: RichTextNode[] = [];
-        for (const node of nodeOrNodes) {
-            switch (node.kind) {
-                case ts.SyntaxKind.JSDocText: {
-                    if ((node as ts.JSDocText).text) {
-                        textNodes.push({ text: node.text });
-                    }
-                    break;
-                }
-                case ts.SyntaxKind.JSDocLink: {
-                    const link = node.getText().match(/^\{@link (.+)}$/)[ 1 ];
-                    const lastTextNode = textNodes.at(-1);
-                    const linkTextMatch = lastTextNode?.text.match(/\[([^\[]+)]$/);
-                    if (linkTextMatch) {
-                        if (linkTextMatch.index) { // there is something beside `[link text]` in the prev text node
-                            lastTextNode.text = lastTextNode?.text.slice(0, linkTextMatch.index);
-                            textNodes.push({ text: linkTextMatch[ 1 ], link });
-                        } else {
-                            textNodes[ textNodes.length - 1 ] = { text: linkTextMatch[ 1 ], link };
+        let nodes: (TextNode | LinkNode)[] = [];
+        if (typeof nodeOrNodes === 'string') {
+            nodes.push({ type: 'text', text: nodeOrNodes });
+        } else {
+            for (const node of nodeOrNodes) {
+                switch (node.kind) {
+                    case ts.SyntaxKind.JSDocText: {
+                        if ((node as ts.JSDocText).text) {
+                            nodes.push({ type: 'text', text: node.text });
                         }
-                    } else {
-                        const [ linkRef, linkText ] = link.split(/[ |](.*)/);
-                        textNodes.push({ text: linkText || linkRef, link: linkRef });
+                        break;
                     }
-                    break;
-                }
-                default: {
-                    throw new Error(`Unexpected node kind: ${ts.SyntaxKind[ node.kind ]}`);
+                    case ts.SyntaxKind.JSDocLink: {
+                        const [ _, target, text ] = node.getText().match(/^\{@link (.+?)(?:\s*\|\s*(.+))?}$/);
+                        const prevNode = nodes.at(-1);
+                        if (!text && prevNode?.type === 'text') {
+                            const linkTextMatch = prevNode.text.match(/\[([^\[]+)]$/);
+                            if (linkTextMatch) {
+                                if (linkTextMatch.index) { // there is something beside `[link text]` in the prev text node
+                                    prevNode.text = prevNode.text.slice(0, linkTextMatch.index);
+                                    nodes.push({ type: 'link', text: linkTextMatch[ 1 ], target });
+                                } else {
+                                    nodes[ nodes.length - 1 ] = { type: 'link', text: linkTextMatch[ 1 ], target };
+                                }
+                                continue;
+                            }
+                        }
+                        nodes.push({ type: 'link', text: text || target, target });
+                        break;
+                    }
+                    default: {
+                        throw new Error(`Unexpected node kind: ${ts.SyntaxKind[ node.kind ]}`);
+                    }
                 }
             }
         }
-        return textNodes;
+
+        // extract admonitions blocks:
+        let admonition: AdmonitionNode = null;
+        return nodes
+            .flatMap<TextNode | LinkNode>(node => (
+                node.type === 'text'
+                    ? node.text
+                        .split(/\r?\n/)
+                        .map((t, i) => ({ type: 'text', text: i ? `\n${t}` : t }))
+                    : node
+            ))
+            .reduce<RichTextNode[]>((acc, node) => {
+                if (node.type === 'text') {
+                    const admonitionStartMatch = node.text.match(/^\n(Note|Tip|Info|Warning|Danger):$/);
+                    if (admonitionStartMatch) {
+                        admonition = {
+                            type: 'admonition',
+                            aType: admonitionStartMatch[ 1 ].toLowerCase() as AdmonitionNode['aType'],
+                            body: [],
+                        };
+                        return [ ...acc, admonition ];
+                    }
+                }
+                if (admonition) {
+                    if (node.text.startsWith('\n') && node.text !== '\n') {
+                        if (!node.text.startsWith('\n  ')) {
+                            admonition = null;
+                            return [ ...acc, node ];
+                        }
+                        node = { ...node, text: node.text.replace('\n  ', '\n') };
+                    }
+                    admonition.body.push(node);
+                    return acc;
+                }
+                return [ ...acc, node ];
+            }, []);
     }
 
     export function readJSDoc(node: ts.Node): Data {
@@ -913,11 +973,17 @@ void async function main() {
 
         formatRichText(textNodes: JSDoc.RichTextNode[]) {
             return textNodes
-                .map(({ text, link }) => (
-                    link
-                        ? symbolMap.createLink(this.symbol, link, text)
-                        : text
-                ))
+                .map(node => {
+                    switch (node.type) {
+                        case 'text':
+                            return node.text;
+                        case 'link':
+                            return symbolMap.createLink(this.symbol, node.target, node.text);
+                        case 'admonition': {
+                            return `\n:::${node.aType}\n\n${this.formatRichText(node.body).trim()}\n\n:::\n`;
+                        }
+                    }
+                })
                 .join('');
         }
 

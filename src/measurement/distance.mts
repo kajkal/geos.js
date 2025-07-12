@@ -35,16 +35,6 @@ import { isEmpty } from '../predicates/isEmpty.mjs';
  * const a = polygon([ [ [ 0, 0 ], [ 1, 0 ], [ 1, 1 ], [ 0, 1 ], [ 0, 0 ] ] ]);
  * const b = polygon([ [ [ 2, 2 ], [ 3, 2 ], [ 3, 3 ], [ 2, 2 ] ] ]);
  * const ab_dist = distance(a, b); // 1.4142135623730951 = Math.sqrt(2)
- *
- * @example to improve performance of repeated calls against a single geometry
- * const a = buffer(point([ 0, 0 ]), 10, { quadrantSegments: 1000 });
- * // `a` is a polygon with many vertices (4000 in this example)
- * prepare(a);
- * // preparation of geometry `a` will improve the performance of repeated
- * // `distance` calls, but only those where `a` is the first geometry
- * const r1 = distance(a, point([ 12, 0 ]));
- * const r2 = distance(a, point([ 12, 1 ]));
- * const r3 = distance(point([ 12, 2 ]), a); // no benefit from prepared geometry
  */
 export function distance(a: Geometry | Prepared<Geometry>, b: Geometry): number {
     const f = geos.f1;

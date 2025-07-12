@@ -197,40 +197,40 @@ GEOSBufferWithParams_r
 #   GEOSGeom_setPrecision_r
 
 ## Spatial Predicates:
-#   GEOSDisjoint_r
-#   GEOSTouches_r
-#   GEOSIntersects_r
-#   GEOSCrosses_r
-#   GEOSWithin_r
-#   GEOSContains_r
-#   GEOSOverlaps_r
-#   GEOSEquals_r
-#   GEOSCovers_r
-#   GEOSCoveredBy_r
-#   GEOSEqualsExact_r
-#   GEOSEqualsIdentical_r
-#   GEOSRelatePattern_r
-#   GEOSRelate_r
+GEOSDisjoint_r
+GEOSTouches_r
+GEOSIntersects_r
+GEOSCrosses_r
+GEOSWithin_r
+GEOSContains_r
+GEOSOverlaps_r
+GEOSEquals_r
+GEOSCovers_r
+GEOSCoveredBy_r
+GEOSEqualsExact_r
+GEOSEqualsIdentical_r
+GEOSRelatePattern_r
+GEOSRelate_r
 #   GEOSRelatePatternMatch_r
 #   GEOSRelateBoundaryNodeRule_r
 
 ## Prepared Geometry:
 GEOSPrepare_r
 GEOSPreparedGeom_destroy_r
-#   GEOSPreparedContains_r
+GEOSPreparedContains_r
 #   GEOSPreparedContainsXY_r
-#   GEOSPreparedContainsProperly_r
-#   GEOSPreparedCoveredBy_r
-#   GEOSPreparedCovers_r
-#   GEOSPreparedCrosses_r
-#   GEOSPreparedDisjoint_r
-#   GEOSPreparedIntersects_r
+GEOSPreparedContainsProperly_r
+GEOSPreparedCoveredBy_r
+GEOSPreparedCovers_r
+GEOSPreparedCrosses_r
+GEOSPreparedDisjoint_r
+GEOSPreparedIntersects_r
 #   GEOSPreparedIntersectsXY_r
-#   GEOSPreparedOverlaps_r
-#   GEOSPreparedTouches_r
-#   GEOSPreparedWithin_r
-#   GEOSPreparedRelate_r
-#   GEOSPreparedRelatePattern_r
+GEOSPreparedOverlaps_r
+GEOSPreparedTouches_r
+GEOSPreparedWithin_r
+GEOSPreparedRelate_r
+GEOSPreparedRelatePattern_r
 GEOSPreparedNearestPoints_r
 GEOSPreparedDistance_r
 GEOSPreparedDistanceWithin_r

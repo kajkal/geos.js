@@ -5,6 +5,7 @@ import { P_POINTER, POINTER } from '../../src/core/symbols.mjs';
 import { GeometryRef } from '../../src/geom/Geometry.mjs';
 import { prepare, unprepare } from '../../src/geom/PreparedGeometry.mjs';
 import { point } from '../../src/helpers/helpers.mjs';
+import { fromWKT } from '../../src/io/WKT.mjs';
 import { geos } from '../../src/core/geos.mjs';
 
 
@@ -84,6 +85,14 @@ describe('PreparedGeometry', () => {
         const unprepared2 = unprepare(prepared);
         assert.equal(unprepared2, geom); // the same object
         assert.equal(geosPreparedDestroy.mock.callCount(), 1);
+    });
+
+    it('should throw on unsupported geometry type', () => {
+        const geom = fromWKT('CIRCULARSTRING (0 0, 1 1, 2 0)');
+        assert.throws(() => prepare(geom), {
+            name: 'GEOSError::UnsupportedOperationException',
+            message: 'Curved geometry types are not supported.',
+        });
     });
 
 });

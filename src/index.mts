@@ -3,6 +3,7 @@ import { instantiate } from './core/geos.mjs';
 
 /**
  * The most convenient way to initialize `geos.js` module.
+ *
  * The .wasm file is embedded directly into the .js file as a base64 string.
  * Although convenient, this causes a certain penalty during initial initialization
  * due to base64 to binary conversion and ~33% overhead of .wasm file size.
@@ -115,7 +116,18 @@ export { isPrepared } from './predicates/isPrepared.mjs';
 export { isEmpty } from './predicates/isEmpty.mjs';
 export { isSimple } from './predicates/isSimple.mjs';
 export { isValid, isValidOrThrow, TopologyValidationError, type IsValidOptions } from './predicates/isValid.mjs';
+export { equalsExact } from './predicates/equalsExact.mjs';
+export { equalsIdentical } from './predicates/equalsIdentical.mjs';
 export { distanceWithin } from './predicates/distanceWithin.mjs';
+
+export { equals } from './spatial-predicates/equals.mjs';
+export { intersects, disjoint } from './spatial-predicates/intersects.mjs';
+export { contains, containsProperly, within } from './spatial-predicates/contains.mjs';
+export { covers, coveredBy } from './spatial-predicates/covers.mjs';
+export { crosses } from './spatial-predicates/crosses.mjs';
+export { overlaps } from './spatial-predicates/overlaps.mjs';
+export { touches } from './spatial-predicates/touches.mjs';
+export { relate, relatePattern } from './spatial-predicates/relate.mjs';
 
 export { growMemory } from './other/growMemory.mjs';
 export { version } from './other/version.mjs';
