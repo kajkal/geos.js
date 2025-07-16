@@ -37,6 +37,11 @@ if (DEFINED EMSCRIPTEN)
             geosify_geomsCoords
             geosify_geoms_r
             jsonify_geoms
+            STRtree_create_r
+            STRtree_destroy_r
+            STRtree_query_r
+            STRtree_nearest_r
+            STRtree_nearestAll_r
     )
     list(TRANSFORM EXPORTED_FUNCTIONS_LIST PREPEND "_") # add "_" at the beginning of each function name (emscripten convention)
     list(JOIN EXPORTED_FUNCTIONS_LIST "," EXPORTED_FUNCTIONS)

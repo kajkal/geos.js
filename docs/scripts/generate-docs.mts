@@ -32,6 +32,10 @@ const apiSidebar: SidebarCategory[] = [
         dir: '/operations',
     },
     {
+        label: 'Spatial Indexes',
+        dir: '/spatial-indexes',
+    },
+    {
         label: 'Helper',
         dir: '/helpers',
     },
@@ -495,6 +499,7 @@ void async function main() {
                 case ts.SyntaxKind.ObjectKeyword:
                 case ts.SyntaxKind.VoidKeyword:
                 case ts.SyntaxKind.NeverKeyword:
+                case ts.SyntaxKind.UndefinedKeyword:
                 case ts.SyntaxKind.UnknownKeyword:
                 case ts.SyntaxKind.LiteralType: {
                     return { type: 'simple', value: typeNode.getText() };
@@ -971,7 +976,7 @@ void async function main() {
             this.symbol = symbol;
         }
 
-        formatRichText(textNodes: JSDoc.RichTextNode[]) {
+        formatRichText(textNodes: JSDoc.RichTextNode[]): string {
             return textNodes
                 .map(node => {
                     switch (node.type) {
@@ -1099,39 +1104,35 @@ void async function main() {
                 const desc = jsDocData?.description;
                 if (!desc?.length) return '';
 
-                const rawLines = this.formatRichText(desc).replace(/^[\s-]*/, '').split(/\r?\n/);
-                const lines = [];
                 let listMode = false;
-
-                for (const line of rawLines) {
-                    if (listMode) {
-                        if (line.startsWith('- ')) {
-                            // close prev bullet and start new
-                            lines.push(`</li><li>${line.slice(2)}`);
-                        } else if (!line) {
-                            listMode = false;
-                            // close prev bullet and list
-                            lines.push(`</li></ul>`);
-                        } else {
+                const lines = this.formatRichText(desc)
+                    .replace(/^[\s-]*/, '') // remove '- ' from the beginning
+                    .split(/\r?\n/)
+                    .map(line => line.replace(/\\$/, '<br/>'))
+                    .map(line => {
+                        if (listMode) {
+                            if (line.startsWith('- ')) {
+                                // close prev bullet and start new
+                                return `</li><li>${line.slice(2)}`;
+                            }
+                            if (!line) {
+                                listMode = false;
+                                // close prev bullet and list
+                                return `</li></ul>`;
+                            }
                             // continue an active bullet
-                            lines.push(line);
+                            return line;
                         }
-                    } else {
                         if (line.startsWith('- ')) {
                             listMode = true;
                             // open a new bullet
-                            lines.push(`<ul><li>${line.slice(2)}`);
-                        } else if (!line) {
-                            lines.push('<br/>');
-                        } else {
-                            lines.push(line);
+                            return `<ul><li>${line.slice(2)}`;
                         }
-                    }
-                }
+                        return line || '<br/>';
+                    });
                 if (listMode) {
                     lines.push(`</li></ul>`);
                 }
-
                 return lines.join(' ');
             },
         };
@@ -1338,7 +1339,8 @@ void async function main() {
                     this.writeFunctionSignature(m);
 
                     // short description
-                    const fullDescription = this.formatRichText(m.jsDoc.description);
+                    const fullDescription = this.formatRichText(m.jsDoc.description)
+                        .replace(/\[(.+?)]\(.+?\)/g, '$1'); // simplify markdown links: `[$1]($2)` -> `$1`
                     const segmenter = new Intl.Segmenter('en', { granularity: 'sentence' });
                     const firstSentence = Array.from(segmenter.segment(fullDescription.replace(/\r?\n/g, ' ')))[ 0 ];
                     const shortDescription = firstSentence?.segment.trim() || '';

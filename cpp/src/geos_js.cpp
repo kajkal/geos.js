@@ -3,6 +3,7 @@
 #include <cstring>
 #include <geos.h>
 #include <geos_c.h>
+#include <vector>
 #include <wasi/api.h>
 
 
@@ -410,6 +411,113 @@ void jsonify_geoms(u32 *buff) {
     for (u32 i = 0; i < geomsLength; ++i) {
         jsonify_inspectGeom(geoms_cpp[i], B, &b, F, &f);
     }
+}
+
+
+/* ******************************************** *
+ * STRtree
+ * ******************************************** */
+
+struct STRtree {
+    GEOSSTRtree *tree;
+    GEOSGeometry **geoms;
+};
+
+STRtree *STRtree_create_r(GEOSContextHandle_t ctx, GEOSGeometry **geoms, u32 ngeoms, u32 nodeCapacity) {
+    GEOSSTRtree *tree = GEOSSTRtree_create_r(ctx, nodeCapacity);
+    for (u32 i = 0; i < ngeoms; ++i) {
+        // tree item is geometry index, not a pointer to anything
+        GEOSSTRtree_insert_r(ctx, tree, geoms[i], (void *) i);
+    }
+    GEOSSTRtree_build_r(ctx, tree);
+    return new STRtree{tree, geoms};
+}
+
+void STRtree_destroy_r(GEOSContextHandle_t ctx, STRtree *tree) {
+    GEOSSTRtree_destroy_r(ctx, tree->tree);
+    free(tree->geoms);
+    delete tree;
+}
+
+
+void queryCallback(void *item, void *userdata) {
+    std::vector<u32> *matches = (std::vector<u32> *) userdata;
+    matches->push_back((u32) item); // item is geometry index
+}
+
+u32 *STRtree_query_r(GEOSContextHandle_t ctx, STRtree *tree, GEOSGeometry *geom, u32 *matchesLength) {
+    std::vector</* geometry index */u32> matches;
+    GEOSSTRtree_query_r(ctx, tree->tree, geom, queryCallback, &matches);
+
+    const u32 n = matches.size();
+    *matchesLength = n;
+    if (n) {
+        u32 *arr = (u32 *) malloc(n * sizeof(u32)); // caller must free
+        std::memcpy(arr, matches.data(), n * sizeof(u32));
+        return arr;
+    }
+    return nullptr;
+}
+
+
+struct STRtreeNearestState {
+    GEOSContextHandle_t ctx;
+    GEOSGeometry **geoms;
+    bool allMatches = false; // whether to return all equally distant neighbors, not just the first one
+    f64 minDistance = geos::DoubleInfinity;
+    std::vector</* geometry index */u32> matches;
+};
+
+int distanceCallback(const void *item1, const void *item2, double *distance, void *userdata) {
+    STRtreeNearestState *s = (STRtreeNearestState *) userdata;
+    u32 treeGeomIndex = (u32) item1;
+    GEOSGeometry *treeGeom = s->geoms[treeGeomIndex];
+    GEOSGeometry *queryGeom = (GEOSGeometry *) item2;
+
+    double dist;
+    GEOSDistance_r(s->ctx, queryGeom, treeGeom, &dist);
+
+    if (dist < s->minDistance) {
+        s->minDistance = dist;
+        s->matches.clear();
+    }
+    if (dist == s->minDistance) {
+        s->matches.push_back(treeGeomIndex);
+        if (s->allMatches) {
+            // *taken from shapely:
+            // to force GEOS to check all geometries that may have an equally small distance
+            dist += 1e-6;
+        }
+    }
+
+    *distance = dist;
+    return 1;
+}
+
+u32 STRtree_nearest_r(GEOSContextHandle_t ctx, STRtree *tree, GEOSGeometry *geom, u32 *matchesLength) {
+    STRtreeNearestState s = {ctx, tree->geoms};
+    GEOSSTRtree_nearest_generic_r(ctx, tree->tree, geom, geom, distanceCallback, &s);
+
+    const u32 n = s.matches.size();
+    *matchesLength = n;
+    if (n) {
+        return s.matches.front();
+    }
+    return 0;
+}
+
+u32 *STRtree_nearestAll_r(GEOSContextHandle_t ctx, STRtree *tree, GEOSGeometry *geom, u32 *matchesLength) {
+    STRtreeNearestState s = {ctx, tree->geoms, true};
+    GEOSSTRtree_nearest_generic_r(ctx, tree->tree, geom, geom, distanceCallback, &s);
+
+    const u32 n = s.matches.size();
+    *matchesLength = n;
+    if (n) {
+        u32 *arr = (u32 *) malloc(n * sizeof(u32)); // caller must free
+        std::memcpy(arr, s.matches.data(), n * sizeof(u32));
+        return arr;
+    }
+    return nullptr;
 }
 }
 

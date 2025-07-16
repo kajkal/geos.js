@@ -86,6 +86,7 @@ export {
     multiLineString,
     multiPolygon,
     geometryCollection,
+    box,
 } from './helpers/helpers.mjs';
 
 export { InvalidGeoJSONError } from './io/geosify.mjs';
@@ -128,6 +129,8 @@ export { crosses } from './spatial-predicates/crosses.mjs';
 export { overlaps } from './spatial-predicates/overlaps.mjs';
 export { touches } from './spatial-predicates/touches.mjs';
 export { relate, relatePattern } from './spatial-predicates/relate.mjs';
+
+export { type STRTreeRef, type STRTreeOptions, strTreeIndex } from './spatial-indexes/STRTree.mjs';
 
 export { growMemory } from './other/growMemory.mjs';
 export { version } from './other/version.mjs';

@@ -12,6 +12,8 @@ import { geos } from '../core/geos.mjs';
  * @returns An array of four numbers `[ xMin, yMin, xMax, yMax ]`
  * @throws {GEOSError} when called on an empty geometry
  *
+ * @see {@link box} creates Polygon geometry from the bounds array
+ *
  * @example #live
  * const pt = point([ 3, 1 ]);
  * const ptExtent = bounds(pt); // [ 3, 1, 3, 1 ]

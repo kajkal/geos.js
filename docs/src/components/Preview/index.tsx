@@ -643,6 +643,7 @@ const defaultStyle: L.StyleFunction = (feature) => {
         opacity: 0.5,
         stroke: true,
         weight: 2,
+        ...(typeof f.geosGeom.props === 'object' ? f.geosGeom.props : {}),
     };
 };
 

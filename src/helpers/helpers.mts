@@ -2,6 +2,7 @@ import type { Position } from 'geojson';
 import { FINALIZATION, POINTER } from '../core/symbols.mjs';
 import { type Geometry, GeometryRef } from '../geom/Geometry.mjs';
 import { geosifyGeometry } from '../io/geosify.mjs';
+import { GEOSError } from '../core/GEOSError.mjs';
 import { geos } from '../core/geos.mjs';
 import type { Point } from '../geom/types/Point.mjs';
 import type { GeometryCollection } from '../geom/types/GeometryCollection.mjs';
@@ -199,4 +200,29 @@ export function geometryCollection<P>(geometries: Geometry[], options?: Geometry
     } finally {
         buff.freeIfTmp();
     }
+}
+
+
+/**
+ * Creates a rectangular {@link Polygon} geometry from bounding box coordinates.
+ *
+ * Polygon is oriented clockwise.
+ *
+ * @param bbox - Array of four numbers `[ xMin, yMin, xMax, yMax ]`
+ * @param options - Optional geometry options
+ * @returns A new Polygon object
+ * @throws {GEOSError} when box is degenerated: width or height is `0`
+ *
+ * @see {@link bounds} calculates bounding box of an existing geometry
+ *
+ * @example #live
+ * const b1 = box([ 0, 0, 4, 4 ]); // <POLYGON ((0 0, 0 4, 4 4, 4 0, 0 0))>
+ * const b2 = box([ 5, 0, 8, 1 ]); // <POLYGON ((5 0, 5 1, 8 1, 8 0, 5 0))>
+ */
+export function box<P>(bbox: number[], options?: GeometryOptions<P>): Polygon<P> {
+    const [ xMin, yMin, xMax, yMax ] = bbox;
+    if (xMin === xMax || yMin === yMax) {
+        throw new GEOSError('Degenerate box'); // point or line
+    }
+    return polygon([ [ [ xMin, yMin ], [ xMin, yMax ], [ xMax, yMax ], [ xMax, yMin ], [ xMin, yMin ] ] ], options);
 }

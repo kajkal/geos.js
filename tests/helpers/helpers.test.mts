@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import type { Geometry, GeometryRef } from '../../src/geom/Geometry.mjs';
-import { geometryCollection, lineString, multiLineString, multiPoint, multiPolygon, point, polygon } from '../../src/helpers/helpers.mjs';
+import { box, geometryCollection, lineString, multiLineString, multiPoint, multiPolygon, point, polygon } from '../../src/helpers/helpers.mjs';
 import { isEmpty } from '../../src/predicates/isEmpty.mjs';
 import { toWKT } from '../../src/io/WKT.mjs';
 
@@ -33,30 +33,6 @@ describe('miscellaneous helpers', () => {
         assert.equal(toWKT(g), 'MULTIPOLYGON (((0 0, 0 1, 1 1, 1 0, 0 0)), ((2 2, 2 3, 3 3, 3 2, 2 2)))');
     });
 
-    it('should create geometry collection from array of geos geometries', () => {
-        const g1 = point([ 1, 1 ]);
-        const g2 = lineString([ [ 0, 0 ], [ 2, 2 ] ]);
-        const g3 = lineString([ [ 2, 8 ], [ 10, 8 ] ]);
-
-        // not detached
-        assert.ok(!g1.detached);
-        assert.ok(!g2.detached);
-        assert.ok(!g3.detached);
-
-        const collection = geometryCollection([ g1, g2, g3 ]);
-        assert.equal(toWKT(collection), 'GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 2 2), LINESTRING (2 8, 10 8))');
-
-        // detached
-        assert.ok(g1.detached);
-        assert.ok(g2.detached);
-        assert.ok(g3.detached);
-
-        // should create empty geometry collection
-        const emptyCollection = geometryCollection([]);
-        assert.ok(isEmpty(emptyCollection));
-        assert.equal(toWKT(emptyCollection), 'GEOMETRYCOLLECTION EMPTY');
-    });
-
     it('should assign id to new geometry', () => {
         const options = { id: 0 };
         let g: GeometryRef = point([], options);
@@ -78,6 +54,9 @@ describe('miscellaneous helpers', () => {
         assert.equal(g.id, 0);
 
         g = geometryCollection([], options);
+        assert.equal(g.id, 0);
+
+        g = box([ 0, 0, 1, 1 ], options);
         assert.equal(g.id, 0);
     });
 
@@ -103,6 +82,59 @@ describe('miscellaneous helpers', () => {
 
         g = geometryCollection([], options);
         assert.deepEqual(g.props, { some: 'prop' });
+
+        g = box([ 0, 0, 1, 1 ], options);
+        assert.deepEqual(g.props, { some: 'prop' });
+    });
+
+    describe('geometryCollection', () => {
+
+        it('should create geometry collection from array of geos geometries', () => {
+            const g1 = point([ 1, 1 ]);
+            const g2 = lineString([ [ 0, 0 ], [ 2, 2 ] ]);
+            const g3 = lineString([ [ 2, 8 ], [ 10, 8 ] ]);
+
+            // not detached
+            assert.ok(!g1.detached);
+            assert.ok(!g2.detached);
+            assert.ok(!g3.detached);
+
+            const collection = geometryCollection([ g1, g2, g3 ]);
+            assert.equal(toWKT(collection), 'GEOMETRYCOLLECTION (POINT (1 1), LINESTRING (0 0, 2 2), LINESTRING (2 8, 10 8))');
+
+            // detached
+            assert.ok(g1.detached);
+            assert.ok(g2.detached);
+            assert.ok(g3.detached);
+
+            // should create empty geometry collection
+            const emptyCollection = geometryCollection([]);
+            assert.ok(isEmpty(emptyCollection));
+            assert.equal(toWKT(emptyCollection), 'GEOMETRYCOLLECTION EMPTY');
+        });
+
+    });
+
+    describe('box', () => {
+
+        it('should create polygon geometry from bbox', () => {
+            const g = box([ 0, 0, 4, 4 ]);
+            assert.equal(toWKT(g), 'POLYGON ((0 0, 0 4, 4 4, 4 0, 0 0))');
+        });
+
+        it('should throw when box is degenerated', () => {
+            const expectedError = { name: 'GEOSError', message: 'Degenerate box' };
+
+            // horizontal line
+            assert.throws(() => box([ 0, 0, 4, 0 ]), expectedError);
+
+            // vertical line
+            assert.throws(() => box([ 0, 0, 0, 4 ]), expectedError);
+
+            // point
+            assert.throws(() => box([ 0, 0, 0, 0 ]), expectedError);
+        });
+
     });
 
 });
