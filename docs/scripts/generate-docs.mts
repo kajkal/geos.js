@@ -1011,10 +1011,12 @@ void async function main() {
                 }
                 case 'reference': {
                     if (type.refersToTypeParameter) {
-                        const id = `${this.symbol.name}:${type.name}`;
-                        let linkTarget = `#${id}`; // local ref
+                        let linkTarget: string;
                         if (this.symbol.kind === 'function' && this.symbol.parent) {
-                            linkTarget = symbolMap.relativeURL(this.symbol, this.symbol.parent, `${id}`); // ref to parent
+                            const id = `${this.symbol.parent.name}:${type.name}`;
+                            linkTarget = symbolMap.relativeURL(this.symbol, this.symbol.parent, id); // ref to parent
+                        } else {
+                            linkTarget = `#${this.symbol.name}:${type.name}`; // local ref
                         }
                         return wrapper(`[<span className='type-parameter'>${type.name}</span>](${linkTarget})`);
                     }
