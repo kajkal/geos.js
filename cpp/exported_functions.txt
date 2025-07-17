@@ -188,8 +188,8 @@ GEOSBufferWithParams_r
 #   GEOSLineMergeDirected_r
 #   GEOSLineSubstring_r
 #   GEOSReverse_r
-#   GEOSSimplify_r
-#   GEOSTopologyPreserveSimplify_r
+GEOSSimplify_r
+GEOSTopologyPreserveSimplify_r
 #   GEOSGeom_extractUniquePoints_r
 #   GEOSHilbertCode_r
 #   GEOSGeom_transformXY_r

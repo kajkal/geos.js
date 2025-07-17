@@ -1738,7 +1738,6 @@ export interface WasmGEOS {
      * @param tolerance - The tolerance to apply. Larger tolerance leads to simpler output.
      * @returns The simplified geometry Caller is responsible for freeing with GEOSGeom_destroy().
      * @see geos::simplify::DouglasPeuckerSimplifier
-     * @deprecated this function is not exported
      */
     GEOSSimplify(g: ConstPtr<GEOSGeometry>, tolerance: f64): Ptr<GEOSGeometry>;
 
@@ -1748,7 +1747,6 @@ export interface WasmGEOS {
      * @param tolerance - The tolerance to apply. Larger tolerance leads to simpler output.
      * @returns The simplified geometry Caller is responsible for freeing with GEOSGeom_destroy().
      * @see geos::simplify::DouglasPeuckerSimplifier
-     * @deprecated this function is not exported
      */
     GEOSTopologyPreserveSimplify(g: ConstPtr<GEOSGeometry>, tolerance: f64): Ptr<GEOSGeometry>;
 

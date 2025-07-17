@@ -111,6 +111,7 @@ export { symmetricDifference } from './operations/symmetricDifference.mjs';
 export { unaryUnion } from './operations/unaryUnion.mjs';
 export { union } from './operations/union.mjs';
 export { makeValid, type MakeValidOptions } from './operations/makeValid.mjs';
+export { simplify, type SimplifyOptions } from './operations/simplify.mjs';
 
 export { isGeometry } from './predicates/isGeometry.mjs';
 export { isPrepared } from './predicates/isPrepared.mjs';
