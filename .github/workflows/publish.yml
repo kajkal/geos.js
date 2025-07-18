@@ -37,6 +37,7 @@ jobs:
 
       - run: pnpm install
       - run: pnpm run build
+      - run: pnpm run update-readme
 
       - name: Publish package
         run: pnpm publish --otp ${{ steps.wait-for-secrets.outputs.OTP }}

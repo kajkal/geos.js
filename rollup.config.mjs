@@ -9,8 +9,11 @@ import { dts } from 'rollup-plugin-dts';
 
 const wasmFilePath = join(import.meta.dirname, './cpp/build/js/geos_js.wasm');
 const wasmData = readFileSync(wasmFilePath);
+const wasmDataBase64 = wasmData.toString('base64');
 
 export default [
+
+    /** ESM */
     {
         input: 'src/index.mts',
         output: { file: 'dist/esm/index.mjs', format: 'esm' },
@@ -21,7 +24,7 @@ export default [
             }),
             typescript({ compilerOptions: { declaration: false } }),
             replace({
-                'ROLLUP_WILL_INSERT_WASM_BASE64_HERE': wasmData.toString('base64'),
+                'ROLLUP_WILL_INSERT_WASM_BASE64_HERE': wasmDataBase64,
             }),
             {
                 name: 'copy-wasm-file-to-dist',
@@ -30,22 +33,6 @@ export default [
                     await writeFile(join(import.meta.dirname, './dist/geos_js.wasm'), wasmData);
                 },
             },
-        ],
-    },
-    {
-        input: 'src/index.mts',
-        output: { file: 'dist/umd/index.min.js', format: 'umd', name: 'geos' },
-        plugins: [
-            typescript({ compilerOptions: { declaration: false } }),
-            replace({
-                'ROLLUP_WILL_INSERT_WASM_BASE64_HERE': wasmData.toString('base64'),
-            }),
-            terser({
-                keep_classnames: /^(Geometry|.+Error)$/,
-                compress: {
-                    passes: 2,
-                },
-            }),
         ],
     },
     {
@@ -59,4 +46,30 @@ export default [
             dts(),
         ],
     },
+
+
+    /** UMD */
+    {
+        input: 'src/index.mts',
+        output: { file: 'dist/umd/index.min.js', format: 'umd', name: 'geos' },
+        plugins: [
+            typescript({ compilerOptions: { declaration: false } }),
+            replace({
+                'ROLLUP_WILL_INSERT_WASM_BASE64_HERE': wasmDataBase64,
+            }),
+            terser({ compress: { passes: 2 } }),
+        ],
+    },
+    {
+        input: 'src/index.mts',
+        output: { file: 'dist/umd/index-slim.min.js', format: 'umd', name: 'geos' },
+        plugins: [
+            typescript({ compilerOptions: { declaration: false } }),
+            replace({
+                'export async function initializeFromBase64': 'async function initializeFromBase64',
+            }),
+            terser({ compress: { passes: 2 } }),
+        ],
+    },
+
 ];

@@ -45,6 +45,28 @@ console.log(JSON.stringify(u)); // '{"type":"Feature","geometry":{"type":"Polygo
 console.log(toWKB(fromWKT('POINT Z (1 2 3)'), { flavor: 'iso' })); // Uint8Array(29) [1,233,3,0,...
 ```
 
+
+## Bundle size
+
+The main components of the library are a Wasm file and a JavaScript wrapper.
+
+They can be combined into a single .js file where .wasm file data is embedded as Base64 string:
+
+| file           |    size | gzipped |
+|----------------|--------:|--------:|
+| `index.min.js` | 1399 KB | 469 KB |
+
+or loaded separately:
+
+| file                |    size | gzipped |
+|---------------------|--------:|--------:|
+| `geos_js.wasm` | 1035 KB | 327 KB |
+| `index-slim.min.js` | 20 KB | 6 KB |
+
+`index-slim` here is a complete JavaScript wrapper, but
+without [initializeFromBase64](https://kajkal.github.io/geos.js/docs/api/setup/initializeFromBase64) function.
+
+
 ## License
 
 `GEOS.js` is licensed under MIT License. `GEOS` is available under the terms of GNU Lesser General Public License (LGPL) 2.1.

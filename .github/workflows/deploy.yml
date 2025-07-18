@@ -34,6 +34,10 @@ jobs:
         run: pnpm run build
         working-directory: .
 
+      - name: Generate documentation
+        run: pnpm run generate-docs
+        working-directory: .
+
       - name: Build website
         run: pnpm run build
         working-directory: ./docs

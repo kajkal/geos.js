@@ -42,6 +42,8 @@
   ],
   "scripts": {
     "build": "rollup -c rollup.config.mjs",
+    "update-readme": "tsx scripts/update-readme.mts",
+    "generate-docs": "tsx scripts/generate-docs.mts",
     "test": "tsx --expose-gc --test",
     "test-coverage": "c8 tsx --expose-gc --test"
   },

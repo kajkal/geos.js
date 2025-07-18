@@ -212,7 +212,7 @@ namespace JSDoc {
         name: string;
         description: RichTextNode[];
         optional: boolean;
-        default: string;
+        default?: string;
     }
 
     export interface Example {
@@ -223,7 +223,7 @@ namespace JSDoc {
 
     export interface Data {
         description: RichTextNode[];
-        default: string | null;
+        default?: string;
         typeParams: TypeParamData[];
         params: ParamData[];
         returns: RichTextNode[];
@@ -235,12 +235,12 @@ namespace JSDoc {
         examples: Example[];
     }
 
-    export function readJSDocRichText(nodeOrNodes: string | ts.NodeArray<ts.JSDocComment>): RichTextNode[] {
+    export function readJSDocRichText(nodeOrNodes: undefined | string | ts.NodeArray<ts.JSDocComment>): RichTextNode[] {
         let nodes: (TextNode | LinkNode)[] = [];
         if (typeof nodeOrNodes === 'string') {
             nodes.push({ type: 'text', text: nodeOrNodes });
         } else {
-            for (const node of nodeOrNodes) {
+            for (const node of nodeOrNodes || []) {
                 switch (node.kind) {
                     case ts.SyntaxKind.JSDocText: {
                         if ((node as ts.JSDocText).text) {
@@ -249,7 +249,7 @@ namespace JSDoc {
                         break;
                     }
                     case ts.SyntaxKind.JSDocLink: {
-                        const [ _, target, text ] = node.getText().match(/^\{@link (.+?)(?:\s*\|\s*(.+))?}$/);
+                        const [ _, target, text ] = node.getText().match(/^\{@link (.+?)(?:\s*\|\s*(.+))?}$/)!;
                         const prevNode = nodes.at(-1);
                         if (!text && prevNode?.type === 'text') {
                             const linkTextMatch = prevNode.text.match(/\[([^\[]+)]$/);
@@ -274,7 +274,7 @@ namespace JSDoc {
         }
 
         // extract admonitions blocks:
-        let admonition: AdmonitionNode = null;
+        let admonition: AdmonitionNode | null = null;
         return nodes
             .flatMap<TextNode | LinkNode>(node => (
                 node.type === 'text'
@@ -313,7 +313,7 @@ namespace JSDoc {
     export function readJSDoc(node: ts.Node): Data {
         const data: Data = {
             description: [],
-            default: null,
+            default: undefined!,
             typeParams: [],
             params: [],
             returns: [],
@@ -328,7 +328,7 @@ namespace JSDoc {
         }
 
         const doc = docs.at(-1);
-        assert.ok(ts.isJSDoc(doc));
+        assert.ok(ts.isJSDoc(doc!));
         if (doc.comment) {
             data.description = readJSDocRichText(doc.comment);
         }
@@ -364,7 +364,7 @@ namespace JSDoc {
                         name: paramName,
                         description: readJSDocRichText(tag.comment),
                         optional,
-                        default: defaultValue,
+                        default: defaultValue!,
                     });
                     break;
                 }
@@ -377,6 +377,7 @@ namespace JSDoc {
                 }
                 case ts.SyntaxKind.JSDocThrowsTag: {
                     assert.ok(ts.isJSDocThrowsTag(tag));
+                    assert.ok(tag.typeExpression);
                     const errorClass = tag.typeExpression.getText(); // requires `@throws {ErrorClass} ` format
                     assert.match(errorClass, /^\{\w+}$/);
                     data.throws.push({
@@ -438,7 +439,7 @@ namespace JSDoc {
  *    on the module path (there are some special cases, like Setup functions)
  */
 void async function main() {
-    const ROOT_DIR = join(import.meta.dirname, '../..');
+    const ROOT_DIR = join(import.meta.dirname, '..');
     const SRC_INDEX_FILE_PATH = join(ROOT_DIR, './src/index.mts');
     const DOCS_DIR = join(ROOT_DIR, './docs');
     const DOCS_API_DIR = join(DOCS_DIR, './docs/api');
@@ -469,7 +470,7 @@ void async function main() {
         constructor(symbol: ts.Symbol) {
             this.symbol = symbol;
             assert.ok(!(symbol.flags & ts.SymbolFlags.Alias)); // not an alias
-            const sources = symbol.getDeclarations()
+            const sources = symbol.getDeclarations()!
                 .map(declaration => {
                     const sourceFile = declaration.getSourceFile();
                     const start = declaration.getStart(sourceFile, true);
@@ -491,7 +492,8 @@ void async function main() {
             this.editUrl = `${EDIT_BASE_URL}/${path}#${lines}`;
         }
 
-        processTypeNode(typeNode: ts.TypeNode): TS.Type {
+        processTypeNode(typeNode: ts.TypeNode | undefined): TS.Type {
+            assert.ok(typeNode);
             switch (typeNode.kind) {
                 case ts.SyntaxKind.BooleanKeyword:
                 case ts.SyntaxKind.NumberKeyword:
@@ -517,8 +519,8 @@ void async function main() {
                     assert.ok(ts.isTypeReferenceNode(typeNode));
                     let externalDeclarationRef: TS.ReferenceType['declarationRef'] | undefined;
                     const type = checker.getTypeFromTypeNode(typeNode);
-                    const symbol = type.aliasSymbol ?? type.getSymbol();
-                    const declaration = symbol.getDeclarations()[ 0 ];
+                    const symbol = type.aliasSymbol ?? type.getSymbol()!;
+                    const declaration = symbol.getDeclarations()![ 0 ];
                     const pathParts = relative(ROOT_DIR, declaration.getSourceFile().fileName).split(sep);
                     for (let i = pathParts.length - 1; i > 0; i--) {
                         if (pathParts[ i - 1 ] === 'node_modules') {
@@ -614,18 +616,18 @@ void async function main() {
         constructor(symbol: ts.Symbol, node?: ts.SignatureDeclarationBase) {
             super(symbol);
             if (!node) {
-                const declarations = symbol.getDeclarations();
+                const declarations = symbol.getDeclarations()!;
                 assert.ok(declarations.length >= 1);
                 const overloads = declarations.map(declaration => {
                     assert.ok(ts.isFunctionDeclaration(declaration));
                     return new FunctionSymbol(symbol, declaration);
                 });
-                const data = overloads.at(-1);
-                data.jsDoc = overloads.at(0).jsDoc;
+                const data = overloads.at(-1)!;
+                data.jsDoc = overloads[ 0 ].jsDoc;
                 return data;
             }
 
-            this.name = node.name.getText();
+            this.name = node.name!.getText();
             this.typeParams = node.typeParameters
                 ?.map(typeParamNode => ({
                     name: typeParamNode.name.text,
@@ -655,7 +657,7 @@ void async function main() {
         constructor(kind: 'class' | 'interface', symbol: ts.Symbol, node?: ts.ClassDeclaration | ts.InterfaceDeclaration) {
             super(symbol);
             if (!node) {
-                const declarations = symbol.getDeclarations();
+                const declarations = symbol.getDeclarations()!;
                 assert.equal(declarations.length, 1);
                 if (kind === 'class') {
                     assert.ok(ts.isClassDeclaration(declarations[ 0 ]));
@@ -665,28 +667,29 @@ void async function main() {
                 return new ClassLikeSymbol(kind, symbol, declarations[ 0 ]);
             }
 
-            this.name = node.name.text;
+            this.name = node.name!.text;
             this.kind = kind;
             this.jsDoc = JSDoc.readJSDoc(node);
 
-            let classNode = node;
+            let classNode: ts.ClassDeclaration | ts.InterfaceDeclaration | undefined = node;
             while (classNode?.heritageClauses) {
                 assert.ok(classNode);
                 assert.equal(classNode.heritageClauses.length, 1);
-                const clause = classNode.heritageClauses[ 0 ];
+                const clause: ts.HeritageClause = classNode.heritageClauses[ 0 ];
                 assert.equal(clause.types.length, 1);
                 let symbol = checker.getSymbolAtLocation(clause.types[ 0 ].expression);
+                assert.ok(symbol);
                 if (symbol.flags & ts.SymbolFlags.Alias) {
                     symbol = checker.getAliasedSymbol(symbol);
                 }
                 assert.ok(symbol);
                 this.prototypeChain.push(symbol.getName());
                 if (symbol.flags & ts.SymbolFlags.Class) {
-                    classNode = symbol.getDeclarations().find(ts.isClassDeclaration);
+                    classNode = symbol.getDeclarations()!.find(ts.isClassDeclaration);
                 } else { // verify that this is a build-in class
                     assert.ok(symbol.flags & ts.SymbolFlags.FunctionScopedVariable);
                     assert.ok(symbol.flags & ts.SymbolFlags.Interface);
-                    assert.ok(!symbol[ 'parent' ]);
+                    assert.ok(!(symbol as any)[ 'parent' ]);
                     break;
                 }
             }
@@ -710,7 +713,7 @@ void async function main() {
                     });
                 } else if (ts.isMethodDeclaration(memberNode) || ts.isMethodSignature(memberNode)) {
                     assert.ok(!memberNode.modifiers?.some(mod => mod.kind === ts.SyntaxKind.StaticKeyword)); // not a static method
-                    this.methods.push(new FunctionSymbol(checker.getSymbolAtLocation(memberNode.name), memberNode));
+                    this.methods.push(new FunctionSymbol(checker.getSymbolAtLocation(memberNode.name)!, memberNode));
                 } else {
                     throw new Error(`Unexpected node kind: ${ts.SyntaxKind[ memberNode.kind ]}`);
                 }
@@ -730,7 +733,7 @@ void async function main() {
         constructor(symbol: ts.Symbol, node?: ts.TypeAliasDeclaration) {
             super(symbol);
             if (!node) {
-                const declarations = symbol.getDeclarations();
+                const declarations = symbol.getDeclarations()!;
                 assert.equal(declarations.length, 1);
                 assert.ok(ts.isTypeAliasDeclaration(declarations[ 0 ]));
                 return new TypeSymbol(symbol, declarations[ 0 ]);
@@ -805,6 +808,7 @@ void async function main() {
                 if (match && 'docFile' in match) {
                     return { label: target, target: this.relativeURL(source, match) };
                 }
+                // @ts-ignore
                 const buildInUrl = externalTypeLinks[ 'typescript' ][ target ];
                 if (buildInUrl) {
                     return { label: target, target: buildInUrl };
@@ -857,7 +861,7 @@ void async function main() {
     ts.forEachChild(sourceFile, (node) => {
         if (!ts.isExportDeclaration(node)) return; // get only exports from `index.mts`
 
-        assert.ok(ts.isNamedExports(node.exportClause));
+        assert.ok(ts.isNamedExports(node.exportClause!));
         let symbolsToProcess: ts.Symbol[];
         let path: string;
 
@@ -865,15 +869,15 @@ void async function main() {
             // exports/imports from another module
             assert.ok(ts.isStringLiteral(node.moduleSpecifier));
             path = node.moduleSpecifier.text; // eg './io/wkt.mjs'
-            const symbol = checker.getSymbolAtLocation(node.moduleSpecifier);
+            const symbol = checker.getSymbolAtLocation(node.moduleSpecifier)!;
             symbolsToProcess = node.exportClause.elements.map(es => {
-                return checker.tryGetMemberInModuleExports(es.name.text, symbol);
+                return checker.tryGetMemberInModuleExports(es.name.text, symbol)!;
             });
         } else {
             // exports from index.mts itself
             path = './' + basename(sourceFile.fileName);
             symbolsToProcess = node.exportClause.elements.map(es => {
-                const symbol = checker.getSymbolAtLocation(es.propertyName || es.name);
+                const symbol = checker.getSymbolAtLocation(es.propertyName || es.name)!;
                 assert.ok(symbol.flags & ts.SymbolFlags.Alias); // is re-export
                 return checker.getAliasedSymbol(symbol);
             });
@@ -899,6 +903,7 @@ void async function main() {
                 }
                 case ts.SymbolFlags.Class: {
                     const category = apiSidebar.find(c => c.dir === '/types');
+                    assert.ok(category);
 
                     data = new ClassLikeSymbol('class', symbol);
                     if (data.prototypeChain.includes('Error')) {
@@ -933,6 +938,7 @@ void async function main() {
                 }
                 case ts.SymbolFlags.Interface: {
                     const category = apiSidebar.find(c => c.dir === '/types');
+                    assert.ok(category);
 
                     data = new ClassLikeSymbol('interface', symbol);
                     data.docFile = {
@@ -948,6 +954,7 @@ void async function main() {
                 // }
                 case ts.SymbolFlags.TypeAlias: {
                     const category = apiSidebar.find(c => c.dir === '/types');
+                    assert.ok(category);
 
                     data = new TypeSymbol(symbol);
                     data.docFile = {
@@ -1022,6 +1029,7 @@ void async function main() {
                     }
                     let name: string;
                     if (type.declarationRef) {
+                        // @ts-ignore
                         const href = externalTypeLinks[ type.declarationRef.package ]?.[ type.declarationRef.name ];
                         assert.ok(href);
                         name = `[**${type.name}**](${href})`;
@@ -1160,7 +1168,7 @@ void async function main() {
 
             const paramsTypeRef = params.map(p => {
                 const symbol = p.type.type === 'reference' ? p.type.targetSymbol : null;
-                const ref = symbolMap.symbols.get(symbol);
+                const ref = symbolMap.symbols.get(symbol!);
                 return ref && 'kind' in ref && ref.kind === 'interface' ? ref : null;
             });
 
@@ -1186,7 +1194,7 @@ void async function main() {
 
                 const referencedInterface = paramsTypeRef[ i ];
                 if (referencedInterface) {
-                    const declarations: ts.Node[] = fnSymbol.getDeclarations();
+                    const declarations: ts.Node[] = fnSymbol.getDeclarations()!;
                     const allUsages = referencedInterface.usages;
                     const otherUsages = allUsages
                         .filter(usage => {
@@ -1343,8 +1351,10 @@ void async function main() {
                     // short description
                     const fullDescription = this.formatRichText(m.jsDoc.description)
                         .replace(/\[(.+?)]\(.+?\)/g, '$1'); // simplify markdown links: `[$1]($2)` -> `$1`
+                    // @ts-ignore
                     const segmenter = new Intl.Segmenter('en', { granularity: 'sentence' });
                     const firstSentence = Array.from(segmenter.segment(fullDescription.replace(/\r?\n/g, ' ')))[ 0 ];
+                    // @ts-ignore
                     const shortDescription = firstSentence?.segment.trim() || '';
                     this.lines.push(shortDescription);
 
@@ -1475,7 +1485,7 @@ void async function main() {
 
     /** Generate documentation for errors */
     {
-        let writer: DocumentationWriter;
+        let writer: DocumentationWriter = null!;
         for (const errData of symbolMap.exportedSymbols()) {
             if (errData.kind !== 'class' || !errData.prototypeChain.includes('Error')) continue;
 
@@ -1497,7 +1507,7 @@ void async function main() {
 
     /** Generate documentation for types */
     {
-        let writer: DocumentationWriter;
+        let writer: DocumentationWriter = null!;
         for (const data of symbolMap.exportedSymbols()) {
             if ((data.kind !== 'type' && data.kind !== 'interface')) continue;
             if (!data.usages.length) continue;
@@ -1546,7 +1556,7 @@ void async function main() {
         console.log(`${geojsonExtraLibPath} generated`);
 
         const geosTypes = await readFile(join(ROOT_DIR, './dist/esm/index.d.mts'), { encoding: 'utf8' });
-        const geosImportDeclarations = [];
+        const geosImportDeclarations: string[] = [];
         let geosExtraLib = geosTypes.replace(/import \{.+?} from .+?;/sg, (m) => (geosImportDeclarations.push(m), ''));
         geosExtraLib = geosExtraLib.replace(/\bexport (?:type )?\{.+?};/sg, '');
         geosExtraLib = `${geosImportDeclarations.join('\n')}\ndeclare global {\n${geosExtraLib.trim()}\n}`;
