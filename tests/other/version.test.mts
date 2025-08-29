@@ -11,7 +11,7 @@ describe('version', () => {
     });
 
     it('should return GEOS version', () => {
-        assert.equal(version(), '3.13.1-CAPI-1.19.2');
+        assert.equal(version(), '3.14.0-CAPI-1.20.4');
     });
 
 });

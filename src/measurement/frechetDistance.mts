@@ -24,7 +24,7 @@ import { geos } from '../core/geos.mjs';
  * @returns Approximation of Fréchet distance between geometries
  * @throws {GEOSError} on unsupported geometry types (curved)
  * @throws {GEOSError} when either geometry is empty
- * @throws {GEOSError} when `options.densify` is not in the range `(0.0, 1.0]`
+ * @throws {GEOSError} when `options.densify` is not in the range `(0.001, 1.0]`
  *
  * @see {@link hausdorffDistance}
  *

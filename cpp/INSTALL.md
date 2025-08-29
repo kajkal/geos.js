@@ -1,7 +1,7 @@
 Required tools:
-- wget, tar, make, cmake, doxygen
-- [Emscripten](https://emscripten.org/docs/getting_started/downloads.html)
-- [Node.js](https://nodejs.org/en/download) (for running [process-geos-docs](./scripts/process-geos-docs/index.mjs) script)
+- wget, tar, make, cmake
+- [Emscripten](https://emscripten.org/docs/getting_started/downloads.html) (v4.0.13)
+- [Node.js](https://nodejs.org/en/download) (v23+) - for running [process-geos-capi](./scripts/process-geos-capi/index.mts) script
 
 
 to build GEOS dependency:

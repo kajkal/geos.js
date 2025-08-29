@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "name": "process-geos-capi",
+  "version": "1.0.0",
+  "description": "Generate TypeScript interface for GEOS C-API based on geos_c.h file"
+}

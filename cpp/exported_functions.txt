@@ -1,12 +1,15 @@
 # list of GEOS C-API functions to be exported from the generated .wasm file
 # line with '#' at the beginning is treated as a comment
 
-## Functions:
-#   GEOS_interruptRegisterCallback
-#   GEOS_interruptRequest
-#   GEOS_interruptCancel
+## Library and Memory Management:
 GEOS_init_r
 #   GEOS_finish_r
+#   GEOSFree_r
+#   GEOS_interruptRegisterCallback
+#   GEOSContext_setInterruptCallback_r
+#   GEOS_interruptRequest
+#   GEOS_interruptThread
+#   GEOS_interruptCancel
 #   GEOSContext_setNoticeHandler_r
 #   GEOSContext_setErrorHandler_r
 #   GEOSContext_setNoticeMessageHandler_r
@@ -14,28 +17,28 @@ GEOSContext_setErrorMessageHandler_r
 #   GEOS_printDouble
 GEOSversion
 
-## Library and Memory Management:
-#   initGEOS
-#   finishGEOS
-#   GEOSFree_r
-
 ## Coordinate Sequences:
 #   GEOSCoordSeq_create_r
+#   GEOSCoordSeq_createWithDimensions_r
 #   GEOSCoordSeq_copyFromBuffer_r
 #   GEOSCoordSeq_copyFromArrays_r
 #   GEOSCoordSeq_copyToBuffer_r
 #   GEOSCoordSeq_copyToArrays_r
 #   GEOSCoordSeq_clone_r
 GEOSCoordSeq_destroy_r
+#   GEOSCoordSeq_hasZ_r
+#   GEOSCoordSeq_hasM_r
 #   GEOSCoordSeq_setX_r
 #   GEOSCoordSeq_setY_r
 #   GEOSCoordSeq_setZ_r
+#   GEOSCoordSeq_setM_r
 #   GEOSCoordSeq_setXY_r
 #   GEOSCoordSeq_setXYZ_r
 #   GEOSCoordSeq_setOrdinate_r
 #   GEOSCoordSeq_getX_r
 #   GEOSCoordSeq_getY_r
 #   GEOSCoordSeq_getZ_r
+#   GEOSCoordSeq_getM_r
 GEOSCoordSeq_getXY_r
 #   GEOSCoordSeq_getXYZ_r
 #   GEOSCoordSeq_getOrdinate_r
@@ -107,6 +110,7 @@ GEOSOrientPolygons_r
 
 ## Validation:
 GEOSisSimple_r
+#   GEOSisSimpleDetail_r
 #   GEOSisValid_r
 #   GEOSisValidReason_r
 GEOSisValidDetail_r
@@ -154,7 +158,20 @@ GEOSUnaryUnion_r
 GEOSUnaryUnionPrec_r
 #   GEOSDisjointSubsetUnion_r
 #   GEOSClipByRect_r
+#   GEOSGridIntersectionFractions_r
 #   GEOSSharedPaths_r
+
+## Clustering:
+#   GEOSClusterDBSCAN_r
+#   GEOSClusterGeometryDistance_r
+#   GEOSClusterGeometryIntersects_r
+#   GEOSClusterEnvelopeDistance_r
+#   GEOSClusterEnvelopeIntersects_r
+#   GEOSClusterInfo_getNumClusters_r
+#   GEOSClusterInfo_getClusterSize_r
+#   GEOSClusterInfo_getClustersForInputs_r
+#   GEOSClusterInfo_getInputsForClusterN_r
+#   GEOSClusterInfo_destroy_r
 
 ## Buffer and Offset Curves:
 #   GEOSBuffer_r
@@ -173,6 +190,33 @@ GEOSBufferWithParams_r
 #   GEOSCoverageUnion_r
 #   GEOSCoverageIsValid_r
 #   GEOSCoverageSimplifyVW_r
+#   GEOSCoverageCleanParams_create_r
+#   GEOSCoverageCleanParams_destroy_r
+#   GEOSCoverageCleanParams_setSnappingDistance_r
+#   GEOSCoverageCleanParams_setGapMaximumWidth_r
+#   GEOSCoverageCleanParams_setOverlapMergeStrategy_r
+#   GEOSCoverageCleanWithParams_r
+#   GEOSCoverageClean_r
+
+## Geometric Constructions:
+#   GEOSEnvelope_r
+#   GEOSBoundary_r
+#   GEOSConvexHull_r
+#   GEOSConcaveHull_r
+#   GEOSConcaveHullByLength_r
+#   GEOSConcaveHullOfPolygons_r
+#   GEOSPolygonHullSimplify_r
+#   GEOSPolygonHullSimplifyMode_r
+#   GEOSMinimumRotatedRectangle_r
+#   GEOSMaximumInscribedCircle_r
+#   GEOSLargestEmptyCircle_r
+#   GEOSMinimumWidth_r
+#   GEOSPointOnSurface_r
+#   GEOSGetCentroid_r
+#   GEOSMinimumBoundingCircle_r
+#   GEOSDelaunayTriangulation_r
+#   GEOSConstrainedDelaunayTriangulation_r
+#   GEOSVoronoiDiagram_r
 
 ## Noding and Polygonization:
 #   GEOSNode_r
@@ -193,6 +237,7 @@ GEOSTopologyPreserveSimplify_r
 #   GEOSGeom_extractUniquePoints_r
 #   GEOSHilbertCode_r
 #   GEOSGeom_transformXY_r
+#   GEOSGeom_transformXYZ_r
 #   GEOSSnap_r
 #   GEOSGeom_setPrecision_r
 
@@ -290,6 +335,8 @@ GEOSWKBWriter_setIncludeSRID_r
 #   GEOSGeoJSONWriter_create_r
 #   GEOSGeoJSONWriter_destroy_r
 #   GEOSGeoJSONWriter_writeGeometry_r
+#   GEOSGeoJSONWriter_setOutputDimension_r
+#   GEOSGeoJSONWriter_getOutputDimension_r
 
 ## DEPRECATED:
 #   GEOSSingleSidedBuffer
@@ -318,23 +365,3 @@ GEOSWKBWriter_setIncludeSRID_r
 #   GEOSGeomToHEX_buf
 #   GEOSUnionCascaded
 #   GEOSUnionCascaded_r
-
-## Geometric Constructions:
-#   GEOSEnvelope_r
-#   GEOSBoundary_r
-#   GEOSConvexHull_r
-#   GEOSConcaveHull_r
-#   GEOSConcaveHullByLength_r
-#   GEOSConcaveHullOfPolygons_r
-#   GEOSPolygonHullSimplify_r
-#   GEOSPolygonHullSimplifyMode_r
-#   GEOSMinimumRotatedRectangle_r
-#   GEOSMaximumInscribedCircle_r
-#   GEOSLargestEmptyCircle_r
-#   GEOSMinimumWidth_r
-#   GEOSPointOnSurface_r
-#   GEOSGetCentroid_r
-#   GEOSMinimumBoundingCircle_r
-#   GEOSDelaunayTriangulation_r
-#   GEOSConstrainedDelaunayTriangulation_r
-#   GEOSVoronoiDiagram_r

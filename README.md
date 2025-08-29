@@ -54,13 +54,13 @@ They can be combined into a single .js file where .wasm file data is embedded as
 
 | file           |    size | gzipped |
 |----------------|--------:|--------:|
-| `index.min.js` | 1399 KB | 469 KB |
+| `index.min.js` | 1391 KB | 466 KB |
 
 or loaded separately:
 
 | file                |    size | gzipped |
 |---------------------|--------:|--------:|
-| `geos_js.wasm` | 1035 KB | 327 KB |
+| `geos_js.wasm` | 1028 KB | 326 KB |
 | `index-slim.min.js` | 20 KB | 6 KB |
 
 `index-slim` here is a complete JavaScript wrapper, but

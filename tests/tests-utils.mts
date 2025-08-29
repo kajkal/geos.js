@@ -7,6 +7,6 @@ export const GEOS_JS_WASM_PATH: string = join(import.meta.dirname, '../cpp/build
 
 export async function initializeForTest(): Promise<void> {
     const wasmData = await readFile(GEOS_JS_WASM_PATH);
-    const module = await WebAssembly.compile(wasmData);
+    const module = await WebAssembly.compile(wasmData as Buffer<ArrayBuffer>);
     await initialize(module);
 }

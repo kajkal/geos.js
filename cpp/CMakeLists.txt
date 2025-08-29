@@ -17,7 +17,7 @@ if (DEFINED EMSCRIPTEN)
 
     # EXPORTED_RUNTIME_METHODS:
     set(EXPORTED_RUNTIME_METHODS_LIST
-            # empty
+            wasmTable # needed to export '__indirect_function_table'
     )
     list(JOIN EXPORTED_RUNTIME_METHODS_LIST "," EXPORTED_RUNTIME_METHODS)
     message(STATUS "EXPORTED_RUNTIME_METHODS=[${EXPORTED_RUNTIME_METHODS}]")

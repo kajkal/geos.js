@@ -63,7 +63,7 @@ describe('index', () => {
     });
 
     it('should initialize from compiled module', async () => {
-        const module = await WebAssembly.compile(wasmData);
+        const module = await WebAssembly.compile(wasmData as Buffer<ArrayBuffer>);
 
         const result = await initialize(module);
         assert.ok(result instanceof WebAssembly.Module);

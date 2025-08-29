@@ -24,7 +24,7 @@ describe('frechetDistance', () => {
         b = fromWKT('LINESTRING EMPTY');
         assert.throws(() => frechetDistance(a, b, { densify: 0 }), {
             name: 'GEOSError::IllegalArgumentException',
-            message: 'Fraction is not in range (0.0 - 1.0]',
+            message: 'Fraction is not in range (0.001 - 1.0]',
         });
 
         // too big densify factor
@@ -32,15 +32,15 @@ describe('frechetDistance', () => {
         b = fromWKT('LINESTRING EMPTY');
         assert.throws(() => frechetDistance(a, b, { densify: 1 + 1e-10 }), {
             name: 'GEOSError::IllegalArgumentException',
-            message: 'Fraction is not in range (0.0 - 1.0]',
+            message: 'Fraction is not in range (0.001 - 1.0]',
         });
 
         // too small positive densify factor
         a = fromWKT('LINESTRING (0 0, 2 1)');
         b = fromWKT('LINESTRING EMPTY');
-        assert.throws(() => frechetDistance(a, b, { densify: 1e-30 }), {
+        assert.throws(() => frechetDistance(a, b, { densify: 0.001 }), {
             name: 'GEOSError::IllegalArgumentException',
-            message: 'Fraction is not in range (0.0 - 1.0]',
+            message: 'Fraction is not in range (0.001 - 1.0]',
         });
 
         a = fromWKT('LINESTRING (0 0, 2 0)');
@@ -58,6 +58,7 @@ describe('frechetDistance', () => {
         a = fromWKT('LINESTRING (0 0, 100 0)');
         b = fromWKT('LINESTRING (0 0, 50 50, 100 0)');
         assert.equal(frechetDistance(a, b, { densify: 0.5 }), 50.0);
+        assert.equal(frechetDistance(a, b, { densify: 0.002 }), 50.0);
 
         a = fromWKT('LINESTRING (1 1, 2 2)');
         b = fromWKT('LINESTRING (1 4, 2 3)');

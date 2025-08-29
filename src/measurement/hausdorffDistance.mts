@@ -26,7 +26,7 @@ import { geos } from '../core/geos.mjs';
  * @see {@link frechetDistance}
  *
  * @example #live
- * const a = lineString([ [ 0, 0 ], [ 100, 0 ], [ 10, 100 ], [ 10, 100 ] ]);
+ * const a = lineString([ [ 0, 0 ], [ 100, 0 ], [ 10, 100 ] ]);
  * const b = lineString([ [ 0, 100 ], [ 0, 10 ], [ 80, 10 ] ]);
  * const ab_hDist = hausdorffDistance(a, b); // 22.360679774997898 - approximation is not close
  * const ab_hDist_d = hausdorffDistance(a, b, { densify: 0.001 }); // 47.89
