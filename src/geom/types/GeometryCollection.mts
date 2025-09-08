@@ -1,4 +1,4 @@
-import type { Feature as GeoJSON_Feature, GeometryCollection as GeoJSON_GeometryCollection } from 'geojson';
+import type { JSON_Feature, JSON_GeometryCollection } from './JSON.mjs';
 import { GeometryRef } from '../Geometry.mjs';
 
 
@@ -24,7 +24,7 @@ export interface GeometryCollection<P = unknown> extends GeometryRef<P> {
 
     readonly type: 'GeometryCollection';
 
-    toJSON(): GeoJSON_Feature<GeoJSON_GeometryCollection, P>;
+    toJSON(): JSON_Feature<JSON_GeometryCollection, P>;
 
     clone(): GeometryCollection<P>;
 

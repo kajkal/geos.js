@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
 import { unaryUnion } from '../../src/operations/unaryUnion.mjs';
-import { geosifyGeometry } from '../../src/io/geosify.mjs';
+import { lineString } from '../../src/helpers/helpers.mjs';
 import { fromWKT, toWKT } from '../../src/io/WKT.mjs';
 
 
@@ -60,7 +60,7 @@ describe('unaryUnion', () => {
     });
 
     it('should throw on geometry with NaN coordinates', () => {
-        const a = geosifyGeometry({ type: 'LineString', coordinates: [ [ NaN, NaN ], [ 0, 1 ] ] });
+        const a = lineString([ [ NaN, NaN ], [ 0, 1 ] ]);
         assert.throws(() => unaryUnion(a), {
             name: 'GEOSError',
             message: 'Edge direction cannot be determined because endpoints are equal',

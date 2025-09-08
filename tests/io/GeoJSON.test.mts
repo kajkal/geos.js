@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { initializeForTest } from '../tests-utils.mjs';
+import type { JSON_Geometry } from '../../src/geom/types/JSON.mjs';
 import { fromWKT, toWKT } from '../../src/io/WKT.mjs';
 import { fromGeoJSON, toGeoJSON } from '../../src/io/GeoJSON.mjs';
 import { point } from '../../src/helpers/helpers.mjs';
@@ -96,6 +97,43 @@ describe('GeoJSON', () => {
             ]);
         });
 
+        it(`should map coordinates according to the 'layout' option`, () => {
+            const json: JSON_Geometry = { type: 'Point', coordinates: [ 10, 20, 30, 40 ] };
+
+            // XYZM by default
+            assert.equal(toWKT(fromGeoJSON(json)), 'POINT ZM (10 20 30 40)');
+
+            const xyzm = fromGeoJSON(json, { layout: 'XYZM' });
+            assert.equal(toWKT(xyzm), 'POINT ZM (10 20 30 40)');
+
+            const xyz = fromGeoJSON(json, { layout: 'XYZ' });
+            assert.equal(toWKT(xyz), 'POINT Z (10 20 30)');
+
+            const xym = fromGeoJSON(json, { layout: 'XYM' });
+            assert.equal(toWKT(xym), 'POINT M (10 20 30)');
+
+            const xy = fromGeoJSON(json, { layout: 'XY' });
+            assert.equal(toWKT(xy), 'POINT (10 20)');
+
+            const xyNOTxyz = fromGeoJSON(
+                { type: 'Point', coordinates: [ 10, 20 ] },
+                { layout: 'XYZ' },
+            );
+            assert.equal(toWKT(xyNOTxyz), 'POINT (10 20)');
+
+            const xyzNOTxyzm = fromGeoJSON(
+                { type: 'Point', coordinates: [ 10, 20, 30 ] },
+                { layout: 'XYZM' },
+            );
+            assert.equal(toWKT(xyzNOTxyzm), 'POINT Z (10 20 30)');
+
+            const xymNOTxyz = fromGeoJSON(
+                { type: 'Point', coordinates: [ 10, 20, 30 ] },
+                { layout: 'XYM' },
+            );
+            assert.equal(toWKT(xymNOTxyz), 'POINT M (10 20 30)');
+        });
+
         it('should throw on invalid GeoJSON data', () => {
             // missing geometry
             assert.throws(() => fromGeoJSON(null!));
@@ -103,7 +141,9 @@ describe('GeoJSON', () => {
                 type: 'Feature',
             } as any), {
                 name: 'InvalidGeoJSONError',
-                message: 'Invalid GeoJSON geometry: undefined',
+                message: 'Invalid geometry',
+                details: undefined,
+                geometry: undefined,
             });
             assert.throws(() => fromGeoJSON({
                 type: 'Feature',
@@ -111,11 +151,15 @@ describe('GeoJSON', () => {
                 properties: null,
             }), {
                 name: 'InvalidGeoJSONError',
-                message: 'Invalid GeoJSON geometry: null',
+                message: 'Invalid geometry',
+                details: undefined,
+                geometry: null,
             });
             assert.throws(() => fromGeoJSON({} as any), {
                 name: 'InvalidGeoJSONError',
-                message: 'Invalid GeoJSON geometry: {}',
+                message: 'Invalid geometry',
+                details: undefined,
+                geometry: {},
             });
 
             // invalid geometries
@@ -124,7 +168,9 @@ describe('GeoJSON', () => {
                 coordinates: [ [ 0, 0 ] ],
             }), {
                 name: 'InvalidGeoJSONError',
-                message: /^Invalid LineString: /,
+                message: 'LineString must have at leat 2 points',
+                details: 'found 1',
+                geometry: { type: 'LineString', coordinates: [ [ 0, 0 ] ] },
             });
             assert.throws(() => fromGeoJSON({
                 type: 'Feature',
@@ -135,7 +181,9 @@ describe('GeoJSON', () => {
                 properties: null,
             }), {
                 name: 'InvalidGeoJSONError',
-                message: /^Invalid LineString: /,
+                message: 'LineString must have at leat 2 points',
+                details: 'found 1',
+                geometry: { type: 'LineString', coordinates: [ [ 0, 0 ] ] },
             });
             assert.throws(() => fromGeoJSON({
                 type: 'FeatureCollection',
@@ -149,7 +197,9 @@ describe('GeoJSON', () => {
                 } ],
             }), {
                 name: 'InvalidGeoJSONError',
-                message: /^Invalid LineString: /,
+                message: 'LineString must have at leat 2 points',
+                details: 'found 1',
+                geometry: { type: 'LineString', coordinates: [ [ 0, 0 ] ] },
             });
         });
 
@@ -208,16 +258,120 @@ describe('GeoJSON', () => {
             });
         });
 
-        it('should throw on unsupported geometry type', () => {
-            const g = fromWKT('CIRCULARSTRING (0 0, 1 1, 2 0)');
-            assert.throws(() => toGeoJSON(g), {
+        it(`should map coordinates according to the 'layout' option`, () => {
+            const xyzm = fromWKT('POINT ZM (10 20 30 40)');
+
+            // XYZ by default
+            assert.deepEqual(
+                toGeoJSON(xyzm).geometry,
+                { type: 'Point', coordinates: [ 10, 20, 30 ] },
+            );
+            assert.deepEqual(
+                toGeoJSON(xyzm, { layout: 'XYZM' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20, 30, 40 ] },
+            );
+            assert.deepEqual(
+                toGeoJSON(xyzm, { layout: 'XYZ' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20, 30 ] },
+            );
+            assert.deepEqual(
+                toGeoJSON(xyzm, { layout: 'XYM' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20, 40 ] },
+            );
+            assert.deepEqual(
+                toGeoJSON(xyzm, { layout: 'XY' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20 ] },
+            );
+
+            // XYZM when Z and M are missing
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT (10 20)'), { layout: 'XYZM' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20 ] },
+            );
+            // XYZM when M is missing
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT Z (10 20 30)'), { layout: 'XYZM' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20, 30 ] },
+            );
+            // XYZM when Z is missing (will insert NaN)
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT M (10 20 40)'), { layout: 'XYZM' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20, NaN, 40 ] },
+            );
+            // XYZM when empty
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT EMPTY'), { layout: 'XYZM' }).geometry,
+                { type: 'Point', coordinates: [] },
+            );
+
+            // XYZ when Z is missing
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT (10 20)'), { layout: 'XYZ' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20 ] },
+            );
+            // XYZ when Z is missing but M is present
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT M (10 20 40)'), { layout: 'XYZ' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20 ] },
+            );
+            // XYZ when empty
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT EMPTY'), { layout: 'XYZ' }).geometry,
+                { type: 'Point', coordinates: [] },
+            );
+
+            // XYM when M is missing
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT (10 20)'), { layout: 'XYM' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20 ] },
+            );
+            // XYM when M is missing but Z is present
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT Z (10 20 30)'), { layout: 'XYM' }).geometry,
+                { type: 'Point', coordinates: [ 10, 20 ] },
+            );
+            // XYM when empty
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT EMPTY'), { layout: 'XYM' }).geometry,
+                { type: 'Point', coordinates: [] },
+            );
+
+            // XY when empty
+            assert.deepEqual(
+                toGeoJSON(fromWKT('POINT EMPTY'), { layout: 'XY' }).geometry,
+                { type: 'Point', coordinates: [] },
+            );
+        });
+
+        it(`should handle geometry types according to the 'flavor' option`, () => {
+            const curvedGeometry = fromWKT('CIRCULARSTRING (10 20, 20 30, 30 20)');
+
+            // should throw by default
+            assert.throws(() => toGeoJSON(curvedGeometry), {
                 name: 'GEOSError',
-                message: 'Unsupported geometry type CircularString',
+                message: 'CircularString is not standard GeoJSON geometry. Use \'extended\' flavor to jsonify all geometry types.',
             });
-            assert.throws(() => toGeoJSON([ g ]), {
+            assert.throws(() => toGeoJSON([ curvedGeometry ]), {
                 name: 'GEOSError',
-                message: 'Unsupported geometry type CircularString',
+                message: 'CircularString is not standard GeoJSON geometry. Use \'extended\' flavor to jsonify all geometry types.',
             });
+
+            // should throw with 'strict' flavor
+            assert.throws(() => toGeoJSON(curvedGeometry, { flavor: 'strict' }), {
+                name: 'GEOSError',
+                message: 'CircularString is not standard GeoJSON geometry. Use \'extended\' flavor to jsonify all geometry types.',
+            });
+            assert.throws(() => toGeoJSON([ curvedGeometry ], { flavor: 'strict' }), {
+                name: 'GEOSError',
+                message: 'CircularString is not standard GeoJSON geometry. Use \'extended\' flavor to jsonify all geometry types.',
+            });
+
+            // should jsonify with 'extended' flavor
+            assert.deepEqual(
+                toGeoJSON(curvedGeometry, { flavor: 'extended' }).geometry,
+                { type: 'CircularString', coordinates: [ [ 10, 20 ], [ 20, 30 ], [ 30, 20 ] ] },
+            );
+            assert.doesNotThrow(() => toGeoJSON([ curvedGeometry ], { flavor: 'extended' }));
         });
 
     });

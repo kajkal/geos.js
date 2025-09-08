@@ -1,6 +1,6 @@
 {
   "name": "geos.js",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "an easy-to-use JavaScript wrapper over WebAssembly build of GEOS",
   "keywords": [
     "geos",
@@ -42,8 +42,8 @@
   ],
   "scripts": {
     "build": "rollup -c rollup.config.mjs",
-    "update-readme": "tsx scripts/update-readme.mts",
-    "generate-docs": "tsx scripts/generate-docs.mts",
+    "update-readme": "node --experimental-strip-types scripts/update-readme.mts",
+    "generate-docs": "node --experimental-strip-types scripts/generate-docs.mts",
     "test": "tsx --expose-gc --test",
     "test-coverage": "c8 tsx --expose-gc --test"
   },

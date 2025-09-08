@@ -14,8 +14,14 @@ You can also check out [API Documentation](https://kajkal.github.io/geos.js/docs
 
 ## Project structure
 
-At the core is the C/C++ GEOS library compiled by Emscripten into WebAssembly with a custom ~~slightly over engineered~~ [GeoJSON integration](src/io/geosify.mts).
+At the core is the C/C++ GEOS library compiled by Emscripten into WebAssembly.
 Memory management, pointers and other C/C++/Wasm related stuff are handled by JavaScript wrapper, which by exposing a clean API almost makes Wasm an implementation detail for downstream developers.
+
+`GEOS.js` custom [GeoJSON integration](src/io/geosify.mts) offers fast and efficient way to transfer data between JavaScript and Wasm memory.
+It also has some unique capabilities like:
+- support for feature ID and properties
+- support for Z and M ordinates
+- support for geometries that are not part of the official GeoJSON format: CircularString, CompoundCurve, CurvePolygon etc.
 
 
 ## Install
@@ -54,14 +60,14 @@ They can be combined into a single .js file where .wasm file data is embedded as
 
 | file           |    size | gzipped |
 |----------------|--------:|--------:|
-| `index.min.js` | 1391 KB | 466 KB |
+| `index.min.js` | 1400 KB | 469 KB |
 
 or loaded separately:
 
 | file                |    size | gzipped |
 |---------------------|--------:|--------:|
-| `geos_js.wasm` | 1028 KB | 326 KB |
-| `index-slim.min.js` | 20 KB | 6 KB |
+| `geos_js.wasm` | 1033 KB | 327 KB |
+| `index-slim.min.js` | 24 KB | 7 KB |
 
 `index-slim` here is a complete JavaScript wrapper, but
 without [initializeFromBase64](https://kajkal.github.io/geos.js/docs/api/setup/initializeFromBase64) function.

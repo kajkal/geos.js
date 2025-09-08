@@ -874,7 +874,6 @@ export interface WasmGEOS {
      * @param ncurves - The number of geometries in the curves list
      * @returns A newly allocated CompoundCurve geometry. NULL on exception.
      * Caller is responsible for freeing with GEOSGeom_destroy().
-     * @deprecated this function is not exported
      */
     GEOSGeom_createCompoundCurve(curves: Ptr<GEOSGeometry[]>, ncurves: u32): Ptr<GEOSGeometry>;
 
@@ -882,7 +881,6 @@ export interface WasmGEOS {
      * Creates an empty CompoundCurve geometry.
      * @returns A newly allocated CompoundCurve geometry. NULL on exception.
      * Caller is responsible for freeing with GEOSGeom_destroy().
-     * @deprecated this function is not exported
      */
     GEOSGeom_createEmptyCompoundCurve(): Ptr<GEOSGeometry>;
 
@@ -897,7 +895,6 @@ export interface WasmGEOS {
      * @param nholes - The number of rings in the holes array.
      * @returns A newly allocated geometry. NULL on exception.
      * Caller is responsible for freeing with GEOSGeom_destroy().
-     * @deprecated this function is not exported
      */
     GEOSGeom_createCurvePolygon(shell: Ptr<GEOSGeometry>, holes: Ptr<GEOSGeometry[]>, nholes: u32): Ptr<GEOSGeometry>;
 
@@ -905,7 +902,6 @@ export interface WasmGEOS {
      * Creates an empty CurvePolygon geometry.
      * @returns A newly allocated CurvePolygon geometry. NULL on exception.
      * Caller is responsible for freeing with GEOSGeom_destroy().
-     * @deprecated this function is not exported
      */
     GEOSGeom_createEmptyCurvePolygon(): Ptr<GEOSGeometry>;
 

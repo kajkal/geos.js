@@ -1,4 +1,3 @@
-import type { Feature as GeoJSON_Feature, Geometry as GeoJSON_Geometry } from 'geojson';
 import type { GEOSGeometry, GEOSPreparedGeometry, Ptr } from '../core/types/WasmGEOS.mjs';
 import type { Point } from './types/Point.mjs';
 import type { LineString } from './types/LineString.mjs';
@@ -13,8 +12,9 @@ import type { CompoundCurve } from './types/CompoundCurve.mjs';
 import type { CurvePolygon } from './types/CurvePolygon.mjs';
 import type { MultiCurve } from './types/MultiCurve.mjs';
 import type { MultiSurface } from './types/MultiSurface.mjs';
+import type { JSON_Feature, JSON_Geometry } from './types/JSON.mjs';
 import { CLEANUP, FINALIZATION, P_CLEANUP, P_FINALIZATION, P_POINTER, POINTER } from '../core/symbols.mjs';
-import { jsonifyGeometry } from '../io/jsonify.mjs';
+import { feature, jsonifyGeometry } from '../io/jsonify.mjs';
 import { geos } from '../core/geos.mjs';
 
 
@@ -50,9 +50,47 @@ export const GEOSGeometryTypeDecoder = [
     /* 12 */ 'MultiSurface',
 ] as const;
 
+interface GEOSGeomTypeIdMap {
+    Point: 0,
+    LineString: 1,
+    LinearRing: 2,
+    Polygon: 3,
+    MultiPoint: 4,
+    MultiLineString: 5,
+    MultiPolygon: 6,
+    GeometryCollection: 7,
+    CircularString: 8,
+    CompoundCurve: 9,
+    CurvePolygon: 10,
+    MultiCurve: 11,
+    MultiSurface: 12,
+}
+
+export const GEOSGeomTypeIdMap: GEOSGeomTypeIdMap = GEOSGeometryTypeDecoder.reduce((a, t, i) => (a[ t ] = i, a), {} as any);
+
+export const CollectionElementsKeyMap: Record<string, string> = {
+    [ GEOSGeometryTypeDecoder[ 7 ] ]: 'geometries',
+    [ GEOSGeometryTypeDecoder[ 9 ] ]: 'segments',
+    [ GEOSGeometryTypeDecoder[ 10 ] ]: 'rings',
+    [ GEOSGeometryTypeDecoder[ 11 ] ]: 'curves',
+    [ GEOSGeometryTypeDecoder[ 12 ] ]: 'surfaces',
+};
+
+
+export type CoordinateType = 'XY' | 'XYZ' | 'XYZM' | 'XYM';
+
 export interface GeometryExtras<P> {
+
+    /**
+     * Optional identifier to be assigned to the geometry instance.
+     */
     id?: number | string;
+
+    /**
+     * Optional data to be assigned to the geometry instance.
+     */
     properties?: P;
+
 }
 
 
@@ -200,6 +238,9 @@ export class GeometryRef<P = unknown> {
      * This method allows the geometry to be serialized to JSON
      * and is automatically called by `JSON.stringify()`.
      *
+     * `geom.toJSON()` is equivalent of calling
+     * `toGeoJSON(geom, { flavor: 'extended', layout: 'XYZM' })`
+     *
      * @returns A GeoJSON `Feature` representation of this geometry
      *
      * @see {@link toGeoJSON} converts geometry to a GeoJSON `Feature`
@@ -216,13 +257,8 @@ export class GeometryRef<P = unknown> {
      * const geojsonStr = JSON.stringify(geom);
      * // '{"type":"Feature","geometry":{"type":"Point","coordinates":[1,2,3]},"properties":null}'
      */
-    toJSON(): GeoJSON_Feature<GeoJSON_Geometry, P> {
-        return {
-            id: this.id,
-            type: 'Feature',
-            geometry: jsonifyGeometry(this),
-            properties: this.props! ?? null,
-        };
+    toJSON(): JSON_Feature<JSON_Geometry, P> {
+        return feature(this, jsonifyGeometry(this, 'XYZM', true));
     }
 
     /**

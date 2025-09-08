@@ -57,10 +57,10 @@ GEOSGeom_createPointFromXY_r
 #   GEOSGeom_createPolygon_r
 #   GEOSGeom_createCircularString_r
 #   GEOSGeom_createEmptyCircularString_r
-#   GEOSGeom_createCompoundCurve_r
-#   GEOSGeom_createEmptyCompoundCurve_r
-#   GEOSGeom_createCurvePolygon_r
-#   GEOSGeom_createEmptyCurvePolygon_r
+GEOSGeom_createCompoundCurve_r
+GEOSGeom_createEmptyCompoundCurve_r
+GEOSGeom_createCurvePolygon_r
+GEOSGeom_createEmptyCurvePolygon_r
 GEOSGeom_createCollection_r
 #   GEOSGeom_releaseCollection_r
 #   GEOSGeom_createEmptyCollection_r

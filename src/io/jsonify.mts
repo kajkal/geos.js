@@ -16,17 +16,97 @@
  * - `buff[1]` -> Wasm side will put here the pointer (starting index) to the
  *   buffer with the concatenated coordinates of all (Multi)Point geometries.
  *
- * The output buffer contains the geometry data (is empty, has z) with pointers
- * to underlying data of their coordinate sequences.
+ * The output buffer contains the geometry data (is empty, has Z, has M) with
+ * pointers to underlying data of their coordinate sequences.
  */
 declare const THIS_FILE: symbol; // to omit ^ @file doc from the bundle
 
-import type { Feature as GeoJSON_Feature, Geometry as GeoJSON_Geometry, Position } from 'geojson';
+import type { Position } from 'geojson';
 import type { Ptr, u32 } from '../core/types/WasmGEOS.mjs';
+import type { JSON_Feature, JSON_Geometry } from '../geom/types/JSON.mjs';
 import { POINTER } from '../core/symbols.mjs';
-import { type Geometry, GeometryRef, GEOSGeometryTypeDecoder } from '../geom/Geometry.mjs';
+import { CollectionElementsKeyMap, type CoordinateType, type Geometry, GeometryRef, GEOSGeometryTypeDecoder } from '../geom/Geometry.mjs';
 import { GEOSError } from '../core/GEOSError.mjs';
 import { geos } from '../core/geos.mjs';
+
+
+interface OutputCoordsOptions {
+    /** read single point */
+    P: (F: Float64Array, f: number, hasZ: 0 | 1, hasM: 0 | 1) => Position;
+    /** read coordinate sequence */
+    C: (F: Float64Array, l: number, f: number, hasZ: 0 | 1, hasM: 0 | 1) => Position[];
+}
+
+const CoordsOptionsMap: Record<CoordinateType, OutputCoordsOptions> = {
+    XY: {
+        P: (F, f) => (
+            [ F[ f ], F[ f + 1 ] ]
+        ),
+        C: (F, l, f, _hasZ, hasM) => {
+            const stride = 3 + hasM;
+            const pts = Array<Position>(l);
+            for (let i = 0; i < l; i++, f += stride) {
+                pts[ i ] = [ F[ f ], F[ f + 1 ] ];
+            }
+            return pts;
+        },
+    },
+    XYZ: {
+        P: (F, f, hasZ) => (
+            hasZ
+                ? [ F[ f ], F[ f + 1 ], F[ f + 2 ] ]
+                : [ F[ f ], F[ f + 1 ] ]
+        ),
+        C: (F, l, f, hasZ, hasM) => {
+            const stride = 3 + hasM;
+            const pts = Array<Position>(l);
+            for (let i = 0; i < l; i++, f += stride) {
+                pts[ i ] = hasZ
+                    ? [ F[ f ], F[ f + 1 ], F[ f + 2 ] ]
+                    : [ F[ f ], F[ f + 1 ] ];
+            }
+            return pts;
+        },
+    },
+    XYZM: {
+        P: (F, f, hasZ, hasM) => (
+            hasM
+                ? [ F[ f ], F[ f + 1 ], F[ f + 2 ], F[ f + 3 ] ]
+                : hasZ
+                    ? [ F[ f ], F[ f + 1 ], F[ f + 2 ] ]
+                    : [ F[ f ], F[ f + 1 ] ]
+        ),
+        C: (F, l, f, hasZ, hasM) => {
+            const stride = 3 + hasM;
+            const pts = Array<Position>(l);
+            for (let i = 0; i < l; i++, f += stride) {
+                pts[ i ] = hasM
+                    ? [ F[ f ], F[ f + 1 ], F[ f + 2 ], F[ f + 3 ] ]
+                    : hasZ
+                        ? [ F[ f ], F[ f + 1 ], F[ f + 2 ] ]
+                        : [ F[ f ], F[ f + 1 ] ];
+            }
+            return pts;
+        },
+    },
+    XYM: {
+        P: (F, f, _hasZ, hasM) => (
+            hasM
+                ? [ F[ f ], F[ f + 1 ], F[ f + 3 ] ]
+                : [ F[ f ], F[ f + 1 ] ]
+        ),
+        C: (F, l, f, _hasZ, hasM) => {
+            const stride = 3 + hasM;
+            const pts = Array<Position>(l);
+            for (let i = 0; i < l; i++, f += stride) {
+                pts[ i ] = hasM
+                    ? [ F[ f ], F[ f + 1 ], F[ f + 3 ] ]
+                    : [ F[ f ], F[ f + 1 ] ];
+            }
+            return pts;
+        },
+    },
+};
 
 
 interface JsonifyState {
@@ -36,103 +116,88 @@ interface JsonifyState {
     f: number; // to read (Multi)Point coordinates
 }
 
-const jsonifyGeom = (s: JsonifyState): GeoJSON_Geometry => {
+const jsonifyGeom = (s: JsonifyState, o: OutputCoordsOptions, extended: boolean | undefined): JSON_Geometry => {
     const { B, F } = s;
     const header = B[ s.b++ ];
     const typeId = header & 15;
     const isEmpty = header & 16;
-    const hasZ = header & 32;
-    const hasM = header & 64;
-    const skip = !hasZ as any + !!hasM;
+    const hasZ = (header >> 5 & 1) as 0 | 1;
+    const hasM = (header >> 6 & 1) as 0 | 1;
 
-    if (isEmpty) {
-        if (typeId < 7) {
-            return { type: GEOSGeometryTypeDecoder[ typeId as 0 | 1 | 3 | 4 | 5 | 6 ], coordinates: [] };
-        }
-        return { type: GEOSGeometryTypeDecoder[ typeId as 7 ], geometries: [] };
-    }
-
-    switch (typeId) {
-
-        case 0: { // Point
-            const pt: Position = hasZ
-                ? [ F[ s.f++ ], F[ s.f++ ], F[ s.f++ ] ]
-                : [ F[ s.f++ ], F[ s.f++ ] ];
-            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pt };
+    if (extended || typeId < 8) {
+        if (isEmpty && typeId < 9 && typeId !== 7) {
+            return { // LinearRing(2) is treated as LineString(1)
+                type: GEOSGeometryTypeDecoder[ typeId === 2 ? 1 : typeId as 0 | 1 | 3 | 4 | 5 | 6 | 8 ],
+                coordinates: [],
+            };
         }
 
-        case 1: { // LineString
-            const ptsLength = B[ s.b++ ];
-            const pts = Array<Position>(ptsLength);
-            let f = B[ s.b++ ];
-            for (let i = 0; i < ptsLength; i++, f += skip) {
-                pts[ i ] = hasZ
-                    ? [ F[ f++ ], F[ f++ ], F[ f++ ] ]
-                    : [ F[ f++ ], F[ f++ ] ];
+        switch (typeId) {
+
+            case 0: { // Point
+                const pt = o.P(F, s.f, hasZ, hasM);
+                s.f += hasM ? 4 : hasZ ? 3 : 2;
+                return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pt };
             }
-            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pts };
-        }
 
-        case 4: { // MultiPoint
-            const ptsLength = B[ s.b++ ];
-            const pts = Array<Position>(ptsLength);
-            for (let i = 0; i < ptsLength; i++) {
-                pts[ i ] = hasZ
-                    ? [ F[ s.f++ ], F[ s.f++ ], F[ s.f++ ] ]
-                    : [ F[ s.f++ ], F[ s.f++ ] ];
-            }
-            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pts };
-        }
-
-        case 3: // Polygon
-        case 5: { // MultiLineString
-            const pptsLength = B[ s.b++ ];
-            const ppts = Array<Position[]>(pptsLength);
-            for (let j = 0; j < pptsLength; j++) {
+            case 4: { // MultiPoint
                 const ptsLength = B[ s.b++ ];
-                const pts = ppts[ j ] = Array<Position>(ptsLength);
-                let f = B[ s.b++ ];
-                for (let i = 0; i < ptsLength; i++, f += skip) {
-                    pts[ i ] = hasZ
-                        ? [ F[ f++ ], F[ f++ ], F[ f++ ] ]
-                        : [ F[ f++ ], F[ f++ ] ];
+                const pts = Array<Position>(ptsLength);
+                const step = hasM ? 4 : hasZ ? 3 : 2;
+                for (let i = 0; i < ptsLength; i++, s.f += step) {
+                    pts[ i ] = o.P(F, s.f, hasZ, hasM);
                 }
+                return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pts };
             }
-            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: ppts };
-        }
 
-        case 6: { // MultiPolygon
-            const ppptsLength = B[ s.b++ ];
-            const pppts = Array<Position[][]>(ppptsLength);
-            for (let k = 0; k < ppptsLength; k++) {
+            case 1: // LineString
+            case 2: // LinearRing
+            case 8: { // CircularString
+                const pts = o.C(F, B[ s.b++ ], B[ s.b++ ], hasZ, hasM);
+                return { type: GEOSGeometryTypeDecoder[ typeId === 2 ? 1 : typeId ], coordinates: pts };
+            }
+
+            case 3: // Polygon
+            case 5: { // MultiLineString
                 const pptsLength = B[ s.b++ ];
-                const ppts = pppts[ k ] = Array<Position[]>(pptsLength);
+                const ppts = Array<Position[]>(pptsLength);
                 for (let j = 0; j < pptsLength; j++) {
-                    const ptsLength = B[ s.b++ ];
-                    const pts = ppts[ j ] = Array<Position>(ptsLength);
-                    let f = B[ s.b++ ];
-                    for (let i = 0; i < ptsLength; i++, f += skip) {
-                        pts[ i ] = hasZ
-                            ? [ F[ f++ ], F[ f++ ], F[ f++ ] ]
-                            : [ F[ f++ ], F[ f++ ] ];
+                    ppts[ j ] = o.C(F, B[ s.b++ ], B[ s.b++ ], hasZ, hasM);
+                }
+                return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: ppts };
+            }
+
+            case 6: { // MultiPolygon
+                const ppptsLength = B[ s.b++ ];
+                const pppts = Array<Position[][]>(ppptsLength);
+                for (let k = 0; k < ppptsLength; k++) {
+                    const pptsLength = B[ s.b++ ];
+                    const ppts = pppts[ k ] = Array<Position[]>(pptsLength);
+                    for (let j = 0; j < pptsLength; j++) {
+                        ppts[ j ] = o.C(F, B[ s.b++ ], B[ s.b++ ], hasZ, hasM);
                     }
                 }
+                return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pppts };
             }
-            return { type: GEOSGeometryTypeDecoder[ typeId ], coordinates: pppts };
-        }
 
-        case 7: { // GeometryCollection
-            const geomsLength = B[ s.b++ ];
-            const geoms = Array<GeoJSON_Geometry>(geomsLength);
-            for (let i = 0; i < geomsLength; i++) {
-                geoms[ i ] = jsonifyGeom(s);
+            case 7: // GeometryCollection
+            case 9: // CompoundCurve
+            case 10: // CurvePolygon
+            case 11: // MultiCurve
+            case 12: { // MultiSurface
+                const geomsLength = isEmpty ? 0 : B[ s.b++ ];
+                const geoms = Array<JSON_Geometry>(geomsLength);
+                for (let i = 0; i < geomsLength; i++) {
+                    geoms[ i ] = jsonifyGeom(s, o, extended);
+                }
+                const type = GEOSGeometryTypeDecoder[ typeId ], key = CollectionElementsKeyMap[ type ];
+                return { type, [ key ]: geoms } as unknown as JSON_Geometry;
             }
-            return { type: GEOSGeometryTypeDecoder[ typeId ], geometries: geoms };
-        }
 
+        }
     }
 
-    throw new GEOSError(`Unsupported geometry type ${GEOSGeometryTypeDecoder[ typeId ]}`);
+    throw new GEOSError(`${GEOSGeometryTypeDecoder[ typeId ]} is not standard GeoJSON geometry. Use 'extended' flavor to jsonify all geometry types.`);
 };
 
 
@@ -140,6 +205,8 @@ const jsonifyGeom = (s: JsonifyState): GeoJSON_Geometry => {
  * Converts a geometry object to its GeoJSON representation.
  *
  * @param geometry - The geometry object to be converted
+ * @param layout - Output geometry coordinate layout
+ * @param extended - Whether to allow all geometry types to be converted
  * @returns A GeoJSON representation of the geometry
  * @throws {GEOSError} when called with an unsupported geometry type (not GeoJSON)
  *
@@ -151,7 +218,8 @@ const jsonifyGeom = (s: JsonifyState): GeoJSON_Geometry => {
  * const b_json = jsonifyGeometry(b); // { type: 'LineString', coordinates: [ [ 0, 0 ], [ 1, 1 ] ] };
  * const c_json = jsonifyGeometry(c); // { type: 'Polygon', coordinates: [ [ [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ] ] ] };
  */
-export function jsonifyGeometry<T extends GeoJSON_Geometry>(geometry: GeometryRef): T {
+export function jsonifyGeometry<T extends JSON_Geometry>(geometry: GeometryRef, layout?: CoordinateType, extended?: boolean): T {
+    const o = CoordsOptionsMap[ layout || 'XYZ' ];
     const buff = geos.buff;
     let tmpOutBuffPtr: 0 | Ptr<u32>;
     try {
@@ -172,7 +240,7 @@ export function jsonifyGeometry<T extends GeoJSON_Geometry>(geometry: GeometryRe
             s.b = tmpOutBuffPtr / 4;
         }
 
-        return jsonifyGeom(s) as T;
+        return jsonifyGeom(s, o, extended) as T;
     } finally {
         if (tmpOutBuffPtr!) {
             geos.free(tmpOutBuffPtr);
@@ -185,6 +253,8 @@ export function jsonifyGeometry<T extends GeoJSON_Geometry>(geometry: GeometryRe
  * Converts an array of geometries to an array of GeoJSON `Feature` objects.
  *
  * @param geometries - Array of geometries to be converted
+ * @param layout - Output geometry coordinate layout
+ * @param extended - Whether to allow all geometry types to be converted
  * @returns Array of GeoJSON `Feature` objects
  * @throws {GEOSError} when called with an unsupported geometry type (not GeoJSON)
  *
@@ -213,7 +283,8 @@ export function jsonifyGeometry<T extends GeoJSON_Geometry>(geometry: GeometryRe
  * //     },
  * // ];
  */
-export function jsonifyFeatures<P>(geometries: Geometry<P>[]): GeoJSON_Feature<GeoJSON_Geometry, P>[] {
+export function jsonifyFeatures<P>(geometries: Geometry<P>[], layout?: CoordinateType, extended?: boolean): JSON_Feature<JSON_Geometry, P>[] {
+    const o = CoordsOptionsMap[ layout || 'XYZ' ];
     const geometriesLength = geometries.length;
     const buffNeededL4 = geometriesLength + 3;
     const buff = geos.buffByL4(buffNeededL4);
@@ -238,15 +309,10 @@ export function jsonifyFeatures<P>(geometries: Geometry<P>[]): GeoJSON_Feature<G
             s.b = tmpOutBuffPtr / 4;
         }
 
-        const features = Array<GeoJSON_Feature<GeoJSON_Geometry, P>>(geometriesLength);
+        const features = Array<JSON_Feature<JSON_Geometry, P>>(geometriesLength);
         for (let i = 0; i < geometriesLength; i++) {
             const geometry = geometries[ i ];
-            features[ i ] = {
-                id: geometry.id,
-                type: 'Feature',
-                geometry: jsonifyGeom(s),
-                properties: geometry.props! ?? null,
-            };
+            features[ i ] = feature(geometry, jsonifyGeom(s, o, extended));
         }
         return features;
     } finally {
@@ -255,4 +321,9 @@ export function jsonifyFeatures<P>(geometries: Geometry<P>[]): GeoJSON_Feature<G
             geos.free(tmpOutBuffPtr);
         }
     }
+}
+
+
+export function feature<P>(f: GeometryRef<P>, g: JSON_Geometry): JSON_Feature<JSON_Geometry, P> {
+    return { id: f.id, type: 'Feature', geometry: g, properties: (f.props ?? null) as P };
 }

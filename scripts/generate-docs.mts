@@ -51,7 +51,7 @@ const apiSidebar: SidebarCategory[] = [
 ];
 
 
-const externalTypeLinks = {
+const externalTypeLinks: Record<string, Record<string, string>> = {
     'typescript': {
         'Uint8Array': 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array',
         'Promise': 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise',
@@ -94,6 +94,7 @@ namespace TS {
         ArrayType | // a[][]
         UnionType | // a | b
         IntersectionType | // a & b
+        ParenthesizedType | // (a)
         TypeLiteral | // { a: b }
         TupleType // [ a, b ]
 
@@ -135,6 +136,11 @@ namespace TS {
         types: Type[];
     }
 
+    export interface ParenthesizedType {
+        type: 'parenthesized',
+        body: Type;
+    }
+
     export interface TypeLiteral {
         type: 'typeLiteral',
         members: TypeLiteralMember[];
@@ -142,8 +148,9 @@ namespace TS {
 
     export interface TypeLiteralMember {
         name: string;
-        optional: boolean;
         type: Type;
+        optional: boolean;
+        jsDoc: JSDoc.ParamData;
     }
 
     export interface TupleType {
@@ -159,17 +166,18 @@ namespace TS {
 
     /*******/
 
-    export interface TypeParamData {
+    export interface TypeParameter {
         name: string;
     }
 
-    export interface ParamData {
+    export interface Parameter {
         name: string;
         type: Type;
-        optional?: boolean;
+        optional: boolean;
     }
 
-    export interface PropertyData {
+    export interface Property {
+        symbol: ts.Symbol;
         name: string;
         type: Type;
         optional: boolean;
@@ -186,18 +194,18 @@ namespace JSDoc {
         LinkNode |
         AdmonitionNode
 
-    interface TextNode {
+    export interface TextNode {
         type: 'text',
         text: string;
     }
 
-    interface LinkNode {
+    export interface LinkNode {
         type: 'link',
         text: string;
         target: string;
     }
 
-    interface AdmonitionNode {
+    export interface AdmonitionNode {
         type: 'admonition',
         aType: 'note' | 'tip' | 'info' | 'warning' | 'danger';
         body: RichTextNode[];
@@ -235,8 +243,200 @@ namespace JSDoc {
         examples: Example[];
     }
 
-    export function readJSDocRichText(nodeOrNodes: undefined | string | ts.NodeArray<ts.JSDocComment>): RichTextNode[] {
-        let nodes: (TextNode | LinkNode)[] = [];
+}
+
+
+// @ts-ignore
+global.__where__ = (node: ts.Node) => { // dev helper
+    const nodes: ts.Node[] = [];
+    for (let n = node; n; n = n.parent) nodes.push(n);
+    const sourceFile = node.getSourceFile();
+    const start = node.getStart();
+    const { line: startLine, character: startCol } = ts.getLineAndCharacterOfPosition(sourceFile, start);
+    const end = node.getEnd();
+    const { line: endLine, character: endCol } = ts.getLineAndCharacterOfPosition(sourceFile, end);
+    return {
+        chain: nodes.map(n => ts.SyntaxKind[ n.kind ]),
+        file: sourceFile.fileName,
+        start: { line: startLine + 1, col: startCol + 1 },
+        end: { line: endLine + 1, col: endCol + 1 },
+    };
+};
+
+
+/**
+ * Collects data from `./src` source files TypeScript types and JSDoc comments
+ * to generate API Documentation files.
+ *
+ * 1. The order of categories in the docs sidebar is based on {@link apiSidebar}
+ * 2. The order in which the functions will be presented in the docs is based
+ *    on the order of exports in `src/index.mts`
+ * 3. The category under which each function will be listed is (mostly) based
+ *    on the module path (there are some special cases, like Setup functions)
+ */
+void async function main() {
+    const ROOT_DIR = join(import.meta.dirname, '..');
+    const SRC_INDEX_FILE_PATH = join(ROOT_DIR, './src/index.mts');
+    const DOCS_DIR = join(ROOT_DIR, './docs');
+    const DOCS_API_DIR = join(DOCS_DIR, './docs/api');
+
+    const sha = execSync(`git -C ${ROOT_DIR} rev-parse --verify HEAD`, { encoding: 'utf8' }).trim();
+    const EDIT_BASE_URL = `https://github.com/kajkal/geos.js/blob/${sha.slice(0, 7)}`;
+
+    /** Process source files */
+    const program = ts.createProgram([ SRC_INDEX_FILE_PATH ], {});
+    const checker = program.getTypeChecker();
+    const sourceFile = program.getSourceFile(SRC_INDEX_FILE_PATH)!;
+    assert.ok(sourceFile);
+
+
+    function processTypeNode(typeNode: ts.TypeNode | undefined): TS.Type {
+        assert.ok(typeNode);
+        switch (typeNode.kind) {
+            case ts.SyntaxKind.BooleanKeyword:
+            case ts.SyntaxKind.NumberKeyword:
+            case ts.SyntaxKind.StringKeyword:
+            case ts.SyntaxKind.ObjectKeyword:
+            case ts.SyntaxKind.VoidKeyword:
+            case ts.SyntaxKind.NeverKeyword:
+            case ts.SyntaxKind.UndefinedKeyword:
+            case ts.SyntaxKind.UnknownKeyword:
+            case ts.SyntaxKind.LiteralType: {
+                return { type: 'simple', value: typeNode.getText() };
+            }
+            case ts.SyntaxKind.TypePredicate: {
+                assert.ok(ts.isTypePredicateNode(typeNode));
+                assert.ok(!typeNode.assertsModifier);
+                return { type: 'simple', value: 'boolean' };
+            }
+            case ts.SyntaxKind.ThisType: {
+                assert.ok(ts.isThisTypeNode(typeNode));
+                return { type: 'this', value: typeNode.getText() };
+            }
+            case ts.SyntaxKind.TypeReference: {
+                assert.ok(ts.isTypeReferenceNode(typeNode));
+                let externalDeclarationRef: TS.ReferenceType['declarationRef'] | undefined;
+                const type = checker.getTypeFromTypeNode(typeNode);
+                const symbol = type.aliasSymbol ?? type.getSymbol()!;
+                const declaration = symbol.getDeclarations()![ 0 ];
+                const pathParts = relative(ROOT_DIR, declaration.getSourceFile().fileName).split(sep);
+                for (let i = pathParts.length - 1; i > 0; i--) {
+                    if (pathParts[ i - 1 ] === 'node_modules') {
+                        externalDeclarationRef = {
+                            package: pathParts[ i ].startsWith('@')
+                                ? `${pathParts[ i ]}/${pathParts[ i + 1 ]}` // packageScope/packageName
+                                : pathParts[ i ], // packageName
+                            name: checker.getFullyQualifiedName(symbol).replace(/^".+?"\./, ''),
+                        };
+                        break;
+                    }
+                }
+                return {
+                    type: 'reference',
+                    name: typeNode.typeName.getText(),
+                    typeArguments: typeNode.typeArguments?.map(processTypeNode),
+                    refersToTypeParameter: Boolean(type.flags & ts.TypeFlags.TypeParameter),
+                    declarationRef: externalDeclarationRef,
+                    targetSymbol: symbol,
+                };
+            }
+            case ts.SyntaxKind.ArrayType: {
+                assert.ok(ts.isArrayTypeNode(typeNode));
+                let level = 0;
+                for (; ts.isArrayTypeNode(typeNode); typeNode = typeNode.elementType) level++;
+                return {
+                    type: 'array',
+                    level,
+                    elementType: processTypeNode(typeNode),
+                };
+            }
+            case ts.SyntaxKind.UnionType: {
+                assert.ok(ts.isUnionTypeNode(typeNode));
+                return {
+                    type: 'union',
+                    types: typeNode.types.map(processTypeNode),
+                };
+            }
+            case ts.SyntaxKind.IntersectionType: {
+                assert.ok(ts.isIntersectionTypeNode(typeNode));
+                return {
+                    type: 'intersection',
+                    types: typeNode.types.map(processTypeNode),
+                };
+            }
+            case ts.SyntaxKind.ParenthesizedType: {
+                assert.ok(ts.isParenthesizedTypeNode(typeNode));
+                return {
+                    type: 'parenthesized',
+                    body: processTypeNode(typeNode.type),
+                };
+            }
+            case ts.SyntaxKind.TypeLiteral: {
+                assert.ok(ts.isTypeLiteralNode(typeNode));
+                return {
+                    type: 'typeLiteral',
+                    members: typeNode.members.map(node => {
+                        assert.ok(ts.isPropertySignature(node));
+                        return {
+                            name: node.name.getText(),
+                            optional: Boolean(node.questionToken),
+                            type: processTypeNode(node.type),
+                            jsDoc: null!,
+                        };
+                    }),
+                };
+            }
+            case ts.SyntaxKind.TupleType: {
+                assert.ok(ts.isTupleTypeNode(typeNode));
+                return {
+                    type: 'tuple',
+                    elements: typeNode.elements.map(node => {
+                        assert.ok(ts.isNamedTupleMember(node));
+                        assert.ok(!node.dotDotDotToken);
+                        return {
+                            name: node.name.getText(),
+                            optional: Boolean(node.questionToken),
+                            type: processTypeNode(node.type),
+                        };
+                    }),
+                };
+            }
+            default: {
+                throw new Error(`Unexpected node type '${ts.SyntaxKind[ typeNode.kind ]}'`);
+            }
+        }
+    }
+
+    function processTypeParameter(node: ts.TypeParameterDeclaration): TS.TypeParameter {
+        return {
+            name: node.name.getText(),
+        };
+    }
+
+    function processParameter(node: ts.ParameterDeclaration): TS.Parameter {
+        return {
+            name: node.name.getText(),
+            type: processTypeNode(node.type),
+            optional: Boolean(node.questionToken),
+        };
+    }
+
+    function processProperty(node: ts.PropertyDeclaration | ts.PropertySignature): TS.Property {
+        const symbol = checker.getSymbolAtLocation(node.name);
+        assert.ok(symbol);
+        return {
+            symbol,
+            name: node.name.getText(),
+            type: processTypeNode(node.type),
+            optional: Boolean(node.questionToken),
+            readonly: Boolean(node.modifiers?.some(mod => mod.kind === ts.SyntaxKind.ReadonlyKeyword)),
+            jsDoc: processJsDoc(node),
+        };
+    }
+
+
+    function processJsDocRichText(nodeOrNodes: undefined | string | ts.NodeArray<ts.JSDocComment>): JSDoc.RichTextNode[] {
+        let nodes: (JSDoc.TextNode | JSDoc.LinkNode)[] = [];
         if (typeof nodeOrNodes === 'string') {
             nodes.push({ type: 'text', text: nodeOrNodes });
         } else {
@@ -274,22 +474,22 @@ namespace JSDoc {
         }
 
         // extract admonitions blocks:
-        let admonition: AdmonitionNode | null = null;
+        let admonition: JSDoc.AdmonitionNode | null = null;
         return nodes
-            .flatMap<TextNode | LinkNode>(node => (
+            .flatMap<JSDoc.TextNode | JSDoc.LinkNode>(node => (
                 node.type === 'text'
                     ? node.text
                         .split(/\r?\n/)
                         .map((t, i) => ({ type: 'text', text: i ? `\n${t}` : t }))
                     : node
             ))
-            .reduce<RichTextNode[]>((acc, node) => {
+            .reduce<JSDoc.RichTextNode[]>((acc, node) => {
                 if (node.type === 'text') {
-                    const admonitionStartMatch = node.text.match(/^\n(Note|Tip|Info|Warning|Danger):$/);
+                    const admonitionStartMatch = node.text.match(/^\n?(Note|Tip|Info|Warning|Danger):$/);
                     if (admonitionStartMatch) {
                         admonition = {
                             type: 'admonition',
-                            aType: admonitionStartMatch[ 1 ].toLowerCase() as AdmonitionNode['aType'],
+                            aType: admonitionStartMatch[ 1 ].toLowerCase() as JSDoc.AdmonitionNode['aType'],
                             body: [],
                         };
                         return [ ...acc, admonition ];
@@ -310,8 +510,8 @@ namespace JSDoc {
             }, []);
     }
 
-    export function readJSDoc(node: ts.Node): Data {
-        const data: Data = {
+    function processJsDoc(node: ts.Node): JSDoc.Data {
+        const data: JSDoc.Data = {
             description: [],
             default: undefined!,
             typeParams: [],
@@ -330,7 +530,7 @@ namespace JSDoc {
         const doc = docs.at(-1);
         assert.ok(ts.isJSDoc(doc!));
         if (doc.comment) {
-            data.description = readJSDocRichText(doc.comment);
+            data.description = processJsDocRichText(doc.comment);
         }
         for (const tag of doc.tags || []) {
             switch (tag.kind) {
@@ -339,7 +539,7 @@ namespace JSDoc {
                     assert.equal(tag.typeParameters.length, 1);
                     data.typeParams.push({
                         name: tag.typeParameters[ 0 ].name.getText(),
-                        description: readJSDocRichText(tag.comment),
+                        description: processJsDocRichText(tag.comment),
                     });
                     break;
                 }
@@ -362,7 +562,7 @@ namespace JSDoc {
                     }
                     data.params.push({
                         name: paramName,
-                        description: readJSDocRichText(tag.comment),
+                        description: processJsDocRichText(tag.comment),
                         optional,
                         default: defaultValue!,
                     });
@@ -372,7 +572,7 @@ namespace JSDoc {
                     assert.ok(ts.isJSDocReturnTag(tag));
                     assert.ok(!tag.typeExpression); // no type in return tag
                     assert.ok(!data.returns.length);
-                    data.returns = readJSDocRichText(tag.comment);
+                    data.returns = processJsDocRichText(tag.comment);
                     break;
                 }
                 case ts.SyntaxKind.JSDocThrowsTag: {
@@ -382,13 +582,13 @@ namespace JSDoc {
                     assert.match(errorClass, /^\{\w+}$/);
                     data.throws.push({
                         type: errorClass.slice(1, -1),
-                        description: readJSDocRichText(tag.comment),
+                        description: processJsDocRichText(tag.comment),
                     });
                     break;
                 }
                 case ts.SyntaxKind.JSDocSeeTag: {
                     assert.ok(ts.isJSDocSeeTag(tag));
-                    data.see.push(readJSDocRichText(tag.comment));
+                    data.see.push(processJsDocRichText(tag.comment));
                     break;
                 }
                 default: {
@@ -425,39 +625,12 @@ namespace JSDoc {
         return data;
     }
 
-}
-
-
-/**
- * Collects data from `./src` source files TypeScript types and JSDoc comments
- * to generate API Documentation files.
- *
- * 1. The order of categories in the docs sidebar is based on {@link apiSidebar}
- * 2. The order in which the functions will be presented in the docs is based
- *    on the order of exports in `src/index.mts`
- * 3. The category under which each function will be listed is (mostly) based
- *    on the module path (there are some special cases, like Setup functions)
- */
-void async function main() {
-    const ROOT_DIR = join(import.meta.dirname, '..');
-    const SRC_INDEX_FILE_PATH = join(ROOT_DIR, './src/index.mts');
-    const DOCS_DIR = join(ROOT_DIR, './docs');
-    const DOCS_API_DIR = join(DOCS_DIR, './docs/api');
-
-    const sha = execSync(`git -C ${ROOT_DIR} rev-parse --verify HEAD`, { encoding: 'utf8' }).trim();
-    const EDIT_BASE_URL = `https://github.com/kajkal/geos.js/blob/${sha.slice(0, 7)}`;
-
-    /** Process source files */
-    const program = ts.createProgram([ SRC_INDEX_FILE_PATH ], {});
-    const checker = program.getTypeChecker();
-    const sourceFile = program.getSourceFile(SRC_INDEX_FILE_PATH);
-    assert.ok(sourceFile);
 
     abstract class BaseSymbol {
 
         name: string;
         symbol: ts.Symbol;
-        usages: ts.Node[] = []; // nodes where symbol is used
+        usages: ts.Node[] = [];
 
         docFile: {
             category: SidebarCategory;
@@ -492,113 +665,99 @@ void async function main() {
             this.editUrl = `${EDIT_BASE_URL}/${path}#${lines}`;
         }
 
-        processTypeNode(typeNode: ts.TypeNode | undefined): TS.Type {
-            assert.ok(typeNode);
-            switch (typeNode.kind) {
-                case ts.SyntaxKind.BooleanKeyword:
-                case ts.SyntaxKind.NumberKeyword:
-                case ts.SyntaxKind.StringKeyword:
-                case ts.SyntaxKind.ObjectKeyword:
-                case ts.SyntaxKind.VoidKeyword:
-                case ts.SyntaxKind.NeverKeyword:
-                case ts.SyntaxKind.UndefinedKeyword:
-                case ts.SyntaxKind.UnknownKeyword:
-                case ts.SyntaxKind.LiteralType: {
-                    return { type: 'simple', value: typeNode.getText() };
-                }
-                case ts.SyntaxKind.TypePredicate: {
-                    assert.ok(ts.isTypePredicateNode(typeNode));
-                    assert.ok(!typeNode.assertsModifier);
-                    return { type: 'simple', value: 'boolean' };
-                }
-                case ts.SyntaxKind.ThisType: {
-                    assert.ok(ts.isThisTypeNode(typeNode));
-                    return { type: 'this', value: typeNode.getText() };
-                }
-                case ts.SyntaxKind.TypeReference: {
-                    assert.ok(ts.isTypeReferenceNode(typeNode));
-                    let externalDeclarationRef: TS.ReferenceType['declarationRef'] | undefined;
-                    const type = checker.getTypeFromTypeNode(typeNode);
-                    const symbol = type.aliasSymbol ?? type.getSymbol()!;
-                    const declaration = symbol.getDeclarations()![ 0 ];
-                    const pathParts = relative(ROOT_DIR, declaration.getSourceFile().fileName).split(sep);
-                    for (let i = pathParts.length - 1; i > 0; i--) {
-                        if (pathParts[ i - 1 ] === 'node_modules') {
-                            externalDeclarationRef = {
-                                package: pathParts[ i ].startsWith('@')
-                                    ? `${pathParts[ i ]}/${pathParts[ i + 1 ]}` // packageScope/packageName
-                                    : pathParts[ i ], // packageName
-                                name: checker.getFullyQualifiedName(symbol).replace(/^".+?"\./, ''),
-                            };
-                            break;
+        clearUsagesBySymbol(usageSymbol: ts.Symbol) {
+            const declarations: ts.Node[] = usageSymbol.getDeclarations()!;
+            assert.ok(declarations);
+
+            const prevNodes = this.usages;
+            const nextNodes = prevNodes
+                .filter(node => {
+                    for (let n = node; n; n = n.parent) {
+                        if (declarations.includes(n)) return false;
+                    }
+                    return true;
+                });
+
+            // const removedNodes = prevNodes
+            //     .filter(node => !nextNodes.includes(node))
+            //     .map(global.__where__);
+
+            this.usages = nextNodes;
+        }
+
+        isAlreadyInlined() {
+            // some interfaces and types are inlined in relevant parts of documentation
+            // do not add them as independent entries
+
+            const publicNodes = this.usages
+                .filter(node => {
+                    const nodes: ts.Node[] = [];
+                    for (let n = node; n; n = n.parent) nodes.push(n);
+
+                    // ignore parts of 'internal' API
+                    if (nodes.some(n => ts.getJSDocTags(n).some(t => t.tagName.text === 'internal'))) {
+                        return;
+                    }
+
+                    // ignore function body
+                    const block = nodes.findLast(n => n.kind === ts.SyntaxKind.Block);
+                    if (block) {
+                        assert.ok(ts.isFunctionDeclaration(block.parent) || ts.isArrowFunction(block.parent));
+                        return;
+                    }
+
+                    // keep parts of public API
+                    const topNode = nodes.at(-2);
+                    assert.ok(topNode);
+                    let topNodeSymbol: ts.Symbol | undefined;
+                    if (ts.isDeclarationStatement(topNode)) {
+                        assert.ok(topNode.name);
+                        topNodeSymbol = checker.getSymbolAtLocation(topNode.name);
+                        assert.ok(topNodeSymbol && topNodeSymbol.declarations);
+
+                        // ignore overloads
+                        if (topNodeSymbol.declarations.length > 1) {
+                            const isMainDeclaration = topNodeSymbol.declarations.at(-1) === topNode;
+                            if (!isMainDeclaration) {
+                                return;
+                            }
+                        }
+
+                        // ignore when part of already inlined interface
+                        if (topNodeSymbol.declarations.length === 1 && topNodeSymbol.declarations[ 0 ] === topNode) {
+                            if (ts.isInterfaceDeclaration(topNode)) {
+                                if (
+                                    ts.isIdentifier(node) &&
+                                    ts.isExpressionWithTypeArguments(node.parent) &&
+                                    ts.isHeritageClause(node.parent.parent) &&
+                                    node.parent.parent.parent === topNode
+                                ) { // node is B in `interface A extends B {}`
+                                    const match = symbolMap.getBySymbol(topNodeSymbol);
+                                    if (match && match instanceof BaseSymbol && match.isAlreadyInlined()) {
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // arrow function declaration
+                        assert.ok(ts.isVariableStatement(topNode));
+                        for (const declaration of topNode.declarationList.declarations) {
+                            if (ts.isVariableDeclaration(declaration) && declaration.initializer && ts.isArrowFunction(declaration.initializer)) {
+                                topNodeSymbol = declaration.name && checker.getSymbolAtLocation(declaration.name);
+                                break;
+                            }
                         }
                     }
-                    return {
-                        type: 'reference',
-                        name: typeNode.typeName.getText(),
-                        typeArguments: typeNode.typeArguments?.map(node => this.processTypeNode(node)),
-                        refersToTypeParameter: Boolean(type.flags & ts.TypeFlags.TypeParameter),
-                        declarationRef: externalDeclarationRef,
-                        targetSymbol: symbol,
-                    };
-                }
-                case ts.SyntaxKind.ArrayType: {
-                    assert.ok(ts.isArrayTypeNode(typeNode));
-                    let level = 0;
-                    for (; ts.isArrayTypeNode(typeNode); typeNode = typeNode.elementType) level++;
-                    return {
-                        type: 'array',
-                        level,
-                        elementType: this.processTypeNode(typeNode),
-                    };
-                }
-                case ts.SyntaxKind.UnionType: {
-                    assert.ok(ts.isUnionTypeNode(typeNode));
-                    return {
-                        type: 'union',
-                        types: typeNode.types.map(node => this.processTypeNode(node)),
-                    };
-                }
-                case ts.SyntaxKind.IntersectionType: {
-                    assert.ok(ts.isIntersectionTypeNode(typeNode));
-                    return {
-                        type: 'intersection',
-                        types: typeNode.types.map(node => this.processTypeNode(node)),
-                    };
-                }
-                case ts.SyntaxKind.TypeLiteral: {
-                    assert.ok(ts.isTypeLiteralNode(typeNode));
-                    return {
-                        type: 'typeLiteral',
-                        members: typeNode.members.map(node => {
-                            assert.ok(ts.isPropertySignature(node));
-                            return {
-                                name: node.name.getText(),
-                                optional: Boolean(node.questionToken),
-                                type: this.processTypeNode(node.type),
-                            };
-                        }),
-                    };
-                }
-                case ts.SyntaxKind.TupleType: {
-                    assert.ok(ts.isTupleTypeNode(typeNode));
-                    return {
-                        type: 'tuple',
-                        elements: typeNode.elements.map(node => {
-                            assert.ok(ts.isNamedTupleMember(node));
-                            assert.ok(!node.dotDotDotToken);
-                            return {
-                                name: node.name.getText(),
-                                optional: Boolean(node.questionToken),
-                                type: this.processTypeNode(node.type),
-                            };
-                        }),
-                    };
-                }
-                default: {
-                    throw new Error(`Unexpected node type '${ts.SyntaxKind[ typeNode.kind ]}'`);
-                }
+                    const match = topNodeSymbol && symbolMap.getBySymbol(topNodeSymbol);
+                    return match && 'kind' in match;
+                });
+
+            const omitThisSymbol = publicNodes.every(node => ts.isDeclarationStatement(node.parent));
+            if (omitThisSymbol) {
+                console.debug(`skip '${this.name}' - already inlined`);
             }
+            return omitThisSymbol;
         }
 
     }
@@ -608,8 +767,8 @@ void async function main() {
         readonly kind = 'function';
 
         parent?: ClassLikeSymbol; // when function is a method
-        typeParams?: TS.TypeParamData[];
-        params: TS.ParamData[];
+        typeParams?: TS.TypeParameter[];
+        params: TS.Parameter[];
         returns: TS.Type;
         jsDoc: JSDoc.Data;
 
@@ -628,29 +787,32 @@ void async function main() {
             }
 
             this.name = node.name!.getText();
-            this.typeParams = node.typeParameters
-                ?.map(typeParamNode => ({
-                    name: typeParamNode.name.text,
-                }));
-            this.params = node.parameters
-                .map(paramNode => ({
-                    name: paramNode.name.getText(),
-                    type: this.processTypeNode(paramNode.type),
-                    optional: Boolean(paramNode.questionToken),
-                }));
-            this.returns = this.processTypeNode(node.type);
-            this.jsDoc = JSDoc.readJSDoc(node);
+            this.typeParams = node.typeParameters?.map(processTypeParameter);
+            this.params = node.parameters.map(processParameter);
+            this.returns = processTypeNode(node.type);
+            this.jsDoc = processJsDoc(node);
         }
 
     }
 
     class ClassLikeSymbol extends BaseSymbol {
 
+        static ErrorClassSymbol: ts.Symbol;
+        static {
+            const errorSymbol = checker.resolveName('Error', undefined, ts.SymbolFlags.All, false);
+            assert.ok(errorSymbol);
+            this.ErrorClassSymbol = errorSymbol;
+        }
+
+        static isErrorClassSymbol(classSymbol: ts.Symbol) {
+            return classSymbol === ClassLikeSymbol.ErrorClassSymbol;
+        }
+
         readonly kind: 'class' | 'interface';
 
-        prototypeChain: string[] = [];
-        typeParams?: TS.TypeParamData[];
-        properties: TS.PropertyData[] = [];
+        prototypeChain: ts.Symbol[] = []; // flatten, not ideal but good enough
+        typeParams?: TS.TypeParameter[];
+        properties: TS.Property[] = [];
         methods: FunctionSymbol[] = [];
         jsDoc: JSDoc.Data;
 
@@ -669,48 +831,38 @@ void async function main() {
 
             this.name = node.name!.text;
             this.kind = kind;
-            this.jsDoc = JSDoc.readJSDoc(node);
+            this.jsDoc = processJsDoc(node);
 
-            let classNode: ts.ClassDeclaration | ts.InterfaceDeclaration | undefined = node;
-            while (classNode?.heritageClauses) {
-                assert.ok(classNode);
-                assert.equal(classNode.heritageClauses.length, 1);
-                const clause: ts.HeritageClause = classNode.heritageClauses[ 0 ];
-                assert.equal(clause.types.length, 1);
-                let symbol = checker.getSymbolAtLocation(clause.types[ 0 ].expression);
-                assert.ok(symbol);
-                if (symbol.flags & ts.SymbolFlags.Alias) {
-                    symbol = checker.getAliasedSymbol(symbol);
-                }
-                assert.ok(symbol);
-                this.prototypeChain.push(symbol.getName());
-                if (symbol.flags & ts.SymbolFlags.Class) {
-                    classNode = symbol.getDeclarations()!.find(ts.isClassDeclaration);
-                } else { // verify that this is a build-in class
-                    assert.ok(symbol.flags & ts.SymbolFlags.FunctionScopedVariable);
-                    assert.ok(symbol.flags & ts.SymbolFlags.Interface);
-                    assert.ok(!(symbol as any)[ 'parent' ]);
-                    break;
+            for (let n: ts.ClassDeclaration | ts.InterfaceDeclaration | undefined = node; n?.heritageClauses;) {
+                assert.equal(n.heritageClauses.length, 1);
+                const clause: ts.HeritageClause = n.heritageClauses[ 0 ];
+                for (const type of clause.types) {
+                    let symbol = checker.getSymbolAtLocation(type.expression);
+                    assert.ok(symbol);
+                    if (symbol.flags & ts.SymbolFlags.Alias) {
+                        symbol = checker.getAliasedSymbol(symbol);
+                    }
+                    assert.ok(symbol);
+                    this.prototypeChain.push(symbol);
+                    if (symbol.flags & ts.SymbolFlags.Class || symbol.flags & ts.SymbolFlags.Interface) {
+                        n = symbol.getDeclarations()!.find(ts.isClassDeclaration);
+                    } else { // verify that this is a build-in class
+                        assert.ok(symbol.flags & ts.SymbolFlags.FunctionScopedVariable);
+                        assert.ok(symbol.flags & ts.SymbolFlags.Interface);
+                        assert.ok(!(symbol as any)[ 'parent' ]);
+                        break;
+                    }
                 }
             }
 
-            this.typeParams = node.typeParameters
-                ?.map(typeParamNode => ({
-                    name: typeParamNode.name.text,
-                }));
+            this.typeParams = node.typeParameters?.map(processTypeParameter);
 
             for (const memberNode of node.members) {
-                const internalSymbol = ts.getJSDocTags(memberNode).some(tag => tag.tagName.getText() === 'internal');
-                if (internalSymbol) continue;
+                const isInternal = ts.getJSDocTags(memberNode).some(tag => tag.tagName.getText() === 'internal');
+                if (isInternal) continue;
                 if (ts.isPropertyDeclaration(memberNode) || ts.isPropertySignature(memberNode)) {
                     assert.ok(!memberNode.modifiers?.some(mod => mod.kind === ts.SyntaxKind.StaticKeyword)); // not a static property
-                    this.properties.push({
-                        name: memberNode.name.getText(),
-                        type: this.processTypeNode(memberNode.type),
-                        optional: Boolean(memberNode.questionToken),
-                        readonly: Boolean(memberNode.modifiers?.some(mod => mod.kind === ts.SyntaxKind.ReadonlyKeyword)),
-                        jsDoc: JSDoc.readJSDoc(memberNode),
-                    });
+                    this.properties.push(processProperty(memberNode));
                 } else if (ts.isMethodDeclaration(memberNode) || ts.isMethodSignature(memberNode)) {
                     assert.ok(!memberNode.modifiers?.some(mod => mod.kind === ts.SyntaxKind.StaticKeyword)); // not a static method
                     this.methods.push(new FunctionSymbol(checker.getSymbolAtLocation(memberNode.name)!, memberNode));
@@ -727,8 +879,10 @@ void async function main() {
         readonly kind = 'type';
 
         definition: TS.Type;
-        typeParams?: TS.TypeParamData[];
+        typeParams?: TS.TypeParameter[];
         jsDoc: JSDoc.Data;
+
+        simple: boolean; // simple types can be inlined
 
         constructor(symbol: ts.Symbol, node?: ts.TypeAliasDeclaration) {
             super(symbol);
@@ -740,62 +894,77 @@ void async function main() {
             }
 
             this.name = node.name.text;
-            this.definition = this.processTypeNode(node.type);
-            this.typeParams = node.typeParameters
-                ?.map(typeParamNode => ({
-                    name: typeParamNode.name.text,
-                }));
-            this.jsDoc = JSDoc.readJSDoc(node);
+            this.definition = processTypeNode(node.type);
+            this.typeParams = node.typeParameters?.map(processTypeParameter);
+            this.jsDoc = processJsDoc(node);
+
+            const t = this.definition;
+            this.simple =
+                t.type === 'simple' ||
+                (t.type === 'union' && t.types.every(t => t.type === 'simple'));
         }
 
     }
 
 
-    type AnySymbol = FunctionSymbol | ClassLikeSymbol | TypeSymbol;
+    type ExportedSymbol = FunctionSymbol | ClassLikeSymbol | TypeSymbol;
 
     const symbolMap = new class {
 
-        symbols = new Map<ts.Symbol, AnySymbol | { usages: ts.Node[] }>();
-        symbolsByName = new Map<string, AnySymbol>();
+        symbols = new Map<ts.Symbol, ExportedSymbol | { usages: ts.Node[] }>();
+        symbolsByName = new Map<string, ExportedSymbol>(); // exported symbols from index.mts
 
         constructor() {
-            const addUsages = (node: ts.Node) => {
-                if (ts.isIdentifier(node)) {
-                    let symbol = checker.getSymbolAtLocation(node);
-                    if (symbol) {
-                        if (symbol.flags & ts.SymbolFlags.Alias) {
-                            symbol = checker.getAliasedSymbol(symbol); // resolve import aliases
-                        }
-                        assert.ok(node.parent);
-                        if (
-                            !ts.isDeclarationStatement(node.parent) &&
-                            !ts.isExportSpecifier(node.parent) &&
-                            !ts.isImportSpecifier(node.parent)
-                        ) {
-                            const value = this.symbols.get(symbol) || { usages: [] };
-                            value.usages.push(node);
-                            this.symbols.set(symbol, value);
-                        }
-                    }
-                }
-                ts.forEachChild(node, addUsages);
-            };
-
             /** Collect all symbol usages */
             for (const sourceFile of program.getSourceFiles()) {
                 if (!sourceFile.isDeclarationFile) {
-                    addUsages(sourceFile);
+                    ts.forEachChild(sourceFile, node => this.visitNode(node));
                 }
             }
         }
 
-        addData(symbol: ts.Symbol, data: AnySymbol) {
-            const usages = this.symbols.get(symbol);
-            assert.ok(!usages || !('name' in usages));
-            data.usages = usages?.usages || [];
+        visitNode(node: ts.Node) {
+            let symbol = checker.getSymbolAtLocation(node);
+            if (symbol) {
+                if (symbol.flags & ts.SymbolFlags.Alias) {
+                    symbol = checker.getAliasedSymbol(symbol); // resolve import aliases
+                }
+                assert.ok(node.parent);
+                if (
+                    !ts.isExportSpecifier(node.parent) && !ts.isExportDeclaration(node.parent) &&
+                    !ts.isImportSpecifier(node.parent) && !ts.isImportDeclaration(node.parent)
+                ) {
+                    const value = this.symbols.get(symbol) || { usages: [] };
+                    value.usages.push(node);
+                    this.symbols.set(symbol, value);
+                }
+            }
+            ts.forEachChild(node, node => this.visitNode(node));
+        }
+
+        visitExportedSymbol(symbol: ts.Symbol, data: ExportedSymbol) {
+            const match = this.getBySymbol(symbol);
+            assert.ok(match);
+            assert.equal(Object.keys(match).join(), 'usages');
+            assert.equal(data.usages.length, 0);
+            data.usages = match.usages;
             this.symbols.set(symbol, data);
             this.symbolsByName.set(data.name, data);
-        };
+        }
+
+        * exportedSymbols() {
+            yield* this.symbolsByName.values();
+        }
+
+
+        getBySymbol(symbol: ts.Symbol): ExportedSymbol | { usages: ts.Node[] } | undefined {
+            return this.symbols.get(symbol);
+        }
+
+        getByName(name: string): ExportedSymbol | undefined {
+            return this.symbolsByName.get(name);
+        }
+
 
         relativeURL(source: BaseSymbol, target: BaseSymbol, id = target.docFile.id) {
             const relativePath = relative(dirname(source.docFile.path), target.docFile.path).replaceAll(sep, '/');
@@ -804,18 +973,17 @@ void async function main() {
 
         resolveSymbolLink(source: BaseSymbol, target: ts.Symbol | string, text?: string): { label: string, target: string } {
             if (typeof target === 'string') {
-                const match = this.symbolsByName.get(target);
+                const match = this.getByName(target);
                 if (match && 'docFile' in match) {
                     return { label: target, target: this.relativeURL(source, match) };
                 }
-                // @ts-ignore
                 const buildInUrl = externalTypeLinks[ 'typescript' ][ target ];
                 if (buildInUrl) {
                     return { label: target, target: buildInUrl };
                 }
                 throw new Error(`unresolved symbol '${target}'`);
             }
-            const match = this.symbols.get(target);
+            const match = this.getBySymbol(target);
             if (match && 'docFile' in match) {
                 assert.ok(text);
                 return { label: text, target: this.relativeURL(source, match) };
@@ -828,13 +996,13 @@ void async function main() {
                 return `[${text}](${target})`;
             }
             const linkLabel = text === target ? `\`${text}\`` : text;
-            let match = this.symbolsByName.get(target);
+            let match = this.getByName(target);
             if (match) {
                 return `[${linkLabel}](${this.relativeURL(source, match)})`;
             }
             // to handle syntax `Geometry#toJSON`
             const [ targetClass, targetMember ] = target.split('#');
-            const matchByClass = this.symbolsByName.get(targetClass);
+            const matchByClass = this.getByName(targetClass);
             if (matchByClass) {
                 assert.equal(matchByClass.kind, 'class');
                 const matchingMethod = matchByClass.methods.find(m => m.name === targetMember);
@@ -848,10 +1016,6 @@ void async function main() {
                 }
             }
             return `[${linkLabel}](${target})`;
-        }
-
-        * exportedSymbols() {
-            yield* this.symbolsByName.values();
         }
 
     }();
@@ -885,14 +1049,14 @@ void async function main() {
 
         for (const symbol of symbolsToProcess) {
             const name = symbol.name;
-            let data: AnySymbol;
+            let data: ExportedSymbol;
 
             switch (symbol.flags) {
                 case ts.SymbolFlags.Function: {
                     const dirPath = dirname(path); // eg './io'
                     const category = apiSidebar.find(c => c.forced?.has(name))
                         || apiSidebar.find(c => `.${c.dir}` === dirPath);
-                    assert.ok(category);
+                    assert.ok(category, `Sidebar category for '${path}' is not defined`);
 
                     data = new FunctionSymbol(symbol);
                     data.docFile = {
@@ -906,7 +1070,7 @@ void async function main() {
                     assert.ok(category);
 
                     data = new ClassLikeSymbol('class', symbol);
-                    if (data.prototypeChain.includes('Error')) {
+                    if (data.prototypeChain.some(ClassLikeSymbol.isErrorClassSymbol)) {
                         assert.equal(data.methods.length, 0);
                         data.docFile = {
                             category,
@@ -969,17 +1133,17 @@ void async function main() {
                 }
             }
 
-            symbolMap.addData(symbol, data);
+            symbolMap.visitExportedSymbol(symbol, data);
         }
     });
 
 
     class DocumentationWriter {
 
-        symbol: AnySymbol;
+        symbol: ExportedSymbol;
         lines: string[] = [];
 
-        constructor(symbol: AnySymbol) {
+        constructor(symbol: ExportedSymbol) {
             this.symbol = symbol;
         }
 
@@ -1034,6 +1198,10 @@ void async function main() {
                         assert.ok(href);
                         name = `[**${type.name}**](${href})`;
                     } else {
+                        const match = symbolMap.getBySymbol(type.targetSymbol);
+                        if (match && 'simple' in match && match.simple) {
+                            return wrapper(this.formatType(match.definition)); // inline simple type refs
+                        }
                         const link = symbolMap.resolveSymbolLink(this.symbol, type.targetSymbol, type.name);
                         name = `[**${link.label}**](${link.target})`;
                     }
@@ -1055,6 +1223,9 @@ void async function main() {
                         .map(t => wrapper(this.formatType(t)))
                         .join(' & ');
                 }
+                case 'parenthesized': {
+                    return wrapper(`( ${this.formatType(type.body)} )`);
+                }
                 case 'typeLiteral': {
                     const body = type.members
                         .map(m => `${m.name.replace(/(_)/g, '\\$1')}${m.optional ? '?' : ''}: ${this.formatType(m.type)}`)
@@ -1075,7 +1246,7 @@ void async function main() {
             return `<code className='beefy-code'>${code}</code>`;
         }
 
-        writeHeader(data: AnySymbol) {
+        writeHeader(data: ExportedSymbol) {
             this.lines.push(`# ${data.name}`, '');
         }
 
@@ -1085,67 +1256,6 @@ void async function main() {
 
             this.lines.push(this.formatRichText(description), '');
         }
-
-        name_column = {
-            header: 'Name',
-            format: '---',
-            toCell: (tsData: TS.ParamData, _jsDocData: Pick<JSDoc.ParamData, never>) => {
-                return `\`${tsData.name}${tsData.optional ? '?' : ''}\``;
-            },
-        };
-        type_column = {
-            header: 'Type',
-            format: ':-:',
-            toCell: (tsData: TS.ParamData, _jsDocData: Pick<JSDoc.ParamData, never>) => {
-                return this.formatType(tsData.type, this.asBeefyCode);
-            },
-        };
-        default_column = {
-            header: 'Default',
-            format: ':-:',
-            toCell: (_tsData: TS.ParamData, jsDocData: Pick<JSDoc.ParamData, 'default'>) => {
-                return jsDocData.default && `\`${jsDocData.default}\``;
-            },
-        };
-        description_column = {
-            header: 'Description',
-            format: '---',
-            toCell: (_tsData: TS.ParamData, jsDocData: Pick<JSDoc.ParamData, 'description'>) => {
-                const desc = jsDocData?.description;
-                if (!desc?.length) return '';
-
-                let listMode = false;
-                const lines = this.formatRichText(desc)
-                    .replace(/^[\s-]*/, '') // remove '- ' from the beginning
-                    .split(/\r?\n/)
-                    .map(line => line.replace(/\\$/, '<br/>'))
-                    .map(line => {
-                        if (listMode) {
-                            if (line.startsWith('- ')) {
-                                // close prev bullet and start new
-                                return `</li><li>${line.slice(2)}`;
-                            }
-                            if (!line) {
-                                listMode = false;
-                                // close prev bullet and list
-                                return `</li></ul>`;
-                            }
-                            // continue an active bullet
-                            return line;
-                        }
-                        if (line.startsWith('- ')) {
-                            listMode = true;
-                            // open a new bullet
-                            return `<ul><li>${line.slice(2)}`;
-                        }
-                        return line || '<br/>';
-                    });
-                if (listMode) {
-                    lines.push(`</li></ul>`);
-                }
-                return lines.join(' ');
-            },
-        };
 
         writeTypeParameters(data: TypeSymbol | FunctionSymbol | ClassLikeSymbol, options: { heading: null | '##' | '###' }) {
             const { name, typeParams, jsDoc } = data;
@@ -1161,76 +1271,140 @@ void async function main() {
             }
         }
 
+        parametersTableColumns = [
+            {
+                header: 'Name',
+                format: '---',
+                toCell: (tsData: TS.Parameter, _jsDocData: Pick<JSDoc.ParamData, never>) => {
+                    return `\`${tsData.name}${tsData.optional ? '?' : ''}\``;
+                },
+            },
+            {
+                header: 'Type',
+                format: ':-:',
+                toCell: (tsData: TS.Parameter, _jsDocData: Pick<JSDoc.ParamData, never>) => {
+                    return this.formatType(tsData.type, this.asBeefyCode);
+                },
+            },
+            {
+                header: 'Default',
+                format: ':-:',
+                toCell: (_tsData: TS.Parameter, jsDocData: Pick<JSDoc.ParamData, 'default'>) => {
+                    return jsDocData.default && `\`${jsDocData.default}\``;
+                },
+            },
+            {
+                header: 'Description',
+                format: '---',
+                toCell: (_tsData: TS.Parameter, jsDocData: Pick<JSDoc.ParamData, 'description'>) => {
+                    const desc = jsDocData?.description;
+                    if (!desc?.length) return '';
+
+                    let listMode = false;
+                    const lines = this.formatRichText(desc)
+                        .replace(/^[\s-]*/, '') // remove '- ' from the beginning
+                        .split(/\r?\n/)
+                        .map(line => line.replace(/\\$/, '<br/>'))
+                        .map(line => {
+                            if (listMode) {
+                                if (line.startsWith('- ')) {
+                                    // close prev bullet and start new
+                                    return `</li><li>${line.slice(2)}`;
+                                }
+                                if (!line) {
+                                    listMode = false;
+                                    // close prev bullet and list
+                                    return `</li></ul>`;
+                                }
+                                // continue an active bullet
+                                return line;
+                            }
+                            if (line.startsWith('- ')) {
+                                listMode = true;
+                                // open a new bullet
+                                return `<ul><li>${line.slice(2)}`;
+                            }
+                            return line || '<br/>';
+                        });
+                    if (listMode) {
+                        lines.push(`</li></ul>`);
+                    }
+                    return lines.join(' ');
+                },
+            },
+        ];
+
         writeParameters(data: FunctionSymbol, options: { heading: '##' | '###' }) {
             const { symbol: { symbol: fnSymbol } } = this;
             const { name, params, jsDoc } = data;
             if (!params.length) return;
 
-            const paramsTypeRef = params.map(p => {
-                const symbol = p.type.type === 'reference' ? p.type.targetSymbol : null;
-                const ref = symbolMap.symbols.get(symbol!);
-                return ref && 'kind' in ref && ref.kind === 'interface' ? ref : null;
+            // if some parameter is object, extract parameters from that object
+            const expandedObjectParams = params.map(param => {
+                const inlinedProperties = new Map<string, TS.Property | TS.TypeLiteralMember>();
+                const types = param.type.type === 'union' ? param.type.types : [ param.type ];
+                // to get properties from 'options' interface
+                if (types.every(t => t.type === 'reference')) {
+                    const refs = types.map(t => symbolMap.getBySymbol(t.targetSymbol));
+                    if (refs.every(r => r && 'kind' in r && r.kind === 'interface')) {
+                        const addInlinedPropertiesFromInterface = (optionsInterface: ClassLikeSymbol) => {
+                            assert.ok(!optionsInterface.methods.length);
+                            for (const propData of optionsInterface.properties) {
+                                inlinedProperties.set(propData.name, propData);
+                            }
+                        };
+                        for (const referencedInterface of refs as ClassLikeSymbol[]) {
+                            referencedInterface.clearUsagesBySymbol(fnSymbol);
+                            for (const parentClass of referencedInterface.prototypeChain) {
+                                const parent = symbolMap.getBySymbol(parentClass);
+                                assert.ok(parent && parent instanceof ClassLikeSymbol);
+                                parent.clearUsagesBySymbol(referencedInterface.symbol);
+                                addInlinedPropertiesFromInterface(parent);
+                            }
+                            addInlinedPropertiesFromInterface(referencedInterface);
+                        }
+                    }
+                }
+                // to get properties from inlined objects (object literal)
+                if (types.every(t => t.type === 'typeLiteral')) {
+                    for (const typeLiteral of types) {
+                        for (const member of typeLiteral.members) {
+                            member.jsDoc = jsDoc?.params?.find(p => p.name === `${param.name}.${member.name}`)!;
+                            assert.ok(member.jsDoc);
+                            inlinedProperties.set(member.name, member);
+                        }
+                    }
+                }
+                if (inlinedProperties.size) {
+                    param.type = { type: 'simple', value: 'object' }; // overwrite TS interface name
+                }
+                return Array.from(inlinedProperties.values());
             });
 
             const defaultColumnNeeded =
                 jsDoc.params.some(p => p.default) ||
-                paramsTypeRef.some(ref => ref?.properties.some(m => m.jsDoc.default));
+                expandedObjectParams.some(props => props.some(m => m.jsDoc.default));
 
             const columns = defaultColumnNeeded
-                ? [ this.name_column, this.type_column, this.default_column, this.description_column ]
-                : [ this.name_column, this.type_column, this.description_column ];
+                ? this.parametersTableColumns
+                : this.parametersTableColumns.filter(c => c.header !== 'Default');
 
             this.lines.push(`${options.heading} Parameters`, '');
             this.lines.push(`| ${columns.map(c => c.header).join(' | ')} |`);
             this.lines.push(`| ${columns.map(c => c.format).join(' | ')} |`);
-
-            for (const [ i, tsData ] of params.entries()) {
+            for (const [ i, param ] of params.entries()) {
                 const jsDocData = jsDoc?.params[ i ];
                 if (jsDocData) {
-                    assert.equal(tsData.name, jsDocData.name);
+                    assert.equal(param.name, jsDocData.name);
                 } else {
-                    console.warn(`Missing JsDoc for function param ${name} > ${tsData.name}`);
+                    console.warn(`Missing JsDoc for function param ${name} > ${param.name}`);
                 }
-
-                const referencedInterface = paramsTypeRef[ i ];
-                if (referencedInterface) {
-                    const declarations: ts.Node[] = fnSymbol.getDeclarations()!;
-                    const allUsages = referencedInterface.usages;
-                    const otherUsages = allUsages
-                        .filter(usage => {
-                            for (let node = usage; node; node = node.parent) {
-                                if (declarations.includes(node)) return false;
-                            }
-                            return true;
-                        });
-                    referencedInterface.usages = otherUsages;
-                    tsData.type = { type: 'simple', value: 'object' }; // overwrite TS interface name
-                }
-
-                this.lines.push(`| ${columns.map(c => c.toCell(tsData, jsDocData)).join(' | ')} |`);
-
-                if (referencedInterface) {
-                    assert.ok(!referencedInterface.methods.length);
-                    assert.ok(referencedInterface.properties.length);
-                    for (const propData of referencedInterface.properties) {
-                        const propDataCopy = { ...propData, name: `${tsData.name}.${propData.name}` }; // from 'joinStyle' to 'options.joinStyle'
-                        this.lines.push(`| ${columns.map(c => c.toCell(propDataCopy, propDataCopy.jsDoc)).join(' | ')} |`);
-                    }
-                }
-
-                // to handle inlined types like `options: { by: number } | { to: number }`
-                if (tsData.type.type === 'union' && tsData.type.types.every(t => t.type === 'typeLiteral')) {
-                    for (const typeLiteral of tsData.type.types) {
-                        for (const member of typeLiteral.members) {
-                            const propJsDocData = jsDoc?.params?.find(p => p.name === `${tsData.name}.${member.name}`);
-                            assert.ok(propJsDocData);
-                            member.name = `${tsData.name}.${member.name}`;
-                            this.lines.push(`| ${columns.map(c => c.toCell(member, propJsDocData)).join(' | ')} |`);
-                        }
-                    }
+                this.lines.push(`| ${columns.map(c => c.toCell(param, jsDocData)).join(' | ')} |`);
+                for (const { name, ...rest } of expandedObjectParams[ i ]) {
+                    const propData = { name: `${param.name}.${name}`, ...rest }; // from 'joinStyle' to 'options.joinStyle'
+                    this.lines.push(`| ${columns.map(c => c.toCell(propData, propData.jsDoc)).join(' | ')} |`);
                 }
             }
-
             this.lines.push('');
         }
 
@@ -1286,11 +1460,11 @@ void async function main() {
             if (!prototypeChain.length) return;
 
             const parentClass = prototypeChain[ 0 ];
-            const ref = symbolMap.symbols.get(symbol);
+            const ref = symbolMap.getBySymbol(symbol);
             const relation = ref && 'kind' in ref && ref.kind === 'class'
                 ? 'is a subclass of'
                 : 'extends';
-            const link = symbolMap.resolveSymbolLink(this.symbol, parentClass);
+            const link = symbolMap.resolveSymbolLink(this.symbol, parentClass.name);
             this.lines.push(`\`${name}\` ${relation} ${this.asBeefyCode(`[**${link.label}**](${link.target})`)}.`, '');
         }
 
@@ -1308,10 +1482,10 @@ void async function main() {
                 this.lines.push(`<div className='indented-section'>`);
 
                 // type
-                const ref = p.type.type === 'reference' && symbolMap.symbols.get(p.type.targetSymbol);
-                if (ref && 'kind' in ref && ref.kind === 'type' && ref.usages.length === 1) {
+                const ref = p.type.type === 'reference' && symbolMap.getBySymbol(p.type.targetSymbol);
+                if (ref && 'kind' in ref && ref.kind === 'type') {
                     this.lines.push(`<pre className='beefy-code-line'>${this.formatType(ref.definition)}</pre>`, '');
-                    ref.usages = [];
+                    ref.clearUsagesBySymbol(p.symbol);
                 } else {
                     this.lines.push(`<pre className='beefy-code-line'>${this.formatType(p.type)}</pre>`, '');
                 }
@@ -1374,7 +1548,7 @@ void async function main() {
             }
         }
 
-        writeEditThisSectionLink(data: AnySymbol) {
+        writeEditThisSectionLink(data: ExportedSymbol) {
             this.lines.push(`<span className='edit-this-section' title='Edit this section'>[edit](${data.editUrl})</span>`, '');
         }
 
@@ -1458,7 +1632,7 @@ void async function main() {
 
     /** Generate documentation files for classes */
     for (const classData of symbolMap.exportedSymbols()) {
-        if (classData.kind !== 'class' || classData.prototypeChain.includes('Error')) continue;
+        if (classData.kind !== 'class' || classData.prototypeChain.some(ClassLikeSymbol.isErrorClassSymbol)) continue;
 
         const writer = new DocumentationWriter(classData);
         writer.writeHeader(classData);
@@ -1487,7 +1661,7 @@ void async function main() {
     {
         let writer: DocumentationWriter = null!;
         for (const errData of symbolMap.exportedSymbols()) {
-            if (errData.kind !== 'class' || !errData.prototypeChain.includes('Error')) continue;
+            if (errData.kind !== 'class' || !errData.prototypeChain.some(ClassLikeSymbol.isErrorClassSymbol)) continue;
 
             if (!writer) {
                 writer = new DocumentationWriter(errData);
@@ -1502,15 +1676,16 @@ void async function main() {
             writer.writeProperties(errData, { heading: '###' });
             writer.lines.push(`</div>`, '');
         }
-        await writer.saveToFile({ sidebarLabel: 'Errors' });
+        await writer?.saveToFile({ sidebarLabel: 'Errors' });
     }
 
     /** Generate documentation for types */
     {
         let writer: DocumentationWriter = null!;
         for (const data of symbolMap.exportedSymbols()) {
-            if ((data.kind !== 'type' && data.kind !== 'interface')) continue;
-            if (!data.usages.length) continue;
+            if (data.kind !== 'type' && data.kind !== 'interface') continue;
+            if (data.kind === 'type' && data.simple) continue;
+            if (data.isAlreadyInlined()) continue;
 
             if (!writer) {
                 writer = new DocumentationWriter(data);

@@ -62,7 +62,7 @@ export { initializeFromBase64, initialize };
 export { terminate } from './core/geos.mjs';
 
 export { GEOSError } from './core/GEOSError.mjs';
-export { type Geometry, type GeometryRef, type GeometryType } from './geom/Geometry.mjs';
+export { type Geometry, type GeometryRef, type GeometryType, type GeometryExtras, type CoordinateType } from './geom/Geometry.mjs';
 export { type Prepared, prepare, unprepare } from './geom/PreparedGeometry.mjs';
 export { type Point } from './geom/types/Point.mjs';
 export { type LineString } from './geom/types/LineString.mjs';
@@ -78,7 +78,19 @@ export { type CurvePolygon } from './geom/types/CurvePolygon.mjs';
 export { type MultiCurve } from './geom/types/MultiCurve.mjs';
 export { type MultiSurface } from './geom/types/MultiSurface.mjs';
 export {
-    type GeometryOptions,
+    type JSON_FeatureCollection,
+    type JSON_Feature,
+    type JSON_Geometry,
+    type JSON_GeometryCollection,
+    type JSON_CircularString,
+    type JSON_CompoundCurve,
+    type JSON_CurvePolygon,
+    type JSON_MultiCurve,
+    type JSON_MultiSurface,
+} from './geom/types/JSON.mjs';
+export {
+    type JSONInputOptions,
+    type GEOSInputOptions,
     point,
     lineString,
     polygon,
@@ -86,11 +98,16 @@ export {
     multiLineString,
     multiPolygon,
     geometryCollection,
+    circularString,
+    compoundCurve,
+    curvePolygon,
+    multiCurve,
+    multiSurface,
     box,
 } from './helpers/helpers.mjs';
 
 export { InvalidGeoJSONError } from './io/geosify.mjs';
-export { fromGeoJSON, toGeoJSON } from './io/GeoJSON.mjs';
+export { fromGeoJSON, type GeoJSONInputOptions, toGeoJSON, type GeoJSONOutputOptions, type ExtendedGeoJSONOutputOptions } from './io/GeoJSON.mjs';
 export { fromWKT, type WKTInputOptions, toWKT, type WKTOutputOptions } from './io/WKT.mjs';
 export { fromWKB, type WKBInputOptions, toWKB, type WKBOutputOptions } from './io/WKB.mjs';
 
