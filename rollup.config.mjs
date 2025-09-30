@@ -18,14 +18,11 @@ export default [
         input: 'src/index.mts',
         output: { file: 'dist/esm/index.mjs', format: 'esm' },
         plugins: [
-            replace({
-                delimiters: [ '', '' ],
-                '@example #live': '@example',
-            }),
             typescript({ compilerOptions: { declaration: false } }),
             replace({
                 'ROLLUP_WILL_INSERT_WASM_BASE64_HERE': wasmDataBase64,
             }),
+            cleanupJSDocs(),
             {
                 name: 'copy-wasm-file-to-dist',
                 async buildStart() {
@@ -39,11 +36,8 @@ export default [
         input: 'src/index.mts',
         output: { file: 'dist/esm/index.d.mts', format: 'esm' },
         plugins: [
-            replace({
-                delimiters: [ '', '' ],
-                '@example #live': '@example',
-            }),
             dts(),
+            cleanupJSDocs(),
         ],
     },
 
@@ -73,3 +67,17 @@ export default [
     },
 
 ];
+
+
+function cleanupJSDocs() {
+    return {
+        name: 'cleanup-js-docs',
+        generateBundle(_, bundle) {
+            for (const fileName in bundle) {
+                bundle[ fileName ].code = bundle[ fileName ].code
+                    // cleanup JSDoc "@example #live" tags
+                    .replace(/@example #live(?:\[.+?])?/g, '@example');
+            }
+        },
+    };
+}

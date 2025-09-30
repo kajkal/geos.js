@@ -3,4 +3,4 @@ packages:
 
 catalog:
   typescript: ^5.9.2
-  tsx: ^4.20.5
+  tsx: ^4.20.6

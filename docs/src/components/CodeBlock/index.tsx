@@ -8,6 +8,7 @@ import { translate } from '@docusaurus/Translate';
 import IconWordWrap from '@theme/Icon/WordWrap';
 import IconSuccess from '@theme/Icon/Success';
 import IconCopy from '@theme/Icon/Copy';
+import type { MapOptions } from '@site/src/components/Preview';
 import { LanguageJavaScript } from '@site/src/utils/LanguageJavaScript';
 import { Language } from '@site/src/utils/Language';
 
@@ -19,13 +20,14 @@ const Preview = React.lazy(() => import('@site/src/components/Preview'));
 
 interface InteractiveCodeBlockProps {
     js: LanguageJavaScript;
-    code: string;
+    initialCode: string;
     title?: string;
+    mapOptions?: MapOptions;
 }
 
-export function InteractiveCodeBlock({ js, code, title }: InteractiveCodeBlockProps) {
+export function InteractiveCodeBlock({ js, initialCode, title, mapOptions }: InteractiveCodeBlockProps) {
     const { scrollableElRef, onWrapToggle } = useOverflowDetector();
-    const [ value, setValue ] = React.useState(code);
+    const [ value, setValue ] = React.useState(initialCode);
     return (
         <div className={styles.interactiveCodeBlock}>
             {title ? (
@@ -55,6 +57,7 @@ export function InteractiveCodeBlock({ js, code, title }: InteractiveCodeBlockPr
                                 js={js}
                                 code={value}
                                 className={styles.interactiveCodeBlockPreview}
+                                mapOptions={mapOptions}
                             />
                         </React.Suspense>
                     )}
@@ -96,19 +99,19 @@ function useOverflowDetector() {
 
     React.useEffect(() => {
         const ro = new ResizeObserver(([ entry ]) => {
-            const el = entry.target;
+            const el = entry.target, parentEl = el.parentElement!;
             if (el.scrollWidth > el.clientWidth) {
-                el.parentElement.classList.add(styles.codeBlockOverflow);
+                parentEl.classList.add(styles.codeBlockOverflow);
             } else {
-                el.parentElement.classList.remove(styles.codeBlockOverflow);
+                parentEl.classList.remove(styles.codeBlockOverflow);
             }
         });
-        ro.observe(ref.current);
+        ro.observe(ref.current!);
         return () => ro.disconnect();
     }, []);
 
     const handleWordWrapToggle = React.useCallback(() => {
-        ref.current.parentElement.classList.toggle(styles.codeBlockWrap);
+        ref.current!.parentElement!.classList.toggle(styles.codeBlockWrap);
     }, []);
 
     return { scrollableElRef: ref, onWrapToggle: handleWordWrapToggle };

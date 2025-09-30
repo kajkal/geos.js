@@ -62,7 +62,7 @@ monaco.editor.defineTheme('dark', {
 
 
 const uri = monaco.Uri.parse('inmemory://model/playground.js');
-let viewState: editor.ICodeEditorViewState | undefined;
+let viewState: editor.ICodeEditorViewState | null | undefined;
 
 
 interface EditorProps {

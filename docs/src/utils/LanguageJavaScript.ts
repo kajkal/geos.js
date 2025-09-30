@@ -1,53 +1,25 @@
 import React from 'react';
-import type L from 'leaflet';
 import { Options as AcornOptions, parse, Pattern, Program, Token, tokTypes } from 'acorn';
-import { type Geometry as GeoJSON_Geometry } from 'geojson';
-import { type Geometry } from 'geos.js';
 import { escapeHtml, Language } from '@site/src/utils/Language';
+import { type Geometry } from 'geos.js';
 
 
-export class FeatureData {
-
-    type = 'Feature' as const;
-    geometry: GeoJSON_Geometry;
-    properties: object;
-
+export interface FeatureVar {
     name: string;
-    key: string;
-    color: `var(--preview__${number})`;
-    geosGeom: Geometry;
-    isActive?: boolean;
-    layer?: L.GeoJSON;
-    vLayer?: L.FeatureGroup; // vertices layer
-    dLayer?: L.FeatureGroup; // direction/winding layer
-
-    constructor(
-        name: string,
-        geosGeom: Geometry,
-        keyPrefix: string,
-        colorIdx: number,
-    ) {
-        this.geometry = geosGeom.toJSON().geometry;
-        this.properties = {};
-
-        this.name = name;
-        this.key = keyPrefix + name;
-        this.color = `var(--preview__${colorIdx})`;
-        this.geosGeom = geosGeom;
-    }
-
+    geom: Geometry;
 }
 
-
-export type ValueData = [ key: string, value: any ];
+export interface Var {
+    name: string;
+    value: any;
+}
 
 export interface EvalCodeResult {
-    code: string;
-    values?: ValueData[];
-    features?: FeatureData[];
-    bbox: [ xMin: number, yMin: number, xMax: number, yMax: number ];
-    errors?: Error[];
+    vars?: Var[];
+    featureVars?: FeatureVar[];
+    evalError?: Error;
 }
+
 
 export class LanguageJavaScript extends Language {
 
@@ -136,7 +108,7 @@ export class LanguageJavaScript extends Language {
             return React.createElement('code', {
                 dangerouslySetInnerHTML: { __html: formatted.join('') },
             });
-        } catch (e) {
+        } catch (e: any) {
             if ('pos' in e && 'raisedAt' in e) {
                 let { pos, raisedAt } = e;
                 if (pos === raisedAt) pos--;
@@ -159,11 +131,11 @@ export class LanguageJavaScript extends Language {
     evalCode(code: string): EvalCodeResult {
         try {
             const ast = (this.lastCode === code)
-                ? this.lastAST
+                ? this.lastAST!
                 : parse(code, this.acornOptions);
 
             // get names of the variables declared in snippet 'global' scope
-            const varNames = [];
+            const varNames: string[] = [];
             for (const node of ast.body) {
                 if (node.type === 'VariableDeclaration') {
                     for (const declaration of node.declarations) {
@@ -178,58 +150,25 @@ export class LanguageJavaScript extends Language {
             const result = new Function(...window.___params, code + `\nreturn {${varNames}}`)(...window.___args);
 
             // sort values
-            const values: ValueData[] = [];
-            const features: FeatureData[] = [];
-            let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
-            let i = 0;
+            const vars: Var[] = [];
+            const featureVars: FeatureVar[] = [];
 
-            const keyPrefix = Math.random().toString(36).slice(2);
-
-            function addFeature(k: string, v: Geometry) {
-                if (v.detached) {
-                    values.push([ k, 'Detached Geometry' ]);
-                } else if (!renderableGeometryTypes.has(v.type) || window.geos.isEmpty(v)) {
-                    values.push([ k, window.geos.toWKT(v) ]);
-                } else {
-                    features.push(new FeatureData(k, v, keyPrefix, (i++) % 8));
-                    const bbox = window.geos.bounds(v);
-                    x1 = Math.min(x1, bbox[ 0 ]);
-                    y1 = Math.min(y1, bbox[ 1 ]);
-                    x2 = Math.max(x2, bbox[ 2 ]);
-                    y2 = Math.max(y2, bbox[ 3 ]);
-                }
-            }
-
-            for (const k in result) {
-                const v = result[ k ];
-                if (Array.isArray(v) && v.length && v.every(window.geos.isGeometry)) {
-                    for (let j = 0; j < v.length; j++) {
-                        addFeature(`${k}[${j}]`, v[ j ]);
+            for (const name in result) {
+                const value = result[ name ];
+                if (Array.isArray(value) && value.length && value.every(window.geos.isGeometry)) {
+                    for (let j = 0; j < value.length; j++) {
+                        featureVars.push({ name: `${name}[${j}]`, geom: value[ j ] });
                     }
-                } else if (window.geos.isGeometry(v)) {
-                    addFeature(k, v);
+                } else if (window.geos.isGeometry(value)) {
+                    featureVars.push({ name, geom: value });
                 } else {
-                    values.push([ k, v ]);
+                    vars.push({ name, value });
                 }
             }
 
-            return {
-                code,
-                values,
-                features,
-                bbox: [
-                    (isFinite(x1) ? x1 : 0) - 1,
-                    (isFinite(y1) ? y1 : 0) - 1,
-                    (isFinite(x2) ? x2 : 0) + 1,
-                    (isFinite(y2) ? y2 : 0) + 1,
-                ],
-            };
-        } catch (e) {
-            return {
-                code,
-                errors: [ e ],
-                bbox: [ -1, -1, 1, 1 ],
-            };
+            return { vars, featureVars };
+        } catch (e: any) {
+            return { evalError: e };
         }
     }
 
@@ -247,14 +186,7 @@ const specialNames = new Map([
     [ 'await', 'keyword' ],
 ] as const);
 
-const renderableGeometryTypes = new Set([
-    'Point', 'MultiPoint',
-    'LineString', 'MultiLineString',
-    'Polygon', 'MultiPolygon',
-    'GeometryCollection',
-]);
-
-function getVarNamesFromPattern(pattern: Pattern, varNames: string[]) {
+function getVarNamesFromPattern(pattern: Pattern, varNames: string[]): void {
     switch (pattern.type) {
 
         case 'Identifier': {

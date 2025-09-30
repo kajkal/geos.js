@@ -200,9 +200,9 @@ export interface ExtendedGeoJSONOutputOptions extends GeoJSONOutputOptions {
  * toGeoJSON(fromWKT('POINT (1 2)'), { layout: 'XYZM' }); // [ 1, 2 ]
  * toGeoJSON(fromWKT('POINT (1 2)'), { layout: 'XYZ' }); // [ 1, 2 ]
  */
-export function toGeoJSON<P>(geometryies: Geometry<P>, options: ExtendedGeoJSONOutputOptions): JSON_Feature<GeoJSON_Geometry, P>;
+export function toGeoJSON<P>(geometryies: Geometry<P>, options: ExtendedGeoJSONOutputOptions): JSON_Feature<JSON_Geometry, P>;
 export function toGeoJSON<P>(geometryies: Geometry<P>, options?: GeoJSONOutputOptions): GeoJSON_Feature<GeoJSON_Geometry, P>;
-export function toGeoJSON<P>(geometryies: Geometry<P>[], options: ExtendedGeoJSONOutputOptions): JSON_FeatureCollection<GeoJSON_Geometry, P>;
+export function toGeoJSON<P>(geometryies: Geometry<P>[], options: ExtendedGeoJSONOutputOptions): JSON_FeatureCollection<JSON_Geometry, P>;
 export function toGeoJSON<P>(geometryies: Geometry<P>[], options?: GeoJSONOutputOptions): GeoJSON_FeatureCollection<GeoJSON_Geometry, P>;
 export function toGeoJSON<P>(geometryies: Geometry<P> | Geometry<P>[], options?: GeoJSONOutputOptions): GeoJSON_Feature<GeoJSON_Geometry, P> | GeoJSON_FeatureCollection<GeoJSON_Geometry, P> | JSON_Feature<JSON_Geometry, P> | JSON_FeatureCollection<JSON_Geometry, P> {
     const layout = options?.layout;

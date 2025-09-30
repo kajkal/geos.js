@@ -76,7 +76,10 @@
 .interactiveCodeBlockPreviewContainer {
     background-color: var(--code-frame-background-color);
     height: 1rem;
-    transition: height var(--ifm-transition-slow) ease-in-out;
+    transition: height 0.2s ease-in-out;
+    @media (prefers-reduced-motion: reduce) {
+        transition: none !important;
+    }
 
     &:has(.interactiveCodeBlockPreview) {
         height: auto;

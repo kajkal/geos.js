@@ -15,30 +15,39 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@docusaurus/core": "3.8.1",
-    "@docusaurus/preset-classic": "3.8.1",
-    "@docusaurus/theme-common": "^3.8.1",
-    "@mdx-js/react": "^3.1.0",
+    "@docusaurus/core": "3.9.1",
+    "@docusaurus/preset-classic": "3.9.1",
+    "@docusaurus/theme-common": "^3.9.1",
+    "@mdx-js/react": "^3.1.1",
     "acorn": "^8.15.0",
     "clsx": "^2.1.1",
-    "copy-text-to-clipboard": "^3.2.0",
+    "copy-text-to-clipboard": "^3.2.2",
+    "d3-axis": "^3.0.0",
+    "d3-scale": "^4.0.2",
+    "d3-selection": "^3.0.0",
+    "d3-transition": "^3.0.1",
+    "d3-zoom": "^3.0.0",
+    "flatbush": "^4.5.0",
     "geos.js": "workspace:*",
-    "leaflet": "^1.9.4",
-    "leaflet-rotatedmarker": "^0.2.0",
-    "monaco-editor": "^0.52.2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-leaflet": "5.0.0",
-    "react-simple-code-editor": "^0.14.1"
+    "kdbush": "^4.0.2",
+    "monaco-editor": "^0.53.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-simple-code-editor": "^0.14.1",
+    "scroll-into-view-if-needed": "^3.1.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.8.1",
-    "@docusaurus/tsconfig": "3.8.1",
-    "@docusaurus/types": "3.8.1",
+    "@docusaurus/module-type-aliases": "3.9.1",
+    "@docusaurus/tsconfig": "3.9.1",
+    "@docusaurus/types": "3.9.1",
+    "@types/d3-axis": "^3.0.6",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-selection": "^3.0.11",
+    "@types/d3-transition": "^3.0.9",
+    "@types/d3-zoom": "^3.0.8",
     "@types/geojson": "^7946.0.16",
-    "@types/leaflet": "^1.9.18",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
     "monaco-editor-webpack-plugin": "^7.1.0",
     "tsx": "catalog:",
     "typescript": "catalog:"
@@ -56,6 +65,6 @@
     ]
   },
   "engines": {
-    "node": ">=18.0"
+    "node": ">=20.0"
   }
 }

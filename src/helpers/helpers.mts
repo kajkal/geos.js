@@ -300,7 +300,7 @@ export function geometryCollection<P>(geometries: Geometry[], options?: GEOSInpu
  * @returns A new CircularString geometry
  * @throws {InvalidGeoJSONError} if total number of points is even or equal to 1
  *
- * @example #live
+ * @example #live[v,d]
  * const a = circularString([ [ 0, 0 ], [ 2, 8 ], [ 8, 0 ] ]);
  * // the same arc but defined by different middle point:
  * const b = circularString([ [ 0, 0 ], [ 6, 8 ], [ 8, 0 ] ]);
@@ -334,7 +334,7 @@ export function circularString<P>(pts: Position[], options?: JSONInputOptions<P>
  * @throws {GEOSError} when input segments are not continuous
  * @throws {GEOSError} when input segments includes empty geometry
  *
- * @example #live
+ * @example #live[v,d]
  * const a = compoundCurve([
  *     lineString([ [ 0, 10 ], [ 0, 0 ], [ 5, 0 ], [5, 5] ]),
  *     circularString([ [ 5, 5], [ 10, 10 ], [ 10, 0 ] ]),

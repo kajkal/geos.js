@@ -1,128 +1,106 @@
 import React from 'react';
 import clsx from 'clsx';
 import copy from 'copy-text-to-clipboard';
-import { type Geometry as GeoJSON_Geometry } from 'geojson';
-import type L from 'leaflet';
-import { circleMarker, CRS, divIcon, DomEvent, featureGroup, LatLng, LatLngBounds, marker } from 'leaflet';
-import { GeoJSON, MapContainer, Popup, useMap } from 'react-leaflet';
-import 'leaflet-rotatedmarker';
-import { EvalCodeResult, FeatureData, LanguageJavaScript, ValueData } from '@site/src/utils/LanguageJavaScript';
+import { useColorMode } from '@docusaurus/theme-common';
+import { Feature, Renderer, RenderResult } from '@site/src/components/Preview/renderer/Renderer';
+import { EvalCodeResult, LanguageJavaScript, Var } from '@site/src/utils/LanguageJavaScript';
+import { palettes } from '@site/src/components/Preview/renderer/styles';
 import { Resizer } from '@site/src/components/Resizer';
 
 import styles from './styles.module.css';
 
 
+export interface MapOptions {
+    v: boolean; // whether vertices are visible
+    d: boolean; // whether direction arrows are visible
+}
+
+type VisualizationResult = EvalCodeResult & RenderResult;
+
+
 interface PreviewProps {
     js: LanguageJavaScript;
     code: string;
+    mapAlwaysVisible?: boolean;
+    mapOptions?: MapOptions;
     className?: string;
-    isMapOptional?: boolean;
 }
 
-type RenderErrorHandler = (error: Error, feature: FeatureData) => void;
-
-
-export default function Preview(props: PreviewProps) {
+export default function Preview({ js, code, className, mapAlwaysVisible, mapOptions }: PreviewProps) {
     if (!window.geos) {
         throw window.geosPromise;
     }
 
-    const { js, code } = props;
-    const [ data, setData ] = React.useState(() => js.evalCode(code));
+    const rendererRef = React.useRef<Renderer | null>(null);
+    const isFirstRenderRef = React.useRef<boolean>(true);
+    const [ evalStatus, setEvalStatus ] = React.useState<0 | 1>(0); // 0 - default; 1 - success
+    const [ data, setData ] = React.useState<VisualizationResult>(() => js.evalCode(code));
+
+    // when no features in the first render -> map is optional
+    const isMapOptional = React.useMemo(() => !mapAlwaysVisible && !data.featureVars?.length, []);
 
     React.useEffect(() => {
-        setData(js.evalCode(code));
+        let evalResult: EvalCodeResult;
+        if (isFirstRenderRef.current) {
+            isFirstRenderRef.current = false;
+            evalResult = data;
+        } else {
+            evalResult = js.evalCode(code);
+        }
+
+        setData(evalResult);
+
+        if (!evalResult.evalError) {
+            setEvalStatus(1);
+            let timeoutId = setTimeout(() => {
+                setEvalStatus(0);
+            }, 200);
+            return () => clearTimeout(timeoutId);
+        }
     }, [ code ]);
 
-    const handleError: RenderErrorHandler = React.useCallback((error, feature) => {
-        setData(prevState => ({
-            ...prevState,
-            errors: [ ...prevState.errors || [], error ],
-            features: prevState.features.filter(f => f !== feature),
-        }));
-    }, []);
-
-    // when no features in the first render = map is optional
-    const isMapOptional = React.useMemo(() => props.isMapOptional ?? !data.features?.length, []);
+    React.useEffect(() => {
+        const featureVars = data.featureVars;
+        const renderer = rendererRef.current;
+        if (renderer && featureVars) {
+            const { logs } = renderer.render(featureVars);
+            setData(data => ({ ...data, logs }));
+        }
+    }, [ data.featureVars ]);
 
     return (
-        <div className={clsx(styles.preview, props.className)}>
-            {(isMapOptional && !data.features?.length) ? null : (
-                <MapPreview
-                    features={data.features}
-                    bbox={data.bbox}
-                    onError={handleError}
+        <div className={clsx(styles.preview, className)}>
+            {isMapOptional && !data.featureVars?.length ? null : (
+                <GeometriesPreview
+                    evalStatus={data.evalError ? 2 : evalStatus}
+                    mapOptions={mapOptions}
+                    ref={rendererRef}
                 />
             )}
-            <ValuesPreview values={data.values} />
-            <ErrorsPreview errors={data.errors} />
+            {(data.evalError ? (
+                <ErrorPreview error={data.evalError} />
+            ) : null)}
+            <RenderErrorsAndWarningsPreview logs={data.logs} />
+            <ValuesPreview values={data.vars} />
         </div>
     );
 }
 
 
-class GeoJSONErrorBoundary extends React.Component<
-    { children: React.ReactNode; f: FeatureData; onError: RenderErrorHandler; },
-    { error?: Error; }
-> {
-
-    state = { error: null };
-
-    static getDerivedStateFromError(error: any) {
-        return { error };
-    }
-
-    componentDidCatch(error: any) {
-        const { f } = this.props;
-        error.name = `Cannot render geometry "${f.name}"`;
-        error.WKT = window.geos.toWKT(f.geosGeom);
-        this.props.onError(error, f);
-    }
-
-    render() {
-        if (this.state.error) {
-            return null;
-        }
-        return this.props.children;
-    }
-
-}
-
-
-/** errors */
-
-const ErrorsPreview: React.FunctionComponent<{ errors?: Error[]; }> = ({ errors }) => {
-    if (!errors?.length) {
-        return null;
+const ValuePreview: React.FunctionComponent<Var> = ({ name, value }) => {
+    if (value instanceof Uint8Array) {
+        value = `<Uint8Array ${Array.from(value, toHex).join('')}>`;
+    } else {
+        value = specialValues.get(value) || JSON.stringify(value);
     }
     return (
-        <>
-            {errors.map((error, i) => {
-                const { name, message, ...rest } = error;
-                const props = Object.entries(rest);
-                return (
-                    <div className={clsx(styles.previewSection, styles.errorPreviewSection)} key={i}>
-                        <span className={styles.previewSectionBar}>{name}</span>
-                        <pre className={styles.previewSectionBody}>
-                            <span>{message}</span>
-                            {props.length ? (
-                                <div className={styles.errorProps}>
-                                    {props.map(entry => (
-                                        <ValuePreview key={entry[ 0 ]} entry={entry} />
-                                    ))}
-                                </div>
-                            ) : null}
-                        </pre>
-                    </div>
-                );
-            })}
-        </>
+        <span className={styles.value} data-var={name}>
+            {value}
+        </span>
     );
 };
 
-
-/** values */
-
+const toHex = (n: number): string => n.toString(16).padStart(2, '0');
 const specialValues = new Map([
     [ NaN, 'NaN' ],
     [ Infinity, 'Infinity' ],
@@ -130,21 +108,9 @@ const specialValues = new Map([
     [ undefined, 'undefined' ],
 ]);
 
-const ValuePreview: React.FunctionComponent<{ entry: ValueData; }> = ({ entry: [ key, value ] }) => {
-    if (value instanceof Uint8Array) {
-        value = `<Uint8Array ${Array.from(value, e => e.toString(16).padStart(2, '0')).join('')}>`;
-    } else {
-        value = specialValues.get(value) || JSON.stringify(value);
-    }
-    return (
-        <div className={styles.value}>
-            <span className={styles.valueName}>{key}</span>: <span className={styles.valueValue}>{value}</span>{'\n'}
-        </div>
-    );
-};
 
 interface ValuesPreviewProps {
-    values?: ValueData[];
+    values?: Var[];
     label?: string;
     className?: string;
 }
@@ -157,8 +123,8 @@ const ValuesPreview: React.FunctionComponent<ValuesPreviewProps> = ({ values, la
         <div className={clsx(styles.previewSection, className)}>
             <span className={styles.previewSectionBar}>{label}</span>
             <pre className={styles.previewSectionBody}>
-                {values.map((entry) => (
-                    <ValuePreview key={entry[ 0 ]} entry={entry} />
+                {values.map(({ name, value }) => (
+                    <ValuePreview key={name} name={name} value={value} />
                 ))}
             </pre>
         </div>
@@ -166,49 +132,201 @@ const ValuesPreview: React.FunctionComponent<ValuesPreviewProps> = ({ values, la
 };
 
 
-/** features */
-
-interface MapPreviewProps {
-    features?: EvalCodeResult['features'];
-    bbox: EvalCodeResult['bbox'];
-    onError: RenderErrorHandler;
+interface ErrorPreviewProps {
+    error: Error;
 }
 
-const MapPreview: React.FunctionComponent<MapPreviewProps> = ({ features = [], bbox: [ x1, y1, x2, y2 ], onError }) => {
-    const [ map, setMap ] = React.useState<L.Map>(null);
-    const bounds = React.useMemo(() => new LatLngBounds([ [ y1, x1 ], [ y2, x2 ] ]), [ x1, y1, x2, y2 ]);
+const ErrorPreview: React.FunctionComponent<ErrorPreviewProps> = ({ error }) => {
+    const { name, message, ...rest } = error;
+    const props = Object.entries(rest);
+    return (
+        <div className={clsx(styles.previewSection, styles.errorPreviewSection)}>
+            <span className={styles.previewSectionBar}>{name}</span>
+            <pre className={styles.previewSectionBody}>
+                <span>{message}</span>
+                {props.length ? (
+                    <div className={styles.errorProps}>
+                        {props.map(([ name, value ]) => (
+                            <ValuePreview key={name} name={name} value={value} />
+                        ))}
+                    </div>
+                ) : null}
+            </pre>
+        </div>
+    );
+};
+
+
+interface RenderWarningsPreviewProps {
+    logs?: Feature[];
+}
+
+const RenderErrorsAndWarningsPreview: React.FunctionComponent<RenderWarningsPreviewProps> = ({ logs }) => {
+    if (!logs?.length) {
+        return null;
+    }
+    return (
+        <div className={clsx(styles.previewSection, styles.renderErrorsAndWarningsPreviewSection)}>
+            <span className={styles.previewSectionBar}>Rendering Errors & Warnings</span>
+            <dl className={styles.previewSectionBody}>
+                {logs.map(d => (
+                    d.error
+                        ? <RenderErrorPreview key={d.name} d={d} />
+                        : <RenderWarningsPreview key={d.name} d={d} />
+                ))}
+            </dl>
+        </div>
+    );
+};
+
+const RenderErrorPreview: React.FunctionComponent<{ d: Feature; }> = ({ d }) => {
+    return (
+        <>
+            <dt>
+                <span className={styles.logTypeIcon} title='Render error'>💥</span>
+                <code className='beefy-code'>{d.name}</code>
+            </dt>
+            <dd>
+                <span className={styles.logSummary}>Cannot render geometry</span>
+                <span className={styles.logDetails}>{d.error!.message}</span>
+                <span className={styles.logWKT}>{window.geos.toWKT(d.geom)}</span>
+            </dd>
+        </>
+    );
+};
+
+const RenderWarningsPreview: React.FunctionComponent<{ d: Feature; }> = ({ d }) => {
+    return (
+        <>
+            <dt>
+                <span className={styles.logTypeIcon} title='Render warning'>⚠️</span>
+                <code className='beefy-code'>{d.name}</code>
+            </dt>
+            {d.warnings!.map((w, i) => (
+                <dd key={i}>
+                    <span className={styles.logSummary}>{w.message}</span>
+                    {w.details ? (
+                        <span className={styles.logDetails}>{w.details}</span>
+                    ) : null}
+                </dd>
+            ))}
+        </>
+    );
+};
+
+
+interface GeometriesPreviewProps {
+    evalStatus: 0 | 1 | 2; // 0 - neutral; 1 - success; 2 - eval error
+    mapOptions?: MapOptions;
+    ref: React.RefObject<Renderer | null>;
+    className?: string;
+}
+
+const GeometriesPreview: React.FunctionComponent<GeometriesPreviewProps> = ({ evalStatus, mapOptions, ref, className }) => {
+    const rootRef = React.useRef<HTMLDivElement>(null);
+    const [ popup, setPopup ] = React.useState<Feature | null>(null);
+    const [ vVisible, setVVisible ] = React.useState<boolean>(Boolean(mapOptions?.v));
+    const [ dVisible, setDVisible ] = React.useState<boolean>(Boolean(mapOptions?.d));
+    const [ gVisible, setGVisible ] = React.useState<boolean>(true);
+    const [ cursor, setCursor ] = React.useState<string>('');
+    const { colorMode } = useColorMode();
+
 
     React.useEffect(() => {
-        map?.whenReady((e) => {
-            e.target.fitBounds(bounds.pad(0.15), { animate: false });
-        });
-    }, [ map, bounds ]);
-
-    React.useEffect(() => {
-        if (map) {
-            const ro = new ResizeObserver(() => {
-                map.invalidateSize();
-            });
-            ro.observe(map.getContainer());
-            return () => ro.disconnect();
+        if (rootRef.current) {
+            const renderer = new Renderer(rootRef.current);
+            renderer.setPopup = setPopup;
+            renderer.showVertices = vVisible;
+            renderer.showDirections = dVisible;
+            ref.current = renderer;
+            return () => {
+                renderer.cleanup();
+                ref.current = null;
+            };
         }
-    }, [ map ]);
+    }, []);
+
+    React.useEffect(() => {
+        const renderer = ref.current;
+        if (renderer) {
+            renderer.setStyles(palettes[ colorMode ]);
+        }
+    }, [ colorMode ]);
+
+    const handleKeyDownOnRoot: React.KeyboardEventHandler<HTMLDivElement> = React.useCallback((e) => {
+        const renderer = ref.current;
+        if (!renderer) return;
+        switch (e.key) {
+            case 'Escape': {
+                renderer.closePopup();
+                break;
+            }
+            case '0':
+            case 'r': {
+                renderer.resetView();
+                break;
+            }
+            case 'f': {
+                renderer.toggleFullscreen();
+                break;
+            }
+        }
+    }, []);
+
+    const handleKeyDownOnSettings: React.KeyboardEventHandler<HTMLDetailsElement> = React.useCallback((e) => {
+        e.stopPropagation();
+        if (e.key === 'Escape') {
+            const match = (e.target as HTMLElement).closest('details');
+            if (match?.open) {
+                match.removeAttribute('open');
+            }
+        }
+    }, []);
+
+    const toggleShowVertices: React.ChangeEventHandler<HTMLInputElement> = React.useCallback((e) => {
+        const newState = e.target.checked;
+        setVVisible(newState);
+        const renderer = ref.current;
+        if (renderer) {
+            renderer.setShowVertices(newState);
+        }
+    }, []);
+
+    const toggleShowDirection: React.ChangeEventHandler<HTMLInputElement> = React.useCallback((e) => {
+        const newState = e.target.checked;
+        setDVisible(newState);
+        const renderer = ref.current;
+        if (renderer) {
+            renderer.setShowDirections(newState);
+        }
+    }, []);
+
+    const toggleShowGrid: React.ChangeEventHandler<HTMLInputElement> = React.useCallback((e) => {
+        const newState = e.target.checked;
+        setGVisible(newState);
+        const renderer = ref.current;
+        if (renderer) {
+            renderer.setShowGrid(newState);
+        }
+    }, []);
 
     const handleResize: React.PointerEventHandler = React.useCallback((e) => {
-        const mapEl = map.getContainer();
-        const rect = mapEl.getBoundingClientRect();
+        const root = rootRef.current;
+        if (!root) return;
+
+        const rect = root.getBoundingClientRect();
         const clickPoint = { y: e.clientY };
 
         const handlePointerMove = (e: PointerEvent) => {
             const dy = e.clientY - clickPoint.y;
             const newHeightInPx = rect.height + dy;
-            mapEl.style.height = `${newHeightInPx}px`;
+            root.style.height = `${newHeightInPx}px`;
         };
 
         // set cursor
         document.body.style.cursor = 'ns-resize';
-        mapEl.style.userSelect = 'none';
-        mapEl.style.pointerEvents = 'none';
+        root.style.userSelect = 'none';
+        root.style.pointerEvents = 'none';
 
         document.addEventListener('pointermove', handlePointerMove);
         document.addEventListener('pointerup', () => {
@@ -216,502 +334,234 @@ const MapPreview: React.FunctionComponent<MapPreviewProps> = ({ features = [], b
 
             // reset cursor
             document.body.style.removeProperty('cursor');
-            mapEl.style.removeProperty('user-select');
-            mapEl.style.removeProperty('pointer-events');
+            root.style.removeProperty('user-select');
+            root.style.removeProperty('pointer-events');
         }, { once: true });
-    }, [ map ]);
+    }, []);
 
     return (
-        <div className={styles.previewSection}>
-            <MapContainer
-                ref={setMap}
-                className={styles.mapPreviewSectionMap}
-                crs={CRS.Simple}
-                center={bounds.getCenter()}
-                minZoom={-16}
-                zoom={3}
-                zoomSnap={0.1}
-                zoomControl={false}
-                inertia={false}
+        <div
+            ref={rootRef}
+            className={clsx('plane', styles.previewSection, styles.geometryViewer, className)}
+            tabIndex={0}
+            onKeyDown={handleKeyDownOnRoot}
+        >
+            <div className={styles.viewer}>
+                <canvas className={clsx(styles.canvas, cursor)}>
+                    Preview of geometries from the script
+                </canvas>
+                <svg className={styles.svg}>
+                    <g className='grid'></g>
+                    <g className='x'></g>
+                    <g className='y'></g>
+                </svg>
+            </div>
+
+            <div className={styles.featurePopupBoundary}>
+                <div className={clsx(styles.featurePopup, styles.hidden)}>
+                    {popup && (
+                        <FeaturePopup d={popup} v={ref} />
+                    )}
+                </div>
+            </div>
+
+            <details
+                className={clsx(styles.previewSectionBar, styles.options)}
+                onKeyDown={handleKeyDownOnSettings}
             >
-                {features.map((f) => (
-                    <GeoJSONErrorBoundary key={f.key} f={f} onError={onError}>
-                        <GeoJSONFeature f={f} />
-                    </GeoJSONErrorBoundary>
-                ))}
-                <VisibilityControl features={features} />
-            </MapContainer>
-            {map ? (
-                <PositionControl map={map} />
-            ) : null}
+                <summary className={styles.optionsBar}>
+                    <svg viewBox='0 0 48 48' width='1em' height='1em'>
+                        <path
+                            className={styles.expandCollapseIcon}
+                            d='M4 16 L24 36 M24 36 L44 16'
+                        />
+                        <circle
+                            className={clsx(styles.evalStatusIcon, {
+                                [ styles.evalSuccess ]: evalStatus === 1,
+                                [ styles.evalError ]: evalStatus === 2,
+                            })}
+                            cx='24' cy='24' r='18'
+                        />
+                    </svg>
+                    <span data-type='zoom' title='zoom'></span>
+                    <div className={styles.pointerPosIndicator}>
+                        <span data-type='x' title='x'></span>
+                        <span data-type='y' title='y'></span>
+                    </div>
+                </summary>
+                <div className={styles.optionsBody}>
+                    {evalStatus === 2 ? (
+                        <>
+                            <div className={styles.evalErrorDescription}>
+                                <svg viewBox='0 0 48 48' width='1em' height='1em'>
+                                    <circle cx='24' cy='24' r='18' />
+                                </svg>
+                                <span>
+                                    code evaluation error<br />
+                                    preview is not up to date
+                                </span>
+                            </div>
+                            <hr className={styles.horizontalSeparator} />
+                        </>
+                    ) : null}
+
+                    <label className={styles.checkboxLabel}>
+                        <input
+                            type='checkbox'
+                            checked={vVisible}
+                            onChange={toggleShowVertices}
+                        />
+                        <span>show vertices</span>
+                    </label>
+                    <label className={styles.checkboxLabel}>
+                        <input
+                            type='checkbox'
+                            checked={dVisible}
+                            onChange={toggleShowDirection}
+                        />
+                        <span>show directions</span>
+                    </label>
+
+                    <hr className={styles.horizontalSeparator} />
+
+                    <label className={styles.checkboxLabel}>
+                        <input
+                            type='checkbox'
+                            checked={gVisible}
+                            onChange={toggleShowGrid}
+                        />
+                        <span>show grid</span>
+                    </label>
+
+                    <hr className={styles.horizontalSeparator} />
+
+                    <label className={styles.selectLabel}>
+                        <span>Funky cursor</span>
+                        <select onChange={e => setCursor(e.target.value)}>
+                            <option value=''>Default</option>
+                            <option value={styles.cursor_dot_white}>White dot</option>
+                            <option value={styles.cursor_dot_black}>Black dot</option>
+                            <option value={styles.cursor_donut_white}>White donut</option>
+                            <option value={styles.cursor_donut_black}>Black donut</option>
+                        </select>
+                    </label>
+
+                    <hr className={styles.horizontalSeparator} />
+
+                    <PreviewButton
+                        onClick={() => ref.current?.resetView()}
+                        withClickFeedback
+                    >
+                        reset view
+                    </PreviewButton>
+                    <PreviewButton
+                        onClick={() => ref.current?.toggleFullscreen()}
+                    >
+                        toggle fullscreen
+                    </PreviewButton>
+                    <PreviewButton
+                        className={styles.screenshotButton}
+                        onClick={async (e) => {
+                            const dpr = Number((e.target as HTMLElement).dataset.dpr || '');
+                            console.log('capturing screenshot with DPR', dpr);
+                            await ref.current?.saveScreenshot(isFinite(dpr) ? dpr : undefined);
+                        }}
+                        data-dpr={4}
+                        withClickFeedback
+                    >
+                        capture screenshot
+                    </PreviewButton>
+                </div>
+            </details>
+
+            <div className={styles.featureList}>
+            </div>
+
             <Resizer
-                className={styles.mapPreviewSectionMapResizer}
+                className={styles.geometryViewerResizer}
                 onPointerDown={handleResize}
             />
         </div>
     );
 };
 
-const PositionControl: React.FunctionComponent<{ map: L.Map }> = ({ map }) => {
-    const [ zoom, setZoom ] = React.useState(map.getZoom());
-    const [ position, setPosition ] = React.useState(map.getCenter());
-
-    React.useEffect(() => {
-        function handleZoomLevelChange(e) {
-            setZoom(e.target.getZoom());
-        }
-
-        function handleMouseMove(e) {
-            setPosition(e.latlng); // lng-x lat-y
-        }
-
-        map.on('zoom', handleZoomLevelChange);
-        map.on('mousemove', handleMouseMove);
-        return () => {
-            map.off('zoom', handleZoomLevelChange);
-            map.off('mousemove', handleMouseMove);
-        };
-    }, [ map ]);
-
-    let digits = 0;
-    if (zoom > 10) {
-        digits = 6;
-    } else if (zoom > 8) {
-        digits = 4;
-    } else if (zoom > 6) {
-        digits = 2;
-    } else if (zoom > 2) {
-        digits = 1;
-    }
-
-    return (
-        <div className={clsx(styles.previewSectionBar, styles.positionControl)}>
-            zoom
-            <span title='zoom level' className={styles.zoom}>{zoom.toFixed(1)}</span>
-            |
-            <span title='x' className={styles.xy}>{position.lng.toFixed(digits)}</span>
-            <span title='y' className={styles.xy}>{position.lat.toFixed(digits)}</span>
-        </div>
-    );
-};
-
-const VisibilityControl: React.FunctionComponent<{ features: FeatureData[] }> = ({ features }) => {
-    const map = useMap();
-    const ref = React.useRef<HTMLDivElement>(null);
-
-    React.useEffect(() => {
-        DomEvent.disableScrollPropagation(ref.current);
-    }, []);
-
-    return (
-        <div
-            ref={ref}
-            className={styles.visibilityControl}
-            onDoubleClickCapture={(e) => void e.stopPropagation()}
-        >
-            {features.map((f) => (
-                <label
-                    key={f.key}
-                    title={f.geometry.type}
-                    className={clsx(styles.checkboxLabel, styles.visibilityControlItem)}
-                    onPointerEnter={() => f.layer.setStyle(hoverStyle)}
-                    onPointerLeave={() => f.layer.setStyle(restStyle)}
-                >
-                    <input
-                        type='checkbox'
-                        defaultChecked
-                        onChange={(e) => {
-                            if (e.target.checked) {
-                                map.addLayer(f.layer);
-                            } else {
-                                map.removeLayer(f.layer);
-                            }
-                        }}
-                    />
-                    {f.name}
-                </label>
-            ))}
-        </div>
-    );
-};
-
-
-const GeoJSONFeature: React.FunctionComponent<{ f: FeatureData; }> = ({ f }) => {
-    const [ isVLayerVisible, onVLayerVisibilityChange ] = useVerticesLayer(f, false);
-    const [ isDLayerVisible, onDLayerVisibilityChange ] = useDirectionLayer(f, false);
-    return (
-        <GeoJSON
-            ref={el => {
-                f.layer = el;
-            }}
-            data={f}
-            style={defaultStyle}
-            eventHandlers={featureLayerEventHandlers}
-            pointToLayer={pointToLayer}
-        >
-            <FeaturePopup
-                f={f}
-                isVLayerVisible={isVLayerVisible}
-                onVLayerVisibilityChange={onVLayerVisibilityChange}
-                isDLayerVisible={isDLayerVisible}
-                onDLayerVisibilityChange={onDLayerVisibilityChange}
-            />
-        </GeoJSON>
-    );
-};
-
-const useVerticesLayer = (f: FeatureData, initialVisibility: boolean) => {
-    const [ isVisible, setIsVisible ] = React.useState(initialVisibility);
-
-    React.useEffect(() => {
-        if (!isVisible) {
-            if (f.vLayer) {
-                f.layer.removeLayer(f.vLayer);
-            }
-            return;
-        }
-
-        if (!f.vLayer) {
-            const outerVertexStyle: L.CircleMarkerOptions = {
-                radius: 3.25,
-                color: `var(--ifm-color-emphasis-700)`,
-                fillColor: f.color,
-                fillOpacity: 1,
-                weight: 0.75,
-                className: styles.vertex,
-            };
-
-            const innerVertexStyle: L.CircleMarkerOptions = {
-                radius: 1.75,
-                color: `var(--ifm-color-emphasis-700)`,
-                fillColor: f.color,
-                fillOpacity: 1,
-                weight: 1.25,
-                className: styles.vertex,
-            };
-
-            const xyTooltipOptions: L.TooltipOptions = {
-                className: styles.vertexTooltip,
-                direction: 'top',
-                opacity: 1,
-            };
-
-            const vertexMarkers: L.CircleMarker[] = [];
-            const addVertexMarkers = (pts: number[][], style: L.CircleMarkerOptions) => {
-                for (const pt of pts) {
-                    const x = String(pt[ 0 ]), y = String(pt[ 1 ]);
-                    const marker = circleMarker(new LatLng(pt[ 1 ], pt[ 0 ], pt[ 2 ]), style)
-                        .bindTooltip(`[ ${x}, ${y} ]`, xyTooltipOptions);
-                    const diff = y.length - x.length;
-                    if (diff) { // to align space between numbers
-                        marker.on('tooltipopen', e => {
-                            e.tooltip.getElement().style.marginLeft = `${diff / 2}ch`;
-                        });
-                    }
-                    vertexMarkers.push(marker);
-                }
-            };
-
-            const visitVertices = (geometry: GeoJSON_Geometry) => {
-                switch (geometry.type) {
-                    case 'Point': {
-                        addVertexMarkers([ geometry.coordinates ], outerVertexStyle);
-                        break;
-                    }
-                    case 'MultiPoint':
-                    case 'LineString': {
-                        const pts = geometry.coordinates;
-                        addVertexMarkers(pts, outerVertexStyle);
-                        break;
-                    }
-                    case 'MultiLineString':
-                    case 'Polygon': {
-                        const ppts = geometry.coordinates;
-                        for (let i = 0; i < ppts.length; i++) {
-                            addVertexMarkers(ppts[ i ], (i && geometry.type === 'Polygon') ? innerVertexStyle : outerVertexStyle);
-                        }
-                        break;
-                    }
-                    case 'MultiPolygon': {
-                        const pppts = geometry.coordinates;
-                        for (const ppts of pppts) {
-                            for (let i = 0; i < ppts.length; i++) {
-                                addVertexMarkers(ppts[ i ], i ? innerVertexStyle : outerVertexStyle);
-                            }
-                        }
-                        break;
-                    }
-                    case 'GeometryCollection': {
-                        for (const geom of geometry.geometries) {
-                            visitVertices(geom);
-                        }
-                    }
-                }
-            };
-            visitVertices(f.geometry);
-
-            f.vLayer = featureGroup(vertexMarkers);
-        }
-
-        f.layer.addLayer(f.vLayer);
-    }, [ f, isVisible ]);
-
-    const handleVisibilityChange: React.ChangeEventHandler<HTMLInputElement> = React.useCallback((e) => {
-        setIsVisible(e.target.checked);
-    }, [ setIsVisible ]);
-
-    return [ isVisible, handleVisibilityChange ] as const;
-};
-
-const useDirectionLayer = (f: FeatureData, initialVisibility: boolean) => {
-    const [ isVisible, setIsVisible ] = React.useState(initialVisibility);
-
-    React.useEffect(() => {
-        if (!isVisible) {
-            if (f.dLayer) {
-                f.layer.removeLayer(f.dLayer);
-            }
-            return;
-        }
-
-        if (!f.dLayer) {
-            const getArrowIcon = (path: string, stroke: string) => {
-                const arrowSvg = `<svg viewBox='0 0 14 14'><path d='${path}' fill='none' stroke='${stroke}' stroke-width='1.5'/></svg>`;
-                return divIcon({
-                    className: 'arrow-icon',
-                    html: arrowSvg,
-                    iconSize: [ 14, 14 ],
-                    iconAnchor: [ 7, 7 ],
-                });
-            };
-            const outerArrowIcon = getArrowIcon('m4 2 7 5-7 5', f.color);
-            const innerArrowIcon = getArrowIcon('m5 4 5 3-5 3', f.color);
-
-            const arrows: L.Marker[] = [];
-            const addArrows = (pts: number[][], icon: L.DivIcon) => {
-                for (let i = 0; i < pts.length - 1; i++) {
-                    const [ x1, y1 ] = pts[ i ], [ x2, y2 ] = pts[ i + 1 ];
-                    const arrow = marker(new LatLng(y1 + (y2 - y1) / 3, x1 + (x2 - x1) / 3), {
-                        icon,
-                        interactive: false,
-                        rotationAngle: -Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI,
-                    } as (L.MarkerOptions & { rotationAngle: number; }));
-                    arrows.push(arrow);
-                }
-            };
-
-            const getArrows = (geometry: GeoJSON_Geometry) => {
-                switch (geometry.type) {
-                    case 'LineString': {
-                        const pts = geometry.coordinates;
-                        addArrows(pts, outerArrowIcon);
-                        break;
-                    }
-                    case 'MultiLineString':
-                    case 'Polygon': {
-                        const ppts = geometry.coordinates;
-                        for (let i = 0; i < ppts.length; i++) {
-                            addArrows(ppts[ i ], (i && geometry.type === 'Polygon') ? innerArrowIcon : outerArrowIcon);
-                        }
-                        break;
-                    }
-                    case 'MultiPolygon': {
-                        const pppts = geometry.coordinates;
-                        for (const ppts of pppts) {
-                            for (let i = 0; i < ppts.length; i++) {
-                                addArrows(ppts[ i ], i ? innerArrowIcon : outerArrowIcon);
-                            }
-                        }
-                        break;
-                    }
-                    case 'GeometryCollection': {
-                        for (const geom of geometry.geometries) {
-                            getArrows(geom);
-                        }
-                    }
-                }
-            };
-            getArrows(f.geometry);
-
-            f.dLayer = featureGroup(arrows);
-        }
-
-        f.layer.addLayer(f.dLayer);
-    }, [ f, isVisible ]);
-
-    const handleVisibilityChange: React.ChangeEventHandler<HTMLInputElement> = React.useCallback((e) => {
-        setIsVisible(e.target.checked);
-    }, [ setIsVisible ]);
-
-    return [ isVisible, handleVisibilityChange ] as const;
-};
-
 
 interface FeaturePopupProps {
-    f: FeatureData;
-    isVLayerVisible: boolean;
-    onVLayerVisibilityChange: React.ChangeEventHandler<HTMLInputElement>;
-    isDLayerVisible: boolean;
-    onDLayerVisibilityChange: React.ChangeEventHandler<HTMLInputElement>;
+    d: Feature;
+    v: React.RefObject<Renderer | null>;
 }
 
-const FeaturePopup: React.FunctionComponent<FeaturePopupProps> = ({ f, ...props }) => {
-    const [ isCopied, setIsCopied ] = React.useState<'wkt' | 'json' | false>(false);
-
+const FeaturePopup: React.FunctionComponent<FeaturePopupProps> = ({ d, v }) => {
     React.useEffect(() => {
-        if (isCopied) {
-            let timeoutId = window.setTimeout(() => {
-                setIsCopied(false);
-            }, 200);
-            return () => window.clearTimeout(timeoutId);
-        }
-    }, [ isCopied ]);
-
+        v.current!.panPopupIntoView();
+    }, [ d, v ]);
     return (
-        <Popup className={styles.featurePopup}>
+        <>
             <header className={styles.featurePopupHeader}>
-                <code>{f.name}</code><i>{f.geometry.type}</i>
+                <code>{d.name}</code><i>{d.geom.type}</i>
             </header>
-            {f.geosGeom.id != null ? (
-                <div className={clsx(styles.featurePopupId, styles.value)}>
-                    <span>ID</span>: <strong className={styles.valueValue}>{JSON.stringify(f.geosGeom.id)}</strong>
+
+            {d.geom.id != null ? (
+                <div className={styles.featurePopupId}>
+                    <ValuePreview name='ID' value={d.geom.id} />
                 </div>
             ) : null}
-            {f.geosGeom.props ? (
+
+            {d.geom.props ? (
                 <ValuesPreview
-                    values={Object.entries(f.geosGeom.props)}
+                    values={Object.entries(d.geom.props).map(([ k, v ]) => ({ name: k, value: v }))}
                     label='Properties'
                     className={clsx(styles.miniPreviewSection, styles.featurePopupProperties)}
                 />
             ) : null}
-            <ul className={styles.featurePopupActions}>
-                <li>
-                    <label className={clsx(styles.checkboxLabel, styles.featurePopupCheckbox)}>
-                        <input
-                            type='checkbox'
-                            checked={props.isVLayerVisible}
-                            onChange={props.onVLayerVisibilityChange}
-                        />
-                        show vertices
-                    </label>
-                </li>
-                <li>
-                    <label className={clsx(styles.checkboxLabel, styles.featurePopupCheckbox)}>
-                        <input
-                            type='checkbox'
-                            checked={props.isDLayerVisible}
-                            onChange={props.onDLayerVisibilityChange}
-                        />
-                        show directions
-                    </label>
-                </li>
-                <li>
-                    <button
-                        className={clsx('button', 'button--outline', styles.featurePopupAction, isCopied === 'json' ? 'button--success' : 'button--secondary')}
-                        onClick={() => {
-                            copy(JSON.stringify(window.geos.toGeoJSON(f.geosGeom)));
-                            setIsCopied('json');
-                        }}
-                    >
-                        copy as GeoJSON
-                    </button>
-                </li>
-                <li>
-                    <button
-                        className={clsx('button', 'button--outline', styles.featurePopupAction, isCopied === 'wkt' ? 'button--success' : 'button--secondary')}
-                        onClick={() => {
-                            copy(window.geos.toWKT(f.geosGeom));
-                            setIsCopied('wkt');
-                        }}
-                    >
-                        copy as WKT
-                    </button>
-                </li>
-            </ul>
-        </Popup>
+
+            <PreviewButton
+                onClick={() => {
+                    copy(JSON.stringify(d.geom.toJSON()));
+                }}
+                withClickFeedback
+            >
+                copy as GeoJSON
+            </PreviewButton>
+
+            <PreviewButton
+                onClick={() => {
+                    copy(window.geos.toWKT(d.geom));
+                }}
+                withClickFeedback
+            >
+                copy as WKT
+            </PreviewButton>
+        </>
     );
 };
 
 
-const defaultStyle: L.StyleFunction = (feature) => {
-    const f = feature as FeatureData;
-    return {
-        radius: 4,
-        color: f.color,
-        fillColor: f.color,
-        fillOpacity: 0.3,
-        opacity: 0.5,
-        stroke: true,
-        weight: 2,
-        ...(typeof f.geosGeom.props === 'object' ? f.geosGeom.props : {}),
-    };
-};
+interface PreviewButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    withClickFeedback?: boolean;
+}
 
-const hoverStyle: L.StyleFunction = (feature) => {
-    if (feature?.constructor === FeatureData) {
-        const f = feature as FeatureData;
-        f.layer.bringToFront();
-        if (f.dLayer && f.layer.hasLayer(f.dLayer)) {
-            // workaround to make `.bringToFront()` work (more or less) for markers
-            f.layer.removeLayer(f.dLayer);
-            f.layer.addLayer(f.dLayer);
+const PreviewButton = ({ onClick, className, withClickFeedback, ...props }: PreviewButtonProps) => {
+    const [ active, setActive ] = React.useState(false);
+
+    React.useEffect(() => {
+        if (active) {
+            const timeoutId = setTimeout(() => {
+                setActive(false);
+            }, 200);
+            return () => clearTimeout(timeoutId);
         }
-        if (f.isActive) return;
-        return {
-            fillOpacity: 0.6,
-            opacity: 1,
-            color: 'var(--preview__active)',
-            weight: 2.5,
-        };
-    }
-};
+    }, [ active ]);
 
-const restStyle: L.StyleFunction = (feature) => {
-    if (feature?.constructor === FeatureData) {
-        const f = feature as FeatureData;
-        if (f.isActive) return;
-        return defaultStyle(feature);
-    }
-};
-
-const activeStyle: L.StyleFunction = (feature) => {
-    if (feature?.constructor === FeatureData) {
-        const f = feature as FeatureData;
-        f.isActive = true;
-        return {
-            fillOpacity: 0.85,
-            opacity: 1,
-            color: 'var(--preview__active)',
-            weight: 2.5,
-        };
-    }
-};
-
-const resetActiveStyle: L.StyleFunction = (feature) => {
-    if (feature?.constructor === FeatureData) {
-        const f = feature as FeatureData;
-        f.isActive = false;
-        return defaultStyle(feature);
-    }
-};
-
-
-const pointToLayer: L.GeoJSONOptions['pointToLayer'] = (_geoJsonPoint, latlng) => {
-    return circleMarker(latlng);
-};
-
-
-const featureLayerEventHandlers: L.LeafletEventHandlerFnMap = {
-    mouseover: (e) => {
-        e.target.setStyle(hoverStyle);
-    },
-    mouseout: (e) => {
-        e.target.setStyle(restStyle);
-    },
-    popupopen: (e) => {
-        e.target.setStyle(activeStyle);
-    },
-    popupclose: (e) => {
-        e.target.setStyle(resetActiveStyle);
-    },
+    return (
+        <button
+            className={clsx(styles.previewButton, className)}
+            data-feedback={withClickFeedback && active ? 'success' : null}
+            onClick={async (e) => {
+                await onClick!(e);
+                setActive(true);
+            }}
+            {...props}
+        />
+    );
 };

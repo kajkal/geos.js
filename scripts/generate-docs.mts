@@ -226,7 +226,7 @@ namespace JSDoc {
     export interface Example {
         title?: string;
         code: string;
-        live?: boolean;
+        live?: string; // `live[<optional options here>]`
     }
 
     export interface Data {
@@ -602,12 +602,15 @@ void async function main() {
                             break;
                         }
                         case 'example': {
-                            let live = false;
+                            let live: string | undefined = undefined;
                             let [ header, ...lines ] = tag.getFullText()
                                 .split(/\r?\n/)
                                 .map(l => l.replace(/^\s*\*(?: |$)/, ''));
                             header = header.replace(/^@example\s*/, '');
-                            header = header.replace(/^#live\s*/, () => (live = true, ''));
+                            header = header.replace(/^#(live(?:\[.*?])?)\s*/, (_, match) => (live = match, ''));
+                            if (live) {
+                                assert.match(live, /^live(?:\[(v,?)?(d,?)?])?$/);
+                            }
                             data.examples.push({
                                 title: header,
                                 code: lines.join('\n').trim(),
@@ -1449,7 +1452,7 @@ void async function main() {
                 this.lines.push(`${options.heading} Examples`, '');
             }
             for (const { title, code, live } of examples) {
-                this.lines.push('```js' + (live ? ' live' : '') + (title ? ` title="${title}"` : ''));
+                this.lines.push('```js' + (live ? ` ${live}` : '') + (title ? ` title="${title}"` : ''));
                 this.lines.push(code);
                 this.lines.push('```', '');
             }

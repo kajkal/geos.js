@@ -10,19 +10,24 @@ export default function CodeBlock({ children, className, metastring }: Props): R
         throw new Error('invalid children prop');
     }
 
-    let title: string;
+    let title: string | undefined = undefined;
     metastring = metastring?.replace(/title=(["'])(.*?)\1/, (_0, _1, match) => {
         title = match;
         return '';
     });
 
-    const live = metastring?.includes('live');
-    if (live) {
+    const liveMatch = metastring?.match(/live(?:\[(v,?)?(d,?)?])?/);
+    if (liveMatch) {
+        const [ _, v, d ] = liveMatch;
         return (
             <InteractiveCodeBlock
                 js={new LanguageJavaScript()}
-                code={children.trim()}
+                initialCode={children.trim()}
                 title={title}
+                mapOptions={{
+                    v: Boolean(v),
+                    d: Boolean(d),
+                }}
             />
         );
     }

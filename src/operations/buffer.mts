@@ -73,16 +73,16 @@ export interface BufferOptions {
  * @returns A new, buffered, geometry
  * @throws {GEOSError} on unsupported geometry types (curved)
  *
- * @example #live create a simple buffer around a point
+ * @example #live[v] create a simple buffer around a point
  * const pt = point([ 0, 0 ]);
  * const circle = buffer(pt, 10);
  *
- * @example #live create a buffer around a line
+ * @example #live[v] create a buffer around a line
  * const line = lineString([ [ 0, 0 ], [ 10, 10 ], [ 25, 10 ] ]);
  * const path1 = buffer(line, 2, { endCapStyle: 'square' });
  * const path2 = buffer(line, 4, { endCapStyle: 'flat' });
  *
- * @example #live create a buffer that shrinks the geometry
+ * @example #live[v] create a buffer that shrinks the geometry
  * const poly = polygon([ [ [ 0, 0 ], [ 0, 8 ], [ 8, 8 ], [ 8, 0 ], [ 0, 0 ] ] ]);
  * const shrunken = buffer(poly, -2);
  * // shrunk to nothing

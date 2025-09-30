@@ -40,14 +40,15 @@ export default function PlaygroundPage() {
     }, []);
 
     React.useEffect(() => {
-        editorContainerRef.current.style.removeProperty('width');
-        editorContainerRef.current.style.removeProperty('height');
+        const editorContainerEl = editorContainerRef.current!;
+        editorContainerEl.style.removeProperty('width');
+        editorContainerEl.style.removeProperty('height');
     }, [ direction ]);
 
     const handleResize: React.PointerEventHandler = React.useCallback((e) => {
-        const containerEl = containerRef.current;
-        const editorContainerEl = editorContainerRef.current;
-        const previewContainerEl = previewContainerRef.current;
+        const containerEl = containerRef.current!;
+        const editorContainerEl = editorContainerRef.current!;
+        const previewContainerEl = previewContainerRef.current!;
 
         const containerRect = containerEl.getBoundingClientRect();
         const rect = editorContainerEl.getBoundingClientRect();
@@ -102,7 +103,10 @@ export default function PlaygroundPage() {
 
     return (
         <Layout
-            description='Play with GEOS.js with no setup! Import data from GeoJSON, WKT or WKB formats and visualize results on the map!'
+            description={
+                'Play with GEOS.js online with no setup! ' +
+                'Import data from GeoJSON, WKT or WKB formats and visualize results on the map!'
+            }
             noFooter
         >
             <main
@@ -139,7 +143,7 @@ export default function PlaygroundPage() {
                                 <Preview
                                     js={js}
                                     code={value}
-                                    isMapOptional={false}
+                                    mapAlwaysVisible
                                 />
                             </React.Suspense>
                         )}

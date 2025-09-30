@@ -59,7 +59,7 @@
             }
         }
 
-        :global .leaflet-container {
+        :global .plane {
             height: 50svh;
         }
     }
